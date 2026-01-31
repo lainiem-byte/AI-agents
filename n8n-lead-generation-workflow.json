@@ -1,0 +1,1002 @@
+{
+  "name": "LNL Lead Generation Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [1]
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Weekly Scrape Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "notes": "Runs every Monday at midnight. Adjust timing as needed."
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 500],
+      "notes": "Use for on-demand scraping runs"
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "industries",
+              "value": "med_spa,realtor,law_firm,hvac_home_services"
+            },
+            {
+              "name": "locations",
+              "value": "Raleigh Durham NC,Columbus OH,Moscow ID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-config",
+      "name": "Set Search Parameters",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [250, 400],
+      "notes": "Configure industries and locations to scrape"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate all search combinations\nconst industries = $input.first().json.industries.split(',');\nconst locations = $input.first().json.locations.split(',');\n\nconst searchQueries = [];\n\nconst industryKeywords = {\n  'med_spa': ['med spa', 'medical spa', 'medspa', 'aesthetic clinic', 'botox clinic', 'laser clinic', 'skin clinic'],\n  'realtor': ['real estate agent', 'realtor', 'real estate broker', 'luxury real estate', 'homes for sale agent'],\n  'law_firm': ['law firm', 'attorney', 'lawyer', 'legal services', 'personal injury lawyer', 'family law attorney'],\n  'hvac_home_services': ['HVAC contractor', 'plumber', 'electrician', 'home services', 'AC repair', 'heating cooling']\n};\n\nconst luxuryIndustries = ['med_spa', 'realtor'];\n\nfor (const industry of industries) {\n  const keywords = industryKeywords[industry.trim()] || [industry.trim()];\n  const isLuxury = luxuryIndustries.includes(industry.trim());\n  \n  for (const location of locations) {\n    for (const keyword of keywords) {\n      searchQueries.push({\n        industry: industry.trim(),\n        location: location.trim(),\n        keyword: keyword,\n        searchQuery: `${keyword} ${location.trim()}`,\n        isLuxuryTarget: isLuxury,\n        timestamp: new Date().toISOString()\n      });\n    }\n  }\n}\n\nreturn searchQueries;"
+      },
+      "id": "generate-queries",
+      "name": "Generate Search Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 400],
+      "notes": "Creates all industry + location combinations with keywords"
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "batch-queries",
+      "name": "Batch Queries",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [750, 400],
+      "notes": "Process 5 queries at a time to respect API rate limits"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://maps.googleapis.com/maps/api/place/textsearch/json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.searchQuery }}"
+            },
+            {
+              "name": "key",
+              "value": "={{ $env.GOOGLE_MAPS_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "google-maps-search",
+      "name": "Google Maps Text Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 300],
+      "notes": "Initial search to find businesses. Returns place_id for details."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract place IDs and prepare for details fetch\nconst results = $input.first().json.results || [];\nconst searchMeta = $('Batch Queries').first().json;\n\nreturn results.map(place => ({\n  place_id: place.place_id,\n  name: place.name,\n  address: place.formatted_address,\n  rating: place.rating || null,\n  review_count: place.user_ratings_total || 0,\n  types: place.types || [],\n  industry: searchMeta.industry,\n  location: searchMeta.location,\n  isLuxuryTarget: searchMeta.isLuxuryTarget,\n  source: 'google_maps',\n  scraped_date: new Date().toISOString()\n}));"
+      },
+      "id": "parse-google-results",
+      "name": "Parse Google Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 300],
+      "notes": "Extracts business data from Google Maps response"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://maps.googleapis.com/maps/api/place/details/json",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "place_id",
+              "value": "={{ $json.place_id }}"
+            },
+            {
+              "name": "fields",
+              "value": "name,formatted_address,formatted_phone_number,website,opening_hours,reviews,photos,url"
+            },
+            {
+              "name": "key",
+              "value": "={{ $env.GOOGLE_MAPS_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "google-place-details",
+      "name": "Get Place Details",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, 300],
+      "notes": "Fetches phone, website, and detailed info for each business"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge place details with search results\nconst details = $input.first().json.result || {};\nconst searchData = $('Parse Google Results').first().json;\n\nreturn [{\n  // Core business info\n  business_name: details.name || searchData.name,\n  industry: searchData.industry,\n  \n  // Location data\n  address: details.formatted_address || searchData.address,\n  city: searchData.location.split(',')[0].trim(),\n  state: searchData.location.split(',')[1]?.trim().split(' ')[0] || '',\n  \n  // Contact info\n  phone: details.formatted_phone_number || '',\n  website: details.website || '',\n  google_maps_url: details.url || '',\n  \n  // Reputation data\n  google_rating: searchData.rating,\n  review_count: searchData.review_count,\n  \n  // Metadata\n  place_id: searchData.place_id,\n  source: 'google_maps',\n  isLuxuryTarget: searchData.isLuxuryTarget,\n  scraped_date: searchData.scraped_date,\n  \n  // To be enriched later\n  email: '',\n  owner_name: '',\n  social_facebook: '',\n  social_instagram: '',\n  social_linkedin: '',\n  lead_score: 0,\n  status: 'new'\n}];"
+      },
+      "id": "merge-place-details",
+      "name": "Merge Place Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1750, 300],
+      "notes": "Combines search results with detailed place information"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.yelp.com/v3/businesses/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "term",
+              "value": "={{ $json.keyword }}"
+            },
+            {
+              "name": "location",
+              "value": "={{ $json.location }}"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "yelp-search",
+      "name": "Yelp Business Search",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 500],
+      "notes": "Parallel search on Yelp for additional businesses",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yelp-api",
+          "name": "Yelp API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse Yelp results into standard format\nconst businesses = $input.first().json.businesses || [];\nconst searchMeta = $('Batch Queries').first().json;\n\nreturn businesses.map(biz => ({\n  business_name: biz.name,\n  industry: searchMeta.industry,\n  \n  // Location\n  address: biz.location?.display_address?.join(', ') || '',\n  city: biz.location?.city || searchMeta.location.split(',')[0].trim(),\n  state: biz.location?.state || '',\n  zip: biz.location?.zip_code || '',\n  \n  // Contact\n  phone: biz.display_phone || biz.phone || '',\n  website: biz.url || '', // Yelp page, not actual website\n  yelp_url: biz.url || '',\n  \n  // Reputation\n  yelp_rating: biz.rating || null,\n  review_count: biz.review_count || 0,\n  \n  // Categories\n  categories: biz.categories?.map(c => c.title).join(', ') || '',\n  \n  // Metadata\n  yelp_id: biz.id,\n  source: 'yelp',\n  isLuxuryTarget: searchMeta.isLuxuryTarget,\n  scraped_date: new Date().toISOString(),\n  \n  // To be enriched\n  email: '',\n  owner_name: '',\n  social_facebook: '',\n  social_instagram: '',\n  social_linkedin: '',\n  lead_score: 0,\n  status: 'new'\n}));"
+      },
+      "id": "parse-yelp-results",
+      "name": "Parse Yelp Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 500],
+      "notes": "Converts Yelp response to standard lead format"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "merge-sources",
+      "name": "Merge All Sources",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2000, 400],
+      "notes": "Combines Google Maps and Yelp results"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Deduplicate by business name + city (fuzzy match)\nconst leads = $input.all().map(i => i.json);\nconst seen = new Map();\nconst unique = [];\n\nfunction normalizeString(str) {\n  return (str || '').toLowerCase()\n    .replace(/[^a-z0-9]/g, '')\n    .trim();\n}\n\nfor (const lead of leads) {\n  const key = normalizeString(lead.business_name) + '_' + normalizeString(lead.city);\n  \n  if (!seen.has(key)) {\n    seen.set(key, lead);\n    unique.push(lead);\n  } else {\n    // Merge data from duplicate (prefer non-empty values)\n    const existing = seen.get(key);\n    for (const [field, value] of Object.entries(lead)) {\n      if (value && !existing[field]) {\n        existing[field] = value;\n      }\n    }\n  }\n}\n\nreturn unique.map(lead => ({ json: lead }));"
+      },
+      "id": "deduplicate",
+      "name": "Deduplicate Leads",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2250, 400],
+      "notes": "Removes duplicate businesses, merges data from multiple sources"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-website",
+              "leftValue": "={{ $json.website }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-no-website",
+      "name": "Filter: Must Have Website",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [2500, 400],
+      "notes": "DISQUALIFIER: No website = skip (per your criteria)"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.hunter.io/v2/domain-search",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "domain",
+              "value": "={{ $json.website.replace(/^https?:\\/\\//, '').replace(/\\/.*/g, '') }}"
+            },
+            {
+              "name": "api_key",
+              "value": "={{ $env.HUNTER_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "hunter-email-finder",
+      "name": "Hunter.io Email Finder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2750, 300],
+      "notes": "Finds email addresses from business website domain"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract best email from Hunter.io results\nconst hunterData = $input.first().json.data || {};\nconst leadData = $('Filter: Must Have Website').first().json;\n\nconst emails = hunterData.emails || [];\n\n// Priority: owner/founder > executive > manager > generic\nconst priorityRoles = ['owner', 'founder', 'ceo', 'president', 'director', 'manager'];\n\nlet bestEmail = '';\nlet ownerName = '';\n\nfor (const role of priorityRoles) {\n  const match = emails.find(e => \n    (e.position || '').toLowerCase().includes(role) ||\n    (e.seniority || '').toLowerCase() === 'executive'\n  );\n  if (match) {\n    bestEmail = match.value;\n    ownerName = [match.first_name, match.last_name].filter(Boolean).join(' ');\n    break;\n  }\n}\n\n// Fallback to first email if no role match\nif (!bestEmail && emails.length > 0) {\n  bestEmail = emails[0].value;\n  ownerName = [emails[0].first_name, emails[0].last_name].filter(Boolean).join(' ');\n}\n\n// Also grab generic email if available\nconst genericEmail = hunterData.pattern ? \n  `info@${hunterData.domain}` : '';\n\nreturn [{\n  ...leadData,\n  email: bestEmail || genericEmail,\n  owner_name: ownerName,\n  email_confidence: emails[0]?.confidence || 0,\n  company_type: hunterData.organization || '',\n  hunter_enriched: true\n}];"
+      },
+      "id": "parse-hunter-results",
+      "name": "Parse Hunter Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3000, 300],
+      "notes": "Extracts owner email and name from Hunter.io response"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/organizations/enrich",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "={{ $env.APOLLO_API_KEY }}"
+            },
+            {
+              "name": "domain",
+              "value": "={{ $json.website.replace(/^https?:\\/\\//, '').replace(/\\/.*/g, '') }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "apollo-enrich",
+      "name": "Apollo.io Enrichment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2750, 500],
+      "notes": "Enriches company data with Apollo.io"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Merge Apollo enrichment data\nconst apolloData = $input.first().json.organization || {};\nconst leadData = $('Parse Hunter Results').first().json;\n\nreturn [{\n  ...leadData,\n  \n  // Company details from Apollo\n  employee_count: apolloData.estimated_num_employees || '',\n  founded_year: apolloData.founded_year || '',\n  annual_revenue: apolloData.annual_revenue || '',\n  \n  // Social profiles\n  social_linkedin: apolloData.linkedin_url || '',\n  social_facebook: apolloData.facebook_url || '',\n  social_twitter: apolloData.twitter_url || '',\n  social_instagram: apolloData.instagram_url || '',\n  \n  // Additional metadata\n  industry_apollo: apolloData.industry || '',\n  keywords: apolloData.keywords?.join(', ') || '',\n  apollo_enriched: true\n}];"
+      },
+      "id": "merge-apollo-data",
+      "name": "Merge Apollo Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3000, 500],
+      "notes": "Adds Apollo enrichment data to lead record"
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.website }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text"
+            }
+          },
+          "timeout": 10000
+        }
+      },
+      "id": "scrape-website",
+      "name": "Scrape Website",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3250, 400],
+      "notes": "Fetches website HTML for brand analysis",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Analyze website for brand quality and social media presence\nconst html = $input.first().json.data || $input.first().json.body || '';\nconst leadData = $('Merge Apollo Data').first().json;\n\n// Social media extraction patterns\nconst socialPatterns = {\n  facebook: /(?:facebook\\.com|fb\\.com)\\/([\\w.-]+)/gi,\n  instagram: /instagram\\.com\\/([\\w.-]+)/gi,\n  linkedin: /linkedin\\.com\\/(?:company|in)\\/([\\w.-]+)/gi,\n  twitter: /(?:twitter\\.com|x\\.com)\\/([\\w.-]+)/gi\n};\n\n// Extract social links from website\nconst socialLinks = {};\nfor (const [platform, pattern] of Object.entries(socialPatterns)) {\n  const matches = html.match(pattern);\n  if (matches && matches.length > 0) {\n    socialLinks[platform] = matches[0];\n  }\n}\n\n// Website quality indicators\nconst hasModernDesign = /bootstrap|tailwind|react|vue|angular/i.test(html);\nconst hasBookingSystem = /calendly|acuity|booksy|vagaro|mindbody|schedulicity/i.test(html);\nconst hasChatbot = /intercom|drift|zendesk|hubspot|tawk|livechat|crisp/i.test(html);\nconst hasEmailCapture = /mailchimp|convertkit|klaviyo|activecampaign/i.test(html);\nconst hasVideo = /<video|youtube\\.com|vimeo\\.com|wistia/i.test(html);\nconst hasProfessionalPhotos = /unsplash|shutterstock|gettyimages|professional|portfolio/i.test(html);\n\n// Luxury indicators (for med spa & realtor)\nconst luxuryKeywords = /luxury|exclusive|premium|bespoke|elite|high-end|concierge|boutique/i;\nconst hasLuxuryBranding = luxuryKeywords.test(html);\n\n// Website age/quality estimate\nconst isOutdated = /copyright 20(1[0-9]|20|21)/i.test(html) || \n                   /<table.*cellpadding|<font|<center>/i.test(html);\n\nreturn [{\n  ...leadData,\n  \n  // Update social links if not already present\n  social_facebook: leadData.social_facebook || socialLinks.facebook || '',\n  social_instagram: leadData.social_instagram || socialLinks.instagram || '',\n  social_linkedin: leadData.social_linkedin || socialLinks.linkedin || '',\n  social_twitter: leadData.social_twitter || socialLinks.twitter || '',\n  \n  // Website analysis flags\n  website_has_modern_design: hasModernDesign,\n  website_has_booking: hasBookingSystem,\n  website_has_chatbot: hasChatbot,\n  website_has_email_capture: hasEmailCapture,\n  website_has_video: hasVideo,\n  website_has_professional_photos: hasProfessionalPhotos,\n  website_has_luxury_branding: hasLuxuryBranding,\n  website_is_outdated: isOutdated,\n  \n  website_analyzed: true\n}];"
+      },
+      "id": "analyze-website",
+      "name": "Analyze Website & Extract Social",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3500, 400],
+      "notes": "Extracts social media links and analyzes website quality for scoring"
+    },
+    {
+      "parameters": {
+        "jsCode": "// LNL Lead Scoring Algorithm\n// Based on: Brand Gap detection (social doesn't match brand)\n// Luxury targeting for Med Spa & Realtors\n\nconst lead = $input.first().json;\nlet score = 0;\nconst scoringBreakdown = [];\n\n// ============================================\n// POSITIVE SIGNALS (Higher = Better Prospect)\n// ============================================\n\n// 1. BRAND GAP DETECTION (Primary Signal)\n// Social media presence doesn't match their brand quality\nconst hasSocialPresence = lead.social_facebook || lead.social_instagram || lead.social_linkedin;\nconst hasQualityWebsite = lead.website_has_modern_design || lead.website_has_professional_photos;\n\nif (hasQualityWebsite && !hasSocialPresence) {\n  score += 30;\n  scoringBreakdown.push('+30: Major Brand Gap - Good website but no social presence');\n} else if (hasQualityWebsite && hasSocialPresence) {\n  // Check if social is weak compared to website\n  // This would need social follower data - for now, flag for manual review\n  score += 15;\n  scoringBreakdown.push('+15: Has social presence - needs manual review for brand alignment');\n}\n\n// 2. NO CHATBOT = Opportunity for Master Brain product\nif (!lead.website_has_chatbot) {\n  score += 25;\n  scoringBreakdown.push('+25: No chatbot - opportunity for Master Brain');\n}\n\n// 3. NO BOOKING SYSTEM = Opportunity for Lead-to-Client Logic\nif (!lead.website_has_booking) {\n  score += 20;\n  scoringBreakdown.push('+20: No booking system - opportunity for Conversion Engine');\n}\n\n// 4. NO EMAIL AUTOMATION = Opportunity for Custom Architecture\nif (!lead.website_has_email_capture) {\n  score += 15;\n  scoringBreakdown.push('+15: No email capture - opportunity for Custom Architecture');\n}\n\n// 5. OUTDATED WEBSITE = Needs help\nif (lead.website_is_outdated) {\n  score += 20;\n  scoringBreakdown.push('+20: Outdated website - needs modernization');\n}\n\n// 6. HAS EMAIL = Contactable\nif (lead.email) {\n  score += 10;\n  scoringBreakdown.push('+10: Has verified email address');\n}\n\n// 7. HAS PHONE = Contactable\nif (lead.phone) {\n  score += 5;\n  scoringBreakdown.push('+5: Has phone number');\n}\n\n// 8. GOOD REVIEWS = Established business\nif (lead.google_rating >= 4.0 && lead.review_count >= 20) {\n  score += 15;\n  scoringBreakdown.push('+15: Established business (good reviews)');\n} else if (lead.review_count < 20) {\n  score += 10;\n  scoringBreakdown.push('+10: Newer business (low review count) - may need marketing help');\n}\n\n// ============================================\n// LUXURY TARGETING (Med Spa & Realtors)\n// ============================================\n\nif (lead.isLuxuryTarget) {\n  // Bonus for luxury indicators\n  if (lead.website_has_luxury_branding) {\n    score += 20;\n    scoringBreakdown.push('+20: Luxury branding detected (high-value target)');\n  }\n  \n  if (lead.website_has_professional_photos) {\n    score += 10;\n    scoringBreakdown.push('+10: Professional photography (luxury indicator)');\n  }\n  \n  if (lead.website_has_video) {\n    score += 10;\n    scoringBreakdown.push('+10: Video content (invested in brand)');\n  }\n}\n\n// ============================================\n// INDUSTRY-SPECIFIC ADJUSTMENTS\n// ============================================\n\nconst industryBonus = {\n  'med_spa': 10,      // High-value clients\n  'realtor': 10,      // High-value clients  \n  'law_firm': 5,      // Professional services\n  'hvac_home_services': 0  // Standard\n};\n\nconst bonus = industryBonus[lead.industry] || 0;\nif (bonus > 0) {\n  score += bonus;\n  scoringBreakdown.push(`+${bonus}: Industry bonus (${lead.industry})`);\n}\n\n// ============================================\n// DETERMINE LEAD TIER\n// ============================================\n\nlet leadTier = 'cold';\nlet priority = 3;\n\nif (score >= 80) {\n  leadTier = 'hot';\n  priority = 1;\n} else if (score >= 50) {\n  leadTier = 'warm';\n  priority = 2;\n} else {\n  leadTier = 'cold';\n  priority = 3;\n}\n\n// ============================================\n// PRODUCT RECOMMENDATIONS\n// ============================================\n\nconst productRecommendations = [];\n\nif (!lead.website_has_chatbot) {\n  productRecommendations.push('Master Brain (Custom AI Agents)');\n}\nif (!lead.website_has_booking) {\n  productRecommendations.push('Lead-to-Client Logic (Conversion Engine)');\n}\nif (!lead.website_has_email_capture) {\n  productRecommendations.push('Custom Architecture (Systems Integration)');\n}\nif (hasQualityWebsite && !hasSocialPresence) {\n  productRecommendations.push('Auto-Pilot Content Factory');\n}\n\nreturn [{\n  ...lead,\n  lead_score: score,\n  lead_tier: leadTier,\n  priority: priority,\n  scoring_breakdown: scoringBreakdown.join(' | '),\n  product_recommendations: productRecommendations.join(', '),\n  qualified_date: new Date().toISOString()\n}];"
+      },
+      "id": "lead-scoring",
+      "name": "Lead Scoring Algorithm",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3750, 400],
+      "notes": "LNL Custom Scoring: Brand Gap detection, luxury targeting, product recommendations"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-score",
+              "leftValue": "={{ $json.lead_score }}",
+              "rightValue": "30",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-low-score",
+      "name": "Filter Low Score Leads",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [4000, 400],
+      "notes": "Only keep leads with score >= 30"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Business Name": "={{ $json.business_name }}",
+            "Industry": "={{ $json.industry }}",
+            "City": "={{ $json.city }}",
+            "State": "={{ $json.state }}",
+            "Address": "={{ $json.address }}",
+            "Phone": "={{ $json.phone }}",
+            "Email": "={{ $json.email }}",
+            "Website": "={{ $json.website }}",
+            "Owner Name": "={{ $json.owner_name }}",
+            "Google Rating": "={{ $json.google_rating }}",
+            "Review Count": "={{ $json.review_count }}",
+            "Facebook": "={{ $json.social_facebook }}",
+            "Instagram": "={{ $json.social_instagram }}",
+            "LinkedIn": "={{ $json.social_linkedin }}",
+            "Lead Score": "={{ $json.lead_score }}",
+            "Lead Tier": "={{ $json.lead_tier }}",
+            "Priority": "={{ $json.priority }}",
+            "Product Recommendations": "={{ $json.product_recommendations }}",
+            "Scoring Breakdown": "={{ $json.scoring_breakdown }}",
+            "Source": "={{ $json.source }}",
+            "Scraped Date": "={{ $json.scraped_date }}",
+            "Status": "new",
+            "Outreach Status": "pending",
+            "Last Contact": "",
+            "Notes": ""
+          }
+        },
+        "options": {}
+      },
+      "id": "google-sheets-save",
+      "name": "Save to Google Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [4250, 300],
+      "notes": "Backup lead tracker in Google Sheets"
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "create",
+        "additionalFields": {
+          "email": "={{ $json.email }}",
+          "firstName": "={{ $json.owner_name.split(' ')[0] || '' }}",
+          "lastName": "={{ $json.owner_name.split(' ').slice(1).join(' ') || '' }}",
+          "phone": "={{ $json.phone }}",
+          "company": "={{ $json.business_name }}",
+          "website": "={{ $json.website }}",
+          "city": "={{ $json.city }}",
+          "state": "={{ $json.state }}",
+          "address": "={{ $json.address }}"
+        }
+      },
+      "id": "hubspot-create-contact",
+      "name": "Create HubSpot Contact",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [4250, 500],
+      "notes": "Creates contact in HubSpot CRM",
+      "credentials": {
+        "hubspotApi": {
+          "id": "hubspot-api",
+          "name": "HubSpot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "deal",
+        "operation": "create",
+        "additionalFields": {
+          "dealName": "={{ $json.business_name }} - {{ $json.industry }}",
+          "pipeline": "default",
+          "stage": "new_lead",
+          "amount": "0"
+        }
+      },
+      "id": "hubspot-create-deal",
+      "name": "Create HubSpot Deal",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [4500, 500],
+      "notes": "Creates deal in HubSpot pipeline",
+      "credentials": {
+        "hubspotApi": {
+          "id": "hubspot-api",
+          "name": "HubSpot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "update",
+        "contactId": "={{ $('Create HubSpot Contact').item.json.id }}",
+        "updateFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "lead_score",
+                "value": "={{ $json.lead_score }}"
+              },
+              {
+                "property": "lead_tier",
+                "value": "={{ $json.lead_tier }}"
+              },
+              {
+                "property": "industry_vertical",
+                "value": "={{ $json.industry }}"
+              },
+              {
+                "property": "product_recommendations",
+                "value": "={{ $json.product_recommendations }}"
+              },
+              {
+                "property": "scoring_breakdown",
+                "value": "={{ $json.scoring_breakdown }}"
+              },
+              {
+                "property": "google_rating",
+                "value": "={{ $json.google_rating }}"
+              },
+              {
+                "property": "social_facebook",
+                "value": "={{ $json.social_facebook }}"
+              },
+              {
+                "property": "social_instagram",
+                "value": "={{ $json.social_instagram }}"
+              }
+            ]
+          }
+        }
+      },
+      "id": "hubspot-update-custom-props",
+      "name": "Update HubSpot Custom Properties",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [4750, 500],
+      "notes": "Adds custom LNL scoring properties to contact",
+      "credentials": {
+        "hubspotApi": {
+          "id": "hubspot-api",
+          "name": "HubSpot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "is-hot",
+              "leftValue": "={{ $json.lead_tier }}",
+              "rightValue": "hot",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-hot-leads",
+      "name": "Filter Hot Leads",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [5000, 400],
+      "notes": "Identify hot leads for immediate notification"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.NOTIFICATION_EMAIL }}",
+        "subject": "🔥 HOT LEAD: {{ $json.business_name }} ({{ $json.industry }})",
+        "message": "A new high-scoring lead has been captured!\n\n**Business:** {{ $json.business_name }}\n**Industry:** {{ $json.industry }}\n**Location:** {{ $json.city }}, {{ $json.state }}\n**Score:** {{ $json.lead_score }} ({{ $json.lead_tier }})\n\n**Contact:**\n- Email: {{ $json.email }}\n- Phone: {{ $json.phone }}\n- Owner: {{ $json.owner_name }}\n\n**Website:** {{ $json.website }}\n\n**Product Recommendations:**\n{{ $json.product_recommendations }}\n\n**Scoring Breakdown:**\n{{ $json.scoring_breakdown }}\n\n---\nThis lead is ready for outreach!",
+        "options": {}
+      },
+      "id": "email-hot-lead-alert",
+      "name": "Email Hot Lead Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [5250, 400],
+      "notes": "Sends email notification for hot leads"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary",
+              "name": "scrape_summary",
+              "value": "=Lead generation complete. Processed {{ $('Deduplicate Leads').all().length }} unique businesses. {{ $('Filter Low Score Leads').all().length }} qualified leads saved.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-summary",
+      "name": "Set Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [5250, 600],
+      "notes": "Final summary of scraping run"
+    }
+  ],
+  "connections": {
+    "Weekly Scrape Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Search Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set Search Parameters",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Search Parameters": {
+      "main": [
+        [
+          {
+            "node": "Generate Search Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Search Queries": {
+      "main": [
+        [
+          {
+            "node": "Batch Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Batch Queries": {
+      "main": [
+        [
+          {
+            "node": "Google Maps Text Search",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Yelp Business Search",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Maps Text Search": {
+      "main": [
+        [
+          {
+            "node": "Parse Google Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Google Results": {
+      "main": [
+        [
+          {
+            "node": "Get Place Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Place Details": {
+      "main": [
+        [
+          {
+            "node": "Merge Place Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Place Details": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Yelp Business Search": {
+      "main": [
+        [
+          {
+            "node": "Parse Yelp Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Yelp Results": {
+      "main": [
+        [
+          {
+            "node": "Merge All Sources",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge All Sources": {
+      "main": [
+        [
+          {
+            "node": "Deduplicate Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deduplicate Leads": {
+      "main": [
+        [
+          {
+            "node": "Filter: Must Have Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter: Must Have Website": {
+      "main": [
+        [
+          {
+            "node": "Hunter.io Email Finder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Apollo.io Enrichment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hunter.io Email Finder": {
+      "main": [
+        [
+          {
+            "node": "Parse Hunter Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Hunter Results": {
+      "main": [
+        [
+          {
+            "node": "Merge Apollo Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo.io Enrichment": {
+      "main": [
+        [
+          {
+            "node": "Merge Apollo Data",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Apollo Data": {
+      "main": [
+        [
+          {
+            "node": "Scrape Website",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scrape Website": {
+      "main": [
+        [
+          {
+            "node": "Analyze Website & Extract Social",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Website & Extract Social": {
+      "main": [
+        [
+          {
+            "node": "Lead Scoring Algorithm",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lead Scoring Algorithm": {
+      "main": [
+        [
+          {
+            "node": "Filter Low Score Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Low Score Leads": {
+      "main": [
+        [
+          {
+            "node": "Save to Google Sheets",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create HubSpot Contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Filter Hot Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create HubSpot Contact": {
+      "main": [
+        [
+          {
+            "node": "Create HubSpot Deal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create HubSpot Deal": {
+      "main": [
+        [
+          {
+            "node": "Update HubSpot Custom Properties",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update HubSpot Custom Properties": {
+      "main": [
+        [
+          {
+            "node": "Set Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Hot Leads": {
+      "main": [
+        [
+          {
+            "node": "Email Hot Lead Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {},
+  "tags": [
+    {
+      "name": "LNL Lead Generation",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}

@@ -1,0 +1,967 @@
+{
+  "name": "LNL Concierge Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vault-auth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-vault-auth",
+      "name": "Vault Auth Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 200],
+      "webhookId": "vault-auth",
+      "notes": "Receives login attempts from vault.lnlgroup.com"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and validate the access key\nconst body = $input.first().json.body;\nconst accessKey = body.access_key || '';\nconst timestamp = body.timestamp || new Date().toISOString();\n\n// Validate key format: LNL-XXX-XXXXX\nconst keyPattern = /^LNL-[A-Z0-9]{3}-[A-Z0-9]{5}$/;\nconst isValidFormat = keyPattern.test(accessKey.toUpperCase());\n\nreturn [{\n  accessKey: accessKey.toUpperCase(),\n  isValidFormat: isValidFormat,\n  loginTimestamp: timestamp,\n  clientIP: $input.first().json.headers?.['x-forwarded-for'] || 'unknown'\n}];"
+      },
+      "id": "validate-key-format",
+      "name": "Validate Key Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 200],
+      "notes": "Validates the access key format"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "valid-format",
+              "leftValue": "={{ $json.isValidFormat }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-format",
+      "name": "Is Format Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [500, 200],
+      "notes": "Routes based on key format validity"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "databaseId": "={{ $env.NOTION_VAULT_DATABASE_ID }}",
+        "filterType": "singleCondition",
+        "conditions": {
+          "singleCondition": {
+            "property": "Vault Key",
+            "condition": "equals",
+            "text": "={{ $json.accessKey }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "search-notion-key",
+      "name": "Search Notion for Key",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [750, 100],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-api",
+          "name": "Notion API"
+        }
+      },
+      "notes": "Looks up the access key in Notion database"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-result",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "key-found",
+      "name": "Key Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 100],
+      "notes": "Checks if key exists in database"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract client data from Notion result\nconst notionPage = $input.first().json;\nconst properties = notionPage.properties || {};\n\n// Helper to extract property values\nconst getText = (prop) => prop?.title?.[0]?.plain_text || prop?.rich_text?.[0]?.plain_text || '';\nconst getSelect = (prop) => prop?.select?.name || '';\nconst getDate = (prop) => prop?.date?.start || '';\nconst getNumber = (prop) => prop?.number || 0;\nconst getUrl = (prop) => prop?.url || '';\nconst getEmail = (prop) => prop?.email || '';\n\nconst clientData = {\n  pageId: notionPage.id,\n  pageUrl: notionPage.url,\n  clientName: getText(properties['Client Name']),\n  businessName: getText(properties['Business Name']),\n  market: getSelect(properties['Market']),\n  industry: getSelect(properties['Industry']),\n  pillarFocus: getSelect(properties['Pillar Focus']),\n  vaultKey: getText(properties['Vault Key']),\n  keyStatus: getSelect(properties['Key Status']),\n  keyIssuedDate: getDate(properties['Key Issued Date']),\n  lastLogin: getDate(properties['Last Login']),\n  totalLogins: getNumber(properties['Total Logins']),\n  projectStatus: getSelect(properties['Project Status']),\n  pillar1Status: getSelect(properties['Pillar 1 Status']),\n  ownerName: getText(properties['Owner Name']),\n  email: getEmail(properties['Email'])\n};\n\n// Check if key is active\nconst isActive = clientData.keyStatus === 'Active';\n\nreturn [{\n  ...clientData,\n  isActive: isActive,\n  loginTimestamp: $('Validate Key Format').first().json.loginTimestamp,\n  clientIP: $('Validate Key Format').first().json.clientIP\n}];"
+      },
+      "id": "extract-client-data",
+      "name": "Extract Client Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1250, 0],
+      "notes": "Parses Notion page properties"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "is-active",
+              "leftValue": "={{ $json.isActive }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-key-status",
+      "name": "Is Key Active?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1500, 0],
+      "notes": "Verifies key is not revoked/expired"
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "update",
+        "pageId": "={{ $json.pageId }}",
+        "properties": {
+          "properties": [
+            {
+              "key": "Last Login",
+              "type": "date",
+              "date": "={{ $now.toISO() }}"
+            },
+            {
+              "key": "Total Logins",
+              "type": "number",
+              "number": "={{ $json.totalLogins + 1 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-login-stats",
+      "name": "Update Login Stats",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1750, -100],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-api",
+          "name": "Notion API"
+        }
+      },
+      "notes": "Records login timestamp and increments counter"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "VAULT_LOGS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.toISO() }}",
+            "Key": "={{ $json.vaultKey }}",
+            "Client": "={{ $json.clientName }}",
+            "Market": "={{ $json.market }}",
+            "IP Address": "={{ $json.clientIP }}",
+            "Status": "SUCCESS",
+            "Action": "LOGIN"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-successful-login",
+      "name": "Log Successful Login",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2000, -100],
+      "notes": "Logs successful login to VAULT_LOGS sheet"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"auth\": true,\n  \"client_name\": \"{{ $json.clientName }}\",\n  \"business_name\": \"{{ $json.businessName }}\",\n  \"market\": \"{{ $json.market }}\",\n  \"industry\": \"{{ $json.industry }}\",\n  \"pillar_focus\": \"{{ $json.pillarFocus }}\",\n  \"project_status\": \"{{ $json.projectStatus }}\",\n  \"pillar_1_status\": \"{{ $json.pillar1Status }}\",\n  \"vault_url\": \"{{ $json.pageUrl }}\",\n  \"message\": \"Welcome back, {{ $json.clientName }}.\"\n}",
+        "options": {}
+      },
+      "id": "respond-auth-success",
+      "name": "Respond: Auth Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2250, -100],
+      "notes": "Returns success response to frontend"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"auth\": false,\n  \"message\": \"Access key has been {{ $json.keyStatus === 'Revoked' ? 'revoked' : 'expired' }}. Contact the Architect.\"\n}",
+        "options": {
+          "responseCode": 403
+        }
+      },
+      "id": "respond-key-inactive",
+      "name": "Respond: Key Inactive",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1750, 100],
+      "notes": "Key exists but is revoked/expired"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"auth\": false,\n  \"message\": \"Access denied. Invalid key.\"\n}",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "respond-key-not-found",
+      "name": "Respond: Key Not Found",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1250, 200],
+      "notes": "Key does not exist in database"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"auth\": false,\n  \"message\": \"Invalid key format. Expected: LNL-XXX-XXXXX\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "respond-invalid-format",
+      "name": "Respond: Invalid Format",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [750, 300],
+      "notes": "Key format is invalid"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 12
+            }
+          ]
+        }
+      },
+      "id": "schedule-asset-check",
+      "name": "Asset Check (Every 12hrs)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 600],
+      "notes": "Checks for Pillar 1 asset uploads"
+    },
+    {
+      "parameters": {
+        "operation": "search",
+        "databaseId": "={{ $env.NOTION_VAULT_DATABASE_ID }}",
+        "filterType": "singleCondition",
+        "conditions": {
+          "singleCondition": {
+            "property": "Pillar 1 Status",
+            "condition": "equals",
+            "select": "Assets Requested"
+          }
+        },
+        "options": {}
+      },
+      "id": "get-pending-assets",
+      "name": "Get Clients Awaiting Assets",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [250, 600],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-api",
+          "name": "Notion API"
+        }
+      },
+      "notes": "Finds clients who haven't uploaded assets"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check each client for asset status and time since key issued\nconst clients = $input.all().map(item => item.json);\nconst now = new Date();\nconst results = [];\n\nfor (const client of clients) {\n  const properties = client.properties || {};\n  \n  // Extract data\n  const getText = (prop) => prop?.title?.[0]?.plain_text || prop?.rich_text?.[0]?.plain_text || '';\n  const getSelect = (prop) => prop?.select?.name || '';\n  const getDate = (prop) => prop?.date?.start || '';\n  const getEmail = (prop) => prop?.email || '';\n  \n  const keyIssuedDate = getDate(properties['Key Issued Date']);\n  const clientName = getText(properties['Client Name']);\n  const email = getEmail(properties['Email']);\n  const market = getSelect(properties['Market']);\n  \n  if (!keyIssuedDate) continue;\n  \n  const issuedDate = new Date(keyIssuedDate);\n  const hoursSinceIssued = (now - issuedDate) / (1000 * 60 * 60);\n  \n  // Determine alert level\n  let alertLevel = null;\n  \n  if (hoursSinceIssued >= 48) {\n    alertLevel = 'LOGIC_STALL'; // Critical - 48+ hours\n  } else if (hoursSinceIssued >= 24) {\n    alertLevel = 'REMINDER'; // First reminder - 24 hours\n  }\n  \n  if (alertLevel) {\n    results.push({\n      pageId: client.id,\n      clientName: clientName,\n      email: email,\n      market: market,\n      hoursSinceIssued: Math.round(hoursSinceIssued),\n      alertLevel: alertLevel,\n      keyIssuedDate: keyIssuedDate\n    });\n  }\n}\n\nreturn results.length > 0 ? results.map(r => ({ json: r })) : [{ json: { noAlerts: true } }];"
+      },
+      "id": "calculate-stall-status",
+      "name": "Calculate Stall Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 600],
+      "notes": "Determines which clients need reminders or stall alerts"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-alerts",
+              "leftValue": "={{ $json.noAlerts }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "notTrue"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "has-pending-alerts",
+      "name": "Has Pending Alerts?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [750, 600],
+      "notes": "Filters out if no alerts needed"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.alertLevel }}",
+                    "rightValue": "LOGIC_STALL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "stall"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.alertLevel }}",
+                    "rightValue": "REMINDER",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "reminder"
+            }
+          ],
+          "fallbackOutput": {
+            "fallbackOutput": "extra"
+          }
+        },
+        "options": {}
+      },
+      "id": "route-by-alert-type",
+      "name": "Route by Alert Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1000, 600],
+      "notes": "Routes to appropriate email template"
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SENDER_EMAIL }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "[LNL SYSTEM ADVISORY]: Pillar 1 Asset Reminder",
+        "message": "{{ $json.clientName }},\n\nYour Vault has been active for 24 hours, but we haven't received your Pillar 1 assets yet.\n\nTo maintain build momentum, please upload your brand assets (logo files, photos, style guides) to your Vault at your earliest convenience.\n\nAccess your Vault: vault.lnlgroup.com\n\nThe Mechanical Heart is standing by.\n\n—\nLNL Group\nGrowth Architecture",
+        "options": {}
+      },
+      "id": "send-reminder-email",
+      "name": "Send 24hr Reminder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1250, 700],
+      "notes": "Sends 24-hour asset reminder"
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SENDER_EMAIL }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "[LNL SYSTEM ALERT]: LOGIC STALL - Build Paused",
+        "message": "{{ $json.clientName }},\n\nCRITICAL: Your Growth Architecture build has entered a LOGIC STALL.\n\nIt has been {{ $json.hoursSinceIssued }} hours since your Vault was initialized, and Pillar 1 Extraction remains incomplete.\n\nTo preserve architectural integrity, your build has been paused until we receive your brand assets.\n\nRequired Assets:\n• Logo files (PNG, SVG, or AI)\n• Brand colors / style guide\n• Professional headshots\n• Existing marketing materials\n\nUpload now: vault.lnlgroup.com\n\nThe Mechanical Heart cannot proceed without this data.\n\n—\nLNL Group\nGrowth Architecture",
+        "options": {}
+      },
+      "id": "send-stall-email",
+      "name": "Send Logic Stall Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1250, 500],
+      "notes": "Sends 48-hour LOGIC STALL alert"
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "update",
+        "pageId": "={{ $json.pageId }}",
+        "properties": {
+          "properties": [
+            {
+              "key": "Project Status",
+              "type": "select",
+              "select": "Pillar 1 Pending"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-stall-status",
+      "name": "Update Status: Stall",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [1500, 500],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-api",
+          "name": "Notion API"
+        }
+      },
+      "notes": "Updates Notion page to reflect stall"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "contract-signed",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "webhook-contract-signed",
+      "name": "Contract Signed Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 1000],
+      "webhookId": "contract-signed",
+      "notes": "Triggered when a new contract is signed"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate unique access key\n// Format: LNL-[Market 3 chars]-[5 alphanumeric]\nconst body = $input.first().json.body;\n\nconst clientName = body.client_name || 'Unknown';\nconst businessName = body.business_name || '';\nconst market = body.market || 'GEN';\nconst industry = body.industry || 'General';\nconst email = body.email || '';\nconst phone = body.phone || '';\nconst pillarFocus = body.pillar_focus || 'Both';\n\n// Generate market code (first 3 letters)\nconst marketCodes = {\n  'Raleigh': 'RAL',\n  'Columbus': 'COL',\n  'Moscow': 'MOS'\n};\nconst marketCode = marketCodes[market] || market.substring(0, 3).toUpperCase();\n\n// Generate random 5-character alphanumeric\nconst chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed confusing chars (0, O, 1, I)\nlet randomPart = '';\nfor (let i = 0; i < 5; i++) {\n  randomPart += chars.charAt(Math.floor(Math.random() * chars.length));\n}\n\nconst accessKey = `LNL-${marketCode}-${randomPart}`;\n\nreturn [{\n  accessKey: accessKey,\n  clientName: clientName,\n  businessName: businessName,\n  market: market,\n  industry: industry,\n  email: email,\n  phone: phone,\n  pillarFocus: pillarFocus,\n  keyIssuedDate: new Date().toISOString()\n}];"
+      },
+      "id": "generate-access-key",
+      "name": "Generate Access Key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [250, 1000],
+      "notes": "Creates unique vault access key"
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "create",
+        "databaseId": "={{ $env.NOTION_VAULT_DATABASE_ID }}",
+        "properties": {
+          "properties": [
+            {
+              "key": "Client Name",
+              "type": "title",
+              "title": "={{ $json.clientName }}"
+            },
+            {
+              "key": "Business Name",
+              "type": "richText",
+              "richText": "={{ $json.businessName }}"
+            },
+            {
+              "key": "Market",
+              "type": "select",
+              "select": "={{ $json.market }}"
+            },
+            {
+              "key": "Industry",
+              "type": "select",
+              "select": "={{ $json.industry }}"
+            },
+            {
+              "key": "Pillar Focus",
+              "type": "select",
+              "select": "={{ $json.pillarFocus }}"
+            },
+            {
+              "key": "Vault Key",
+              "type": "richText",
+              "richText": "={{ $json.accessKey }}"
+            },
+            {
+              "key": "Key Status",
+              "type": "select",
+              "select": "Active"
+            },
+            {
+              "key": "Key Issued Date",
+              "type": "date",
+              "date": "={{ $json.keyIssuedDate }}"
+            },
+            {
+              "key": "Total Logins",
+              "type": "number",
+              "number": 0
+            },
+            {
+              "key": "Project Status",
+              "type": "select",
+              "select": "Contract Signed"
+            },
+            {
+              "key": "Pillar 1 Status",
+              "type": "select",
+              "select": "Assets Requested"
+            },
+            {
+              "key": "Owner Name",
+              "type": "richText",
+              "richText": "={{ $json.clientName }}"
+            },
+            {
+              "key": "Email",
+              "type": "email",
+              "email": "={{ $json.email }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-notion-page",
+      "name": "Create Client Vault Page",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [500, 1000],
+      "credentials": {
+        "notionApi": {
+          "id": "notion-api",
+          "name": "Notion API"
+        }
+      },
+      "notes": "Creates new client page in Notion database"
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SENDER_EMAIL }}",
+        "toEmail": "={{ $json.email }}",
+        "subject": "[LNL SYSTEM]: Your Vault Has Been Architected",
+        "message": "{{ $json.clientName }},\n\nWelcome to LNL Group.\n\nYour private Vault has been initialized. This is your secure workspace for your Growth Architecture build.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nACCESS KEY: {{ $json.accessKey }}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nInitialize your Vault: vault.lnlgroup.com\n\nYour first step is to upload your Pillar 1 Assets:\n• Logo files (PNG, SVG, or AI format)\n• Brand colors or style guide\n• Professional headshots\n• Any existing marketing materials\n\nOnce your assets are received, the Mechanical Heart will begin processing your Digital Facelift.\n\nEstimated build time after asset receipt: 72 hours.\n\n—\nLNL Group\nGrowth Architecture\n\n[ This is an automated system message. Your key is unique to your build. Do not share it. ]",
+        "options": {}
+      },
+      "id": "send-welcome-email",
+      "name": "Send Welcome + Key Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [750, 1000],
+      "notes": "Sends vault access key to new client"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "VAULT_LOGS"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now.toISO() }}",
+            "Key": "={{ $json.accessKey }}",
+            "Client": "={{ $json.clientName }}",
+            "Market": "={{ $json.market }}",
+            "IP Address": "SYSTEM",
+            "Status": "CREATED",
+            "Action": "KEY_GENERATED"
+          }
+        },
+        "options": {}
+      },
+      "id": "log-key-generation",
+      "name": "Log Key Generation",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1000, 1000],
+      "notes": "Logs new key creation"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $env.NOTIFICATION_EMAIL }}",
+        "subject": "🔑 New Vault Initialized: {{ $json.clientName }} ({{ $json.market }})",
+        "message": "A new client vault has been created.\n\n**Client:** {{ $json.clientName }}\n**Business:** {{ $json.businessName }}\n**Market:** {{ $json.market }}\n**Industry:** {{ $json.industry }}\n**Pillar Focus:** {{ $json.pillarFocus }}\n\n**Access Key:** {{ $json.accessKey }}\n\n**Email:** {{ $json.email }}\n\nThe welcome email has been sent. Awaiting Pillar 1 assets.",
+        "options": {}
+      },
+      "id": "notify-architect",
+      "name": "Notify Architect",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1250, 1000],
+      "notes": "Notifies you of new client"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "response",
+              "name": "success",
+              "value": "=Vault initialized for {{ $json.clientName }}. Key: {{ $json.accessKey }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "respond-key-created",
+      "name": "Respond: Key Created",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1500, 1000],
+      "notes": "Returns success response"
+    }
+  ],
+  "connections": {
+    "Vault Auth Webhook": {
+      "main": [
+        [
+          {
+            "node": "Validate Key Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Key Format": {
+      "main": [
+        [
+          {
+            "node": "Is Format Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Format Valid?": {
+      "main": [
+        [
+          {
+            "node": "Search Notion for Key",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Invalid Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Notion for Key": {
+      "main": [
+        [
+          {
+            "node": "Key Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Key Found?": {
+      "main": [
+        [
+          {
+            "node": "Extract Client Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Key Not Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Client Data": {
+      "main": [
+        [
+          {
+            "node": "Is Key Active?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Key Active?": {
+      "main": [
+        [
+          {
+            "node": "Update Login Stats",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Key Inactive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Login Stats": {
+      "main": [
+        [
+          {
+            "node": "Log Successful Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Successful Login": {
+      "main": [
+        [
+          {
+            "node": "Respond: Auth Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Asset Check (Every 12hrs)": {
+      "main": [
+        [
+          {
+            "node": "Get Clients Awaiting Assets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Clients Awaiting Assets": {
+      "main": [
+        [
+          {
+            "node": "Calculate Stall Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Stall Status": {
+      "main": [
+        [
+          {
+            "node": "Has Pending Alerts?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Pending Alerts?": {
+      "main": [
+        [
+          {
+            "node": "Route by Alert Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Alert Type": {
+      "main": [
+        [
+          {
+            "node": "Send Logic Stall Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send 24hr Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Logic Stall Alert": {
+      "main": [
+        [
+          {
+            "node": "Update Status: Stall",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contract Signed Webhook": {
+      "main": [
+        [
+          {
+            "node": "Generate Access Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Access Key": {
+      "main": [
+        [
+          {
+            "node": "Create Client Vault Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Client Vault Page": {
+      "main": [
+        [
+          {
+            "node": "Send Welcome + Key Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Welcome + Key Email": {
+      "main": [
+        [
+          {
+            "node": "Log Key Generation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Key Generation": {
+      "main": [
+        [
+          {
+            "node": "Notify Architect",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Architect": {
+      "main": [
+        [
+          {
+            "node": "Respond: Key Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {},
+  "tags": [
+    {
+      "name": "LNL Concierge Agent",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
