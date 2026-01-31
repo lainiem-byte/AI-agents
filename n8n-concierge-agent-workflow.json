@@ -1,4 +1,5 @@
 {
+  "active": false,
   "name": "LNL Concierge Agent",
   "nodes": [
     {
@@ -434,7 +435,7 @@
         "fromEmail": "={{ $env.SENDER_EMAIL }}",
         "toEmail": "={{ $json.email }}",
         "subject": "[LNL SYSTEM ADVISORY]: Pillar 1 Asset Reminder",
-        "message": "{{ $json.clientName }},\n\nYour Vault has been active for 24 hours, but we haven't received your Pillar 1 assets yet.\n\nTo maintain build momentum, please upload your brand assets (logo files, photos, style guides) to your Vault at your earliest convenience.\n\nAccess your Vault: vault.lnlgroup.com\n\nThe Mechanical Heart is standing by.\n\n—\nLNL Group\nGrowth Architecture",
+        "message": "{{ $json.clientName }},\n\nYour Vault has been active for 24 hours, but we haven't received your Pillar 1 assets yet.\n\nTo maintain build momentum, please upload your brand assets (logo files, photos, style guides) to your Vault at your earliest convenience.\n\nAccess your Vault: vault.lnlgroup.com\n\nThe Mechanical Heart is standing by.\n\nâ€”\nLNL Group\nGrowth Architecture",
         "options": {}
       },
       "id": "send-reminder-email",
@@ -449,7 +450,7 @@
         "fromEmail": "={{ $env.SENDER_EMAIL }}",
         "toEmail": "={{ $json.email }}",
         "subject": "[LNL SYSTEM ALERT]: LOGIC STALL - Build Paused",
-        "message": "{{ $json.clientName }},\n\nCRITICAL: Your Growth Architecture build has entered a LOGIC STALL.\n\nIt has been {{ $json.hoursSinceIssued }} hours since your Vault was initialized, and Pillar 1 Extraction remains incomplete.\n\nTo preserve architectural integrity, your build has been paused until we receive your brand assets.\n\nRequired Assets:\n• Logo files (PNG, SVG, or AI)\n• Brand colors / style guide\n• Professional headshots\n• Existing marketing materials\n\nUpload now: vault.lnlgroup.com\n\nThe Mechanical Heart cannot proceed without this data.\n\n—\nLNL Group\nGrowth Architecture",
+        "message": "{{ $json.clientName }},\n\nCRITICAL: Your Growth Architecture build has entered a LOGIC STALL.\n\nIt has been {{ $json.hoursSinceIssued }} hours since your Vault was initialized, and Pillar 1 Extraction remains incomplete.\n\nTo preserve architectural integrity, your build has been paused until we receive your brand assets.\n\nRequired Assets:\nâ€¢ Logo files (PNG, SVG, or AI)\nâ€¢ Brand colors / style guide\nâ€¢ Professional headshots\nâ€¢ Existing marketing materials\n\nUpload now: vault.lnlgroup.com\n\nThe Mechanical Heart cannot proceed without this data.\n\nâ€”\nLNL Group\nGrowth Architecture",
         "options": {}
       },
       "id": "send-stall-email",
@@ -608,7 +609,7 @@
         "fromEmail": "={{ $env.SENDER_EMAIL }}",
         "toEmail": "={{ $json.email }}",
         "subject": "[LNL SYSTEM]: Your Vault Has Been Architected",
-        "message": "{{ $json.clientName }},\n\nWelcome to LNL Group.\n\nYour private Vault has been initialized. This is your secure workspace for your Growth Architecture build.\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nACCESS KEY: {{ $json.accessKey }}\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nInitialize your Vault: vault.lnlgroup.com\n\nYour first step is to upload your Pillar 1 Assets:\n• Logo files (PNG, SVG, or AI format)\n• Brand colors or style guide\n• Professional headshots\n• Any existing marketing materials\n\nOnce your assets are received, the Mechanical Heart will begin processing your Digital Facelift.\n\nEstimated build time after asset receipt: 72 hours.\n\n—\nLNL Group\nGrowth Architecture\n\n[ This is an automated system message. Your key is unique to your build. Do not share it. ]",
+        "message": "{{ $json.clientName }},\n\nWelcome to LNL Group.\n\nYour private Vault has been initialized. This is your secure workspace for your Growth Architecture build.\n\nâ”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\nACCESS KEY: {{ $json.accessKey }}\nâ”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”\n\nInitialize your Vault: vault.lnlgroup.com\n\nYour first step is to upload your Pillar 1 Assets:\nâ€¢ Logo files (PNG, SVG, or AI format)\nâ€¢ Brand colors or style guide\nâ€¢ Professional headshots\nâ€¢ Any existing marketing materials\n\nOnce your assets are received, the Mechanical Heart will begin processing your Digital Facelift.\n\nEstimated build time after asset receipt: 72 hours.\n\nâ€”\nLNL Group\nGrowth Architecture\n\n[ This is an automated system message. Your key is unique to your build. Do not share it. ]",
         "options": {}
       },
       "id": "send-welcome-email",
@@ -655,7 +656,7 @@
     {
       "parameters": {
         "sendTo": "={{ $env.NOTIFICATION_EMAIL }}",
-        "subject": "🔑 New Vault Initialized: {{ $json.clientName }} ({{ $json.market }})",
+        "subject": "ðŸ”‘ New Vault Initialized: {{ $json.clientName }} ({{ $json.market }})",
         "message": "A new client vault has been created.\n\n**Client:** {{ $json.clientName }}\n**Business:** {{ $json.businessName }}\n**Market:** {{ $json.market }}\n**Industry:** {{ $json.industry }}\n**Pillar Focus:** {{ $json.pillarFocus }}\n\n**Access Key:** {{ $json.accessKey }}\n\n**Email:** {{ $json.email }}\n\nThe welcome email has been sent. Awaiting Pillar 1 assets.",
         "options": {}
       },
