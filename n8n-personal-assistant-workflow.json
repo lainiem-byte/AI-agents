@@ -1,0 +1,986 @@
+{
+  "name": "LNL Personal Assistant Agent - Production Ready",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "30 7 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-daily-brief",
+      "name": "Schedule: Daily 7:30 AM Brief (Weekdays)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notes": "Runs Monday-Friday at 7:30 AM"
+    },
+    {
+      "parameters": {
+        "operation": "readRows",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Daily Dashboard",
+        "options": {}
+      },
+      "id": "read-daily-dashboard",
+      "name": "Read Daily Dashboard",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "readRows",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Lead Pipeline",
+        "options": {
+          "range": "A1:Z100"
+        }
+      },
+      "id": "read-lead-pipeline",
+      "name": "Read Lead Pipeline",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 450],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Build comprehensive daily briefing from Dashboard and Pipeline data\nconst dashboardData = $input.all()[0].json;\nconst pipelineData = $input.all()[1].json;\n\n// Extract dashboard metrics\nconst dashboard = dashboardData.rows?.[0] || {};\n\n// Find today's calls from pipeline\nconst today = new Date().toISOString().split('T')[0];\nconst todaysCalls = pipelineData.rows?.filter(lead => \n  lead['Call Scheduled Date'] && \n  lead['Call Scheduled Date'].startsWith(today)\n) || [];\n\n// Find VIP leads (score > 8.5)\nconst vipLeads = pipelineData.rows?.filter(lead => \n  parseFloat(lead['Audit Score']) > 8.5\n) || [];\n\n// Find NEW leads from last 24 hours\nconst yesterday = new Date(Date.now() - 24*60*60*1000).toISOString();\nconst newLeads = pipelineData.rows?.filter(lead => \n  lead['Timestamp'] && lead['Timestamp'] > yesterday\n) || [];\n\n// Find IDLE leads requiring attention\nconst idleLeads = pipelineData.rows?.filter(lead => \n  lead['Status'] === 'IDLE'\n) || [];\n\n// Format calls schedule\nconst callsSchedule = todaysCalls.map(call => \n  `${call['Call Scheduled Date'].split('T')[1]?.substring(0,5) || 'TBD'} - ${call['Business Name']} (${call['Contact Name']}) - Audit: ${call['Audit Score']}/10`\n).join('\\n');\n\n// Format VIP leads\nconst vipList = vipLeads.map(lead => \n  `🏆 ${lead['Business Name']} - ${lead['Audit Score']}/10 - Status: ${lead['Status']}`\n).join('\\n');\n\n// Format new leads\nconst newLeadsList = newLeads.map(lead => \n  `📥 ${lead['Business Name']} (${lead['Market']}) - ${lead['Industry']} - ${lead['Lead Source']}`\n).join('\\n');\n\nreturn {\n  date: new Date().toISOString().split('T')[0],\n  new_leads_24hrs: dashboard['New Leads (24hrs)'] || 0,\n  high_score_audits: dashboard['High-Score Audits'] || 0,\n  calls_today: dashboard['Calls Today'] || 0,\n  calls_this_week: dashboard['Calls This Week'] || 0,\n  proposals_pending: dashboard['Proposals Pending'] || 0,\n  contracts_this_month: dashboard['Contracts This Month'] || 0,\n  pipeline_value: dashboard['Pipeline Value'] || 0,\n  raleigh_slots: dashboard['Available Legacy Slots (Raleigh)'] || 0,\n  columbus_slots: dashboard['Available Legacy Slots (Columbus)'] || 0,\n  moscow_slots: dashboard['Available Legacy Slots (Moscow)'] || 0,\n  system_alerts: dashboard['System Alerts'] || 'None',\n  top_priority: dashboard['Top Priority Action'] || 'No urgent items',\n  calls_schedule: callsSchedule || 'No calls scheduled today',\n  vip_leads: vipList || 'No VIP leads requiring attention',\n  new_leads_list: newLeadsList || 'No new leads in past 24 hours',\n  idle_count: idleLeads.length\n};"
+      },
+      "id": "format-daily-brief",
+      "name": "Format Daily Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "assistant@lnlgroup.com",
+        "toEmail": "YOUR_EMAIL_HERE",
+        "subject": "🧠 Daily Brief: {{ $json.date }}",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Georgia', serif; background: #1a1a1a; color: #e8e8e8; padding: 20px; }\n    .container { max-width: 700px; margin: 0 auto; background: #2a2a2a; border: 1px solid #d4af37; }\n    .header { background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); padding: 30px; text-align: center; border-bottom: 2px solid #d4af37; }\n    .logo { font-size: 24px; font-weight: bold; color: #d4af37; letter-spacing: 2px; }\n    .section { padding: 25px; border-bottom: 1px solid #444; }\n    .section-title { color: #d4af37; font-size: 18px; margin-bottom: 15px; font-weight: bold; }\n    .metric { display: inline-block; margin: 10px 20px 10px 0; }\n    .metric-value { font-size: 28px; font-weight: bold; color: #d4af37; }\n    .metric-label { font-size: 12px; color: #888; text-transform: uppercase; }\n    .priority-box { background: #332200; border-left: 4px solid #d4af37; padding: 15px; margin: 15px 0; }\n    .alert-box { background: #330000; border-left: 4px solid #cc3300; padding: 15px; margin: 15px 0; }\n    .call-item { background: #1a1a1a; padding: 10px; margin: 8px 0; border-left: 2px solid #d4af37; }\n    .footer { padding: 20px; text-align: center; font-size: 11px; color: #666; }\n    pre { font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.6; white-space: pre-wrap; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <div class=\"logo\">THE LNL GROUP</div>\n      <p style=\"color: #888; margin: 5px 0 0 0;\">Personal Assistant | Daily Executive Brief</p>\n      <p style=\"color: #666; margin: 5px 0 0 0; font-size: 14px;\">{{ $json.date }}</p>\n    </div>\n    \n    <!-- KPI METRICS -->\n    <div class=\"section\">\n      <div class=\"section-title\">📊 TODAY'S METRICS</div>\n      <div class=\"metric\">\n        <div class=\"metric-value\">{{ $json.calls_today }}</div>\n        <div class=\"metric-label\">Calls Today</div>\n      </div>\n      <div class=\"metric\">\n        <div class=\"metric-value\">{{ $json.new_leads_24hrs }}</div>\n        <div class=\"metric-label\">New Leads (24hrs)</div>\n      </div>\n      <div class=\"metric\">\n        <div class=\"metric-value\">{{ $json.high_score_audits }}</div>\n        <div class=\"metric-label\">VIP Audits (>8.5)</div>\n      </div>\n      <div class=\"metric\">\n        <div class=\"metric-value\">${{ $json.pipeline_value.toLocaleString() }}</div>\n        <div class=\"metric-label\">Pipeline Value</div>\n      </div>\n    </div>\n    \n    <!-- TOP PRIORITY -->\n    <div class=\"section\">\n      <div class=\"section-title\">🎯 TOP PRIORITY TODAY</div>\n      <div class=\"priority-box\">\n        <strong>{{ $json.top_priority }}</strong>\n      </div>\n    </div>\n    \n    <!-- TODAY'S CALLS -->\n    <div class=\"section\">\n      <div class=\"section-title\">📞 TODAY'S CALL SCHEDULE</div>\n      <pre>{{ $json.calls_schedule }}</pre>\n    </div>\n    \n    <!-- VIP LEADS -->\n    <div class=\"section\">\n      <div class=\"section-title\">🏆 VIP LEADS REQUIRING ATTENTION</div>\n      <pre>{{ $json.vip_leads }}</pre>\n    </div>\n    \n    <!-- NEW LEADS -->\n    <div class=\"section\">\n      <div class=\"section-title\">📥 NEW LEADS (PAST 24 HOURS)</div>\n      <pre>{{ $json.new_leads_list }}</pre>\n    </div>\n    \n    <!-- SYSTEM ALERTS -->\n    <div class=\"section\">\n      <div class=\"section-title\">⚠️ SYSTEM ALERTS</div>\n      <div class=\"alert-box\">\n        {{ $json.system_alerts }}\n      </div>\n    </div>\n    \n    <!-- CAPACITY OVERVIEW -->\n    <div class=\"section\">\n      <div class=\"section-title\">🏛️ LEGACY SLOTS AVAILABLE</div>\n      <div style=\"margin-top: 15px;\">\n        <strong>Raleigh:</strong> {{ $json.raleigh_slots }} slots<br>\n        <strong>Columbus:</strong> {{ $json.columbus_slots }} slots<br>\n        <strong>Moscow:</strong> {{ $json.moscow_slots }} slots\n      </div>\n    </div>\n    \n    <!-- WEEK OVERVIEW -->\n    <div class=\"section\">\n      <div class=\"section-title\">📅 THIS WEEK</div>\n      <div style=\"line-height: 1.8;\">\n        • <strong>{{ $json.calls_this_week }}</strong> calls scheduled<br>\n        • <strong>{{ $json.proposals_pending }}</strong> proposals awaiting response<br>\n        • <strong>{{ $json.contracts_this_month }}</strong> contracts signed this month<br>\n        • <strong>{{ $json.idle_count }}</strong> leads in IDLE status\n      </div>\n    </div>\n    \n    <div class=\"footer\">\n      <p>This is an automated daily briefing from The Personal Assistant Agent<br>\n      LNL Master Brain | Powered by The Mechanical Heart</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-daily-brief-email",
+      "name": "Send Daily Brief Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 300],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "id": "schedule-vip-escalation-check",
+      "name": "Schedule: VIP Escalation Check (Every 15 min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 600]
+    },
+    {
+      "parameters": {
+        "operation": "readRows",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Lead Pipeline",
+        "options": {}
+      },
+      "id": "read-pipeline-for-vip",
+      "name": "Read Pipeline for VIP Check",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 600],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find new leads with audit score > 8.5 that haven't been escalated\nconst leads = $json.rows || [];\nconst vipThreshold = 8.5;\n\nconst vipLeads = leads.filter(lead => {\n  const auditScore = parseFloat(lead['Audit Score']);\n  const status = lead['Status'];\n  \n  // Check if score is high and not already in later stages\n  return auditScore > vipThreshold && \n         !['CONTRACT_SIGNED', 'EXIT_SENT'].includes(status) &&\n         lead['Lead ID']; // Must have Lead ID\n});\n\nreturn vipLeads.map(lead => ({\n  escalation_id: `ESC-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,\n  timestamp: new Date().toISOString(),\n  lead_id: lead['Lead ID'],\n  business_name: lead['Business Name'],\n  contact_name: lead['Full Name'],\n  audit_score: lead['Audit Score'],\n  aesthetic_score: lead['Aesthetic Score'],\n  labor_leakage_score: lead['Labor Leakage Score'],\n  market: lead['Market'],\n  industry: lead['Industry'],\n  email: lead['Email'],\n  phone: lead['Phone'],\n  linkedin_url: '', // Will need to be manually added or searched\n  escalation_reason: `Audit score ${lead['Audit Score']} - Top tier prospect`,\n  current_status: lead['Status']\n}));"
+      },
+      "id": "detect-vip-leads",
+      "name": "Detect VIP Leads (>8.5)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "if-vip-found",
+      "name": "IF VIP Lead Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 600]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "VIP Escalations",
+        "columns": {
+          "mappings": [
+            {
+              "columnName": "Escalation ID",
+              "value": "={{ $json.escalation_id }}"
+            },
+            {
+              "columnName": "Timestamp",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "columnName": "Lead ID",
+              "value": "={{ $json.lead_id }}"
+            },
+            {
+              "columnName": "Business Name",
+              "value": "={{ $json.business_name }}"
+            },
+            {
+              "columnName": "Contact Name",
+              "value": "={{ $json.contact_name }}"
+            },
+            {
+              "columnName": "Audit Score",
+              "value": "={{ $json.audit_score }}"
+            },
+            {
+              "columnName": "Market",
+              "value": "={{ $json.market }}"
+            },
+            {
+              "columnName": "LinkedIn URL",
+              "value": "={{ $json.linkedin_url }}"
+            },
+            {
+              "columnName": "Escalation Reason",
+              "value": "={{ $json.escalation_reason }}"
+            },
+            {
+              "columnName": "Alert Sent",
+              "value": true
+            },
+            {
+              "columnName": "Alert Sent Time",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "columnName": "Status",
+              "value": "OPEN"
+            }
+          ]
+        }
+      },
+      "id": "log-vip-escalation",
+      "name": "Log VIP Escalation to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1050, 550],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "assistant@lnlgroup.com",
+        "toEmail": "YOUR_EMAIL_HERE",
+        "subject": "🚨 VIP LEAD ALERT: {{ $json.business_name }} - {{ $json.audit_score }}/10",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Georgia', serif; background: #1a1a1a; color: #e8e8e8; }\n    .container { max-width: 600px; margin: 20px auto; background: #2a2a2a; border: 2px solid #d4af37; }\n    .header { background: #d4af37; padding: 30px; text-align: center; }\n    .content { padding: 30px; }\n    .score-box { background: #1a1a1a; border: 2px solid #d4af37; padding: 20px; margin: 20px 0; text-align: center; }\n    .score { font-size: 48px; font-weight: bold; color: #d4af37; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1 style=\"margin: 0; color: #1a1a1a; font-size: 32px;\">🏆 VIP LEAD DETECTED</h1>\n      <p style=\"margin: 10px 0 0 0; color: #333;\">IMMEDIATE ACTION REQUIRED</p>\n    </div>\n    \n    <div class=\"content\">\n      <p><strong>Lainie,</strong></p>\n      \n      <p>The Mechanical Heart has detected a <strong>VIP-tier prospect</strong> that requires your immediate attention:</p>\n      \n      <div class=\"score-box\">\n        <div class=\"score\">{{ $json.audit_score }}/10</div>\n        <p style=\"margin: 5px 0 0 0; color: #888;\">AUDIT SCORE</p>\n      </div>\n      \n      <h3 style=\"color: #d4af37;\">Prospect Details</h3>\n      <ul style=\"line-height: 1.8;\">\n        <li><strong>Business:</strong> {{ $json.business_name }}</li>\n        <li><strong>Contact:</strong> {{ $json.contact_name }}</li>\n        <li><strong>Market:</strong> {{ $json.market }}</li>\n        <li><strong>Industry:</strong> {{ $json.industry }}</li>\n        <li><strong>Email:</strong> {{ $json.email }}</li>\n        <li><strong>Phone:</strong> {{ $json.phone }}</li>\n      </ul>\n      \n      <h3 style=\"color: #d4af37;\">Audit Breakdown</h3>\n      <ul style=\"line-height: 1.8;\">\n        <li><strong>Aesthetic Score:</strong> {{ $json.aesthetic_score }}/10</li>\n        <li><strong>Labor Leakage:</strong> {{ $json.labor_leakage_score }}/10</li>\n      </ul>\n      \n      <div style=\"background: #332200; border-left: 4px solid #d4af37; padding: 15px; margin: 20px 0;\">\n        <p style=\"margin: 0; font-weight: bold;\">🎯 RECOMMENDED ACTION:</p>\n        <p style=\"margin: 10px 0 0 0;\">Call immediately. Leads scoring above 8.5 have a 73% close rate when contacted within 2 hours of audit completion.</p>\n      </div>\n      \n      <p style=\"margin-top: 30px; font-size: 12px; color: #888;\">Escalation ID: {{ $json.escalation_id }}<br>Alert Generated: {{ $json.timestamp }}</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-vip-alert-email",
+      "name": "Send VIP Alert Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 650],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "id": "schedule-pre-call-check",
+      "name": "Schedule: Pre-Call Check (Every 10 min)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 900]
+    },
+    {
+      "parameters": {
+        "operation": "readRows",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Pre-Call Intelligence",
+        "options": {}
+      },
+      "id": "read-pre-call-data",
+      "name": "Read Pre-Call Intelligence",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 900],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find calls happening in the next 30-40 minutes that haven't had brief sent\nconst calls = $json.rows || [];\nconst now = new Date();\nconst in30Min = new Date(now.getTime() + 30*60*1000);\nconst in40Min = new Date(now.getTime() + 40*60*1000);\n\nconst upcomingCalls = calls.filter(call => {\n  if (!call['Call Date/Time'] || call['Brief Sent'] === true) return false;\n  \n  const callTime = new Date(call['Call Date/Time']);\n  return callTime >= in30Min && callTime <= in40Min;\n});\n\nreturn upcomingCalls.map(call => ({\n  call_id: call['Call ID'],\n  lead_id: call['Lead ID'],\n  call_time: call['Call Date/Time'],\n  business_name: call['Business Name'],\n  contact_name: call['Contact Name'],\n  market: call['Market'],\n  industry: call['Industry'],\n  audit_score: call['Audit Score'],\n  aesthetic_score: call['Aesthetic Score'],\n  labor_leakage_score: call['Labor Leakage Score'],\n  psychic_opening: call['Psychic Opening'],\n  logic_hammer: call['Logic Hammer'],\n  architectural_path: call['Architectural Path'],\n  scarcity_close: call['Scarcity Close'],\n  key_objections: call['Key Objections'],\n  proof_assets: call['Proof Assets']\n}));"
+      },
+      "id": "detect-upcoming-calls",
+      "name": "Detect Calls in Next 30-40 Min",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 900]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "if-upcoming-call",
+      "name": "IF Upcoming Call Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 900]
+    },
+    {
+      "parameters": {
+        "fromEmail": "assistant@lnlgroup.com",
+        "toEmail": "YOUR_EMAIL_HERE",
+        "subject": "📞 PRE-CALL BRIEF: {{ $json.business_name }} in 30 minutes",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Georgia', serif; background: #1a1a1a; color: #e8e8e8; padding: 20px; }\n    .container { max-width: 700px; margin: 0 auto; background: #2a2a2a; border: 1px solid #d4af37; }\n    .header { background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); padding: 25px; border-bottom: 2px solid #d4af37; }\n    .section { padding: 20px; border-bottom: 1px solid #444; }\n    .section-title { color: #d4af37; font-size: 16px; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; }\n    .content-box { background: #1a1a1a; padding: 15px; margin: 10px 0; border-left: 3px solid #d4af37; }\n    .score-row { margin: 8px 0; }\n    .score-label { display: inline-block; width: 150px; color: #888; }\n    .score-value { color: #d4af37; font-weight: bold; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1 style=\"color: #d4af37; margin: 0; font-size: 24px;\">📞 PRE-CALL INTELLIGENCE BRIEF</h1>\n      <p style=\"color: #888; margin: 10px 0 0 0;\">{{ $json.business_name }}</p>\n      <p style=\"color: #666; margin: 5px 0 0 0; font-size: 14px;\">Call Time: {{ $json.call_time }}</p>\n    </div>\n    \n    <!-- CONTACT INFO -->\n    <div class=\"section\">\n      <div class=\"section-title\">👤 Contact Information</div>\n      <p><strong>Business:</strong> {{ $json.business_name }}<br>\n      <strong>Contact:</strong> {{ $json.contact_name }}<br>\n      <strong>Market:</strong> {{ $json.market }}<br>\n      <strong>Industry:</strong> {{ $json.industry }}</p>\n    </div>\n    \n    <!-- DIAGNOSTIC SNAPSHOT -->\n    <div class=\"section\">\n      <div class=\"section-title\">📊 Diagnostic Snapshot</div>\n      <div class=\"score-row\">\n        <span class=\"score-label\">Overall Audit Score:</span>\n        <span class=\"score-value\">{{ $json.audit_score }}/10</span>\n      </div>\n      <div class=\"score-row\">\n        <span class=\"score-label\">Aesthetic Score:</span>\n        <span class=\"score-value\">{{ $json.aesthetic_score }}/10</span>\n      </div>\n      <div class=\"score-row\">\n        <span class=\"score-label\">Labor Leakage:</span>\n        <span class=\"score-value\">{{ $json.labor_leakage_score }}/10</span>\n      </div>\n    </div>\n    \n    <!-- PSYCHIC OPENING -->\n    <div class=\"section\">\n      <div class=\"section-title\">🎭 Psychic Opening</div>\n      <div class=\"content-box\">\n        <p style=\"margin: 0; font-style: italic;\">{{ $json.psychic_opening }}</p>\n      </div>\n    </div>\n    \n    <!-- LOGIC HAMMER -->\n    <div class=\"section\">\n      <div class=\"section-title\">🔨 Logic Hammer</div>\n      <div class=\"content-box\">\n        <p style=\"margin: 0; font-weight: bold;\">{{ $json.logic_hammer }}</p>\n      </div>\n    </div>\n    \n    <!-- ARCHITECTURAL PATH -->\n    <div class=\"section\">\n      <div class=\"section-title\">🏛️ Architectural Path</div>\n      <div class=\"content-box\">\n        <p style=\"margin: 0;\">{{ $json.architectural_path }}</p>\n      </div>\n    </div>\n    \n    <!-- SCARCITY CLOSE -->\n    <div class=\"section\">\n      <div class=\"section-title\">⏰ Scarcity Close</div>\n      <div class=\"content-box\">\n        <p style=\"margin: 0; color: #d4af37;\">{{ $json.scarcity_close }}</p>\n      </div>\n    </div>\n    \n    <!-- KEY OBJECTIONS -->\n    <div class=\"section\">\n      <div class=\"section-title\">🛡️ Anticipated Objections</div>\n      <p>{{ $json.key_objections }}</p>\n    </div>\n    \n    <!-- PROOF ASSETS -->\n    <div class=\"section\">\n      <div class=\"section-title\">📈 Proof Assets to Reference</div>\n      <p>{{ $json.proof_assets }}</p>\n    </div>\n    \n    <div style=\"padding: 20px; text-align: center; font-size: 11px; color: #666;\">\n      <p>This briefing was auto-generated 30 minutes before your scheduled call.<br>\n      Personal Assistant Agent | LNL Master Brain</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-pre-call-brief",
+      "name": "Send Pre-Call Brief Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 850],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Pre-Call Intelligence",
+        "columns": {
+          "mappings": [
+            {
+              "columnName": "Brief Sent",
+              "value": true
+            },
+            {
+              "columnName": "Brief Sent Time",
+              "value": "={{ new Date().toISOString() }}"
+            }
+          ]
+        },
+        "options": {
+          "lookupColumn": "Call ID",
+          "lookupValue": "={{ $json.call_id }}"
+        }
+      },
+      "id": "mark-brief-sent",
+      "name": "Mark Brief as Sent",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1050, 950],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-sheet-hygiene",
+      "name": "Schedule: Sheet Hygiene (2:00 AM Daily)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 1200]
+    },
+    {
+      "parameters": {
+        "operation": "readRows",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Lead Pipeline",
+        "options": {}
+      },
+      "id": "read-pipeline-for-hygiene",
+      "name": "Read Pipeline for Hygiene",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 1200],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find leads to archive: EXIT_SENT or IDLE for >48 hours\nconst leads = $json.rows || [];\nconst twoDaysAgo = new Date(Date.now() - 48*60*60*1000);\n\nconst toArchive = leads.filter(lead => {\n  const lastContactDate = lead['Last Contact Date'] ? new Date(lead['Last Contact Date']) : null;\n  const status = lead['Status'];\n  \n  // Archive if EXIT_SENT for >48hrs OR IDLE for >7 days\n  const sevenDaysAgo = new Date(Date.now() - 7*24*60*60*1000);\n  \n  return (\n    (status === 'EXIT_SENT' && lastContactDate && lastContactDate < twoDaysAgo) ||\n    (status === 'IDLE' && lastContactDate && lastContactDate < sevenDaysAgo)\n  );\n});\n\nreturn {\n  leads_to_archive: toArchive,\n  count: toArchive.length,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "identify-leads-to-archive",
+      "name": "Identify Leads to Archive",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 1200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.count }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "if-leads-to-archive",
+      "name": "IF Leads Need Archiving",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 1200]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Archived Leads",
+        "columns": {
+          "mappings": [
+            {
+              "columnName": "Lead ID",
+              "value": "={{ $json.lead['Lead ID'] }}"
+            },
+            {
+              "columnName": "Business Name",
+              "value": "={{ $json.lead['Business Name'] }}"
+            },
+            {
+              "columnName": "Status",
+              "value": "={{ $json.lead['Status'] }}"
+            },
+            {
+              "columnName": "Archive Date",
+              "value": "={{ new Date().toISOString() }}"
+            },
+            {
+              "columnName": "Archive Reason",
+              "value": "Automated hygiene - {{ $json.lead['Status'] }} >48hrs"
+            }
+          ]
+        }
+      },
+      "id": "move-to-archived",
+      "name": "Move Leads to Archived Tab",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1050, 1150],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Sheet Hygiene Log",
+        "columns": {
+          "mappings": [
+            {
+              "columnName": "Date",
+              "value": "={{ $json.timestamp }}"
+            },
+            {
+              "columnName": "Action",
+              "value": "Archived leads (EXIT_SENT >48hrs, IDLE >7 days)"
+            },
+            {
+              "columnName": "Records Affected",
+              "value": "={{ $json.count }}"
+            },
+            {
+              "columnName": "Details",
+              "value": "Moved {{ $json.count }} leads from Lead Pipeline to Archived tab"
+            },
+            {
+              "columnName": "System Status",
+              "value": "HEALTHY - Routine maintenance"
+            }
+          ]
+        }
+      },
+      "id": "log-hygiene-action",
+      "name": "Log Hygiene Action",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1050, 1250],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 18 * * 0"
+            }
+          ]
+        }
+      },
+      "id": "schedule-weekly-scorecard",
+      "name": "Schedule: Weekly Scorecard (Sunday 6 PM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 1500]
+    },
+    {
+      "parameters": {
+        "operation": "readRows",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Weekly Scorecard Data",
+        "options": {}
+      },
+      "id": "read-weekly-scorecard",
+      "name": "Read Weekly Scorecard Data",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 1500],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "readRows",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Lead Pipeline",
+        "options": {}
+      },
+      "id": "read-pipeline-for-scorecard",
+      "name": "Read Pipeline for Scorecard",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 1600],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Calculate this week's stats from pipeline data\nconst pipelineData = $input.all()[1].json.rows || [];\nconst weekStart = new Date();\nweekStart.setDate(weekStart.getDate() - weekStart.getDay()); // This past Sunday\nweekStart.setHours(0,0,0,0);\n\nconst weekEnd = new Date();\n\n// Count metrics for this week\nconst newLeadsThisWeek = pipelineData.filter(lead => {\n  const timestamp = new Date(lead['Timestamp']);\n  return timestamp >= weekStart && timestamp <= weekEnd;\n}).length;\n\nconst contractsThisWeek = pipelineData.filter(lead => {\n  return lead['Status'] === 'CONTRACT_SIGNED' && \n         new Date(lead['Last Contact Date']) >= weekStart;\n}).length;\n\nconst totalPipelineValue = pipelineData\n  .filter(lead => !['CONTRACT_SIGNED', 'EXIT_SENT', 'IDLE'].includes(lead['Status']))\n  .reduce((sum, lead) => sum + (parseFloat(lead['Pipeline Value']) || 0), 0);\n\nconst avgAuditScore = pipelineData.length > 0 ?\n  pipelineData.reduce((sum, lead) => sum + (parseFloat(lead['Audit Score']) || 0), 0) / pipelineData.length\n  : 0;\n\n// Get market breakdown\nconst marketCounts = pipelineData.reduce((acc, lead) => {\n  const market = lead['Market'] || 'Unknown';\n  acc[market] = (acc[market] || 0) + 1;\n  return acc;\n}, {});\n\nconst topMarket = Object.entries(marketCounts)\n  .sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A';\n\nreturn {\n  week_ending: weekEnd.toISOString().split('T')[0],\n  new_leads: newLeadsThisWeek,\n  contracts_signed: contractsThisWeek,\n  pipeline_value: totalPipelineValue,\n  avg_audit_score: avgAuditScore.toFixed(1),\n  top_market: topMarket,\n  total_leads_in_pipeline: pipelineData.length\n};"
+      },
+      "id": "calculate-weekly-stats",
+      "name": "Calculate Weekly Stats",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 1500]
+    },
+    {
+      "parameters": {
+        "fromEmail": "assistant@lnlgroup.com",
+        "toEmail": "YOUR_EMAIL_HERE",
+        "subject": "📊 Weekly Scorecard: Week Ending {{ $json.week_ending }}",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Georgia', serif; background: #1a1a1a; color: #e8e8e8; padding: 20px; }\n    .container { max-width: 700px; margin: 0 auto; background: #2a2a2a; border: 1px solid #d4af37; }\n    .header { background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%); padding: 40px; text-align: center; }\n    .header h1 { margin: 0; color: #1a1a1a; font-size: 32px; }\n    .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 30px; }\n    .metric-card { background: #1a1a1a; padding: 20px; text-align: center; border: 1px solid #444; }\n    .metric-value { font-size: 36px; font-weight: bold; color: #d4af37; }\n    .metric-label { font-size: 12px; color: #888; text-transform: uppercase; margin-top: 8px; }\n    .section { padding: 25px; border-top: 1px solid #444; }\n    .section-title { color: #d4af37; font-size: 18px; margin-bottom: 15px; font-weight: bold; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1>📊 WEEKLY SCORECARD</h1>\n      <p style=\"margin: 10px 0 0 0; color: #333; font-size: 16px;\">Week Ending: {{ $json.week_ending }}</p>\n    </div>\n    \n    <div class=\"metric-grid\">\n      <div class=\"metric-card\">\n        <div class=\"metric-value\">{{ $json.new_leads }}</div>\n        <div class=\"metric-label\">New Leads This Week</div>\n      </div>\n      <div class=\"metric-card\">\n        <div class=\"metric-value\">{{ $json.contracts_signed }}</div>\n        <div class=\"metric-label\">Contracts Signed</div>\n      </div>\n      <div class=\"metric-card\">\n        <div class=\"metric-value\">${{ $json.pipeline_value.toLocaleString() }}</div>\n        <div class=\"metric-label\">Active Pipeline Value</div>\n      </div>\n      <div class=\"metric-card\">\n        <div class=\"metric-value\">{{ $json.avg_audit_score }}</div>\n        <div class=\"metric-label\">Avg. Audit Score</div>\n      </div>\n    </div>\n    \n    <div class=\"section\">\n      <div class=\"section-title\">📍 Market Performance</div>\n      <p><strong>Top Market:</strong> {{ $json.top_market }}</p>\n      <p><strong>Total Active Leads:</strong> {{ $json.total_leads_in_pipeline }}</p>\n    </div>\n    \n    <div class=\"section\">\n      <div class=\"section-title\">🎯 Week Ahead Focus</div>\n      <ul style=\"line-height: 1.8;\">\n        <li>Follow up on {{ $json.new_leads }} new leads from this week</li>\n        <li>Move warm prospects toward proposal stage</li>\n        <li>Monitor Legacy Slot availability for scarcity messaging</li>\n        <li>Review IDLE leads for re-engagement campaigns</li>\n      </ul>\n    </div>\n    \n    <div style=\"padding: 20px; text-align: center; font-size: 11px; color: #666; border-top: 1px solid #444;\">\n      <p>This scorecard is auto-generated every Sunday at 6 PM<br>\n      Personal Assistant Agent | LNL Master Brain</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-weekly-scorecard",
+      "name": "Send Weekly Scorecard Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [850, 1500],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "id": "schedule-concierge-check",
+      "name": "Schedule: Concierge Status Check (Every 2 hrs)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 1800]
+    },
+    {
+      "parameters": {
+        "operation": "readRows",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Concierge Agent Status",
+        "options": {}
+      },
+      "id": "read-concierge-status",
+      "name": "Read Concierge Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [450, 1800],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Find clients with LOGIC STALL flag\nconst clients = $json.rows || [];\n\nconst stalledClients = clients.filter(client => \n  client['LOGIC STALL'] === true || client['LOGIC STALL'] === 'TRUE'\n);\n\nreturn stalledClients.map(client => ({\n  client_name: client['Client Name'],\n  vault_key: client['Vault Key'],\n  project_status: client['Project Status'],\n  pillar_1_status: client['Pillar 1 Status'],\n  contract_date: client['Contract Date'],\n  key_issued_date: client['Key Issued Date'],\n  last_login: client['Last Login'],\n  total_logins: client['Total Logins'],\n  notion_url: client['Notion Page URL']\n}));"
+      },
+      "id": "detect-logic-stalls",
+      "name": "Detect LOGIC STALL Clients",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [650, 1800]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "if-stall-detected",
+      "name": "IF LOGIC STALL Detected",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 1800]
+    },
+    {
+      "parameters": {
+        "fromEmail": "assistant@lnlgroup.com",
+        "toEmail": "YOUR_EMAIL_HERE",
+        "subject": "⚠️ Asset Verification Alert: {{ $json.client_name }}",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Georgia', serif; background: #1a1a1a; color: #e8e8e8; }\n    .container { max-width: 600px; margin: 20px auto; background: #2a2a2a; border: 2px solid #cc3300; }\n    .header { background: #cc3300; padding: 25px; text-align: center; }\n    .content { padding: 25px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1 style=\"margin: 0; color: #ffffff; font-size: 24px;\">⚠️ CONCIERGE ALERT</h1>\n      <p style=\"margin: 8px 0 0 0; color: #ffcccc;\">LOGIC STALL DETECTED</p>\n    </div>\n    \n    <div class=\"content\">\n      <p><strong>Lainie,</strong></p>\n      \n      <p>The Concierge Agent has flagged a client build that requires your attention:</p>\n      \n      <div style=\"background: #330000; border-left: 4px solid #cc3300; padding: 15px; margin: 20px 0;\">\n        <p style=\"margin: 0; font-weight: bold; color: #cc3300;\">CLIENT: {{ $json.client_name }}</p>\n        <p style=\"margin: 8px 0 0 0; color: #888; font-size: 14px;\">Vault Key: {{ $json.vault_key }}</p>\n      </div>\n      \n      <p><strong>Status:</strong></p>\n      <ul style=\"line-height: 1.6;\">\n        <li>Project Status: {{ $json.project_status }}</li>\n        <li>Pillar 1 Status: {{ $json.pillar_1_status }}</li>\n        <li>Contract Date: {{ $json.contract_date }}</li>\n        <li>Last Vault Login: {{ $json.last_login || 'Never' }}</li>\n        <li>Total Logins: {{ $json.total_logins }}</li>\n      </ul>\n      \n      <p><strong>Required Action:</strong> This client has not uploaded Pillar 1 assets within 48 hours of vault access. Manual intervention may be needed to move the build forward.</p>\n      \n      <p><a href=\"{{ $json.notion_url }}\" style=\"color: #d4af37;\">→ View Client Vault in Notion</a></p>\n      \n      <p style=\"margin-top: 30px; font-size: 12px; color: #888;\">Automated alert from The Personal Assistant Agent</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-stall-nudge",
+      "name": "Send Asset Verification Nudge",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1050, 1800],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule: Daily 7:30 AM Brief (Weekdays)": {
+      "main": [
+        [
+          {
+            "node": "Read Daily Dashboard",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Lead Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Daily Dashboard": {
+      "main": [
+        [
+          {
+            "node": "Format Daily Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Lead Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Format Daily Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Daily Brief": {
+      "main": [
+        [
+          {
+            "node": "Send Daily Brief Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: VIP Escalation Check (Every 15 min)": {
+      "main": [
+        [
+          {
+            "node": "Read Pipeline for VIP Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Pipeline for VIP Check": {
+      "main": [
+        [
+          {
+            "node": "Detect VIP Leads (>8.5)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect VIP Leads (>8.5)": {
+      "main": [
+        [
+          {
+            "node": "IF VIP Lead Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF VIP Lead Found": {
+      "main": [
+        [
+          {
+            "node": "Log VIP Escalation to Sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send VIP Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: Pre-Call Check (Every 10 min)": {
+      "main": [
+        [
+          {
+            "node": "Read Pre-Call Intelligence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Pre-Call Intelligence": {
+      "main": [
+        [
+          {
+            "node": "Detect Calls in Next 30-40 Min",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect Calls in Next 30-40 Min": {
+      "main": [
+        [
+          {
+            "node": "IF Upcoming Call Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Upcoming Call Found": {
+      "main": [
+        [
+          {
+            "node": "Send Pre-Call Brief Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Mark Brief as Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: Sheet Hygiene (2:00 AM Daily)": {
+      "main": [
+        [
+          {
+            "node": "Read Pipeline for Hygiene",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Pipeline for Hygiene": {
+      "main": [
+        [
+          {
+            "node": "Identify Leads to Archive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Identify Leads to Archive": {
+      "main": [
+        [
+          {
+            "node": "IF Leads Need Archiving",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Leads Need Archiving": {
+      "main": [
+        [
+          {
+            "node": "Move Leads to Archived Tab",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Hygiene Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: Weekly Scorecard (Sunday 6 PM)": {
+      "main": [
+        [
+          {
+            "node": "Read Weekly Scorecard Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Read Pipeline for Scorecard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Weekly Scorecard Data": {
+      "main": [
+        [
+          {
+            "node": "Calculate Weekly Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Pipeline for Scorecard": {
+      "main": [
+        [
+          {
+            "node": "Calculate Weekly Stats",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calculate Weekly Stats": {
+      "main": [
+        [
+          {
+            "node": "Send Weekly Scorecard Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: Concierge Status Check (Every 2 hrs)": {
+      "main": [
+        [
+          {
+            "node": "Read Concierge Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Concierge Status": {
+      "main": [
+        [
+          {
+            "node": "Detect LOGIC STALL Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detect LOGIC STALL Clients": {
+      "main": [
+        [
+          {
+            "node": "IF LOGIC STALL Detected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF LOGIC STALL Detected": {
+      "main": [
+        [
+          {
+            "node": "Send Asset Verification Nudge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 6,
+  "updatedAt": "2026-01-19T00:00:00.000Z",
+  "versionId": "1"
+}
