@@ -1,0 +1,970 @@
+{
+  "name": "LNL Concierge Agent - Production Ready",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "lnl-contract-signed",
+        "method": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-contract-signed",
+      "name": "Webhook: Contract Signed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "generateRandom",
+        "dataPropertyName": "vault_key",
+        "options": {
+          "length": 5,
+          "charset": "alphanumeric",
+          "uppercase": true
+        }
+      },
+      "id": "generate-key-suffix",
+      "name": "Generate Key Suffix",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        450,
+        300
+      ],
+      "executeOnce": false,
+      "alwaysOutputData": true,
+      "continueOnFail": false,
+      "onError": "stopWorkflow",
+      "notesInFlow": true,
+      "notes": "Generates 5-char alphanumeric code"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get market code from webhook data\nconst market = $input.item.json.market || 'RAL'; // Default to Raleigh\nconst marketCodes = {\n  'Raleigh': 'RAL',\n  'Columbus': 'COL',\n  'Moscow': 'MOS'\n};\n\nconst marketCode = marketCodes[market] || market.substring(0, 3).toUpperCase();\n\n// Generate random 5-character alphanumeric code\nconst chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';\nlet suffix = '';\nfor (let i = 0; i < 5; i++) {\n  suffix += chars.charAt(Math.floor(Math.random() * chars.length));\n}\n\n// Format: LNL-RAL-8K4T2\nconst vaultKey = `LNL-${marketCode}-${suffix}`;\n\n// Pass through all webhook data plus the new key\nreturn {\n  ...($input.item.json),\n  vault_key: vaultKey,\n  key_issued_date: new Date().toISOString(),\n  key_status: 'Active',\n  project_status: 'Contract Signed',\n  pillar_1_status: 'Not Started'\n};"
+      },
+      "id": "format-vault-key",
+      "name": "Format Vault Key",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": "2ed2b4104a59804eb681fc0fe732d51e",
+        "title": "={{ $json.client_name }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Business Name",
+              "textValue": "={{ $json.business_name }}"
+            },
+            {
+              "key": "Market",
+              "selectValue": "={{ $json.market }}"
+            },
+            {
+              "key": "Industry",
+              "selectValue": "={{ $json.industry }}"
+            },
+            {
+              "key": "Pillar Focus",
+              "selectValue": "={{ $json.pillar_focus }}"
+            },
+            {
+              "key": "Vault Key",
+              "textValue": "={{ $json.vault_key }}"
+            },
+            {
+              "key": "Key Status",
+              "selectValue": "Active"
+            },
+            {
+              "key": "Key Issued Date",
+              "dateValue": "={{ $json.key_issued_date }}"
+            },
+            {
+              "key": "Project Status",
+              "selectValue": "Contract Signed"
+            },
+            {
+              "key": "Pillar 1 Status",
+              "selectValue": "Not Started"
+            },
+            {
+              "key": "Owner Name",
+              "textValue": "={{ $json.owner_name }}"
+            },
+            {
+              "key": "Email",
+              "emailValue": "={{ $json.email }}"
+            },
+            {
+              "key": "Phone",
+              "phoneValue": "={{ $json.phone }}"
+            },
+            {
+              "key": "Contract Date",
+              "dateValue": "={{ $json.contract_date }}"
+            },
+            {
+              "key": "Total Logins",
+              "numberValue": 0
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-notion-client-page",
+      "name": "Create Notion Client Page",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        850,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "LNL Concierge Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "append",
+        "pageId": "={{ $json.id }}",
+        "blocksUi": {
+          "blockValues": [
+            {
+              "type": "heading_1",
+              "textContent": "\u00f0\u0178\u201c\u0160 SYSTEM STATUS"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "\u00e2\u2013\u201c\u00e2\u2013\u201c\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018\u00e2\u2013\u2018 PILLAR 1: AWAITING ASSETS"
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "\u00f0\u0178\u201c\u0081 PILLAR 1: ASSET EXTRACTION"
+            },
+            {
+              "type": "callout",
+              "textContent": "Upload your brand assets here:\n\u00e2\u20ac\u00a2 Logo files (PNG, SVG, AI)\n\u00e2\u20ac\u00a2 Brand colors / style guide\n\u00e2\u20ac\u00a2 Headshots / team photos\n\u00e2\u20ac\u00a2 Existing marketing materials\n\u00e2\u20ac\u00a2 Website screenshots (if redesigning)",
+              "icon": "\u00f0\u0178\u201c\u00a4"
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "\u00f0\u0178\u201c\u00a6 DELIVERABLES"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "Your completed work will appear here.\nStatus: Awaiting Pillar 1 Completion"
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "\u00f0\u0178\u201c\u2039 PROJECT TIMELINE"
+            },
+            {
+              "type": "to_do",
+              "textContent": "Contract Signed - ={{ $json.contract_date }}",
+              "checked": true
+            },
+            {
+              "type": "to_do",
+              "textContent": "Vault Access Granted - ={{ $json.key_issued_date }}",
+              "checked": true
+            },
+            {
+              "type": "to_do",
+              "textContent": "Pillar 1 Assets - Awaiting Upload",
+              "checked": false
+            },
+            {
+              "type": "to_do",
+              "textContent": "Digital Facelift v1.0 - Pending",
+              "checked": false
+            },
+            {
+              "type": "to_do",
+              "textContent": "Mechanical Heart Setup - Pending",
+              "checked": false
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "\u00f0\u0178\u2019\u00ac ARCHITECT NOTES"
+            },
+            {
+              "type": "quote",
+              "textContent": "Welcome to your LNL Vault. This is your private workspace for your Growth Architecture build. Upload your assets above to begin your transformation."
+            }
+          ]
+        }
+      },
+      "id": "populate-client-page",
+      "name": "Populate Client Page Template",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "LNL Concierge Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "Master Brain",
+        "columns": {
+          "mappings": [
+            {
+              "columnName": "Client Name",
+              "value": "={{ $json.client_name }}",
+              "id": "002c6373-0254-4f4f-b1a0-6f1a88d2157f"
+            },
+            {
+              "columnName": "Business Name",
+              "value": "={{ $json.business_name }}",
+              "id": "47f78ffd-8e41-4752-8a47-0fa954ad567c"
+            },
+            {
+              "columnName": "Market",
+              "value": "={{ $json.market }}",
+              "id": "d143808b-ff51-45cd-b7da-1bd584a7cec1"
+            },
+            {
+              "columnName": "Vault Key",
+              "value": "={{ $json.vault_key }}",
+              "id": "439dff40-70fa-49f7-8ee2-cb80a2e9fc9e"
+            },
+            {
+              "columnName": "Notion Page ID",
+              "value": "={{ $json.id }}",
+              "id": "fc75b0ac-ca57-4171-929e-1b2fa8d38fe0"
+            },
+            {
+              "columnName": "Email",
+              "value": "={{ $json.email }}",
+              "id": "1478687a-d806-4948-9594-f8aab6dbe864"
+            },
+            {
+              "columnName": "Status",
+              "value": "Contract Signed",
+              "id": "c243d0fc-88cc-45ef-84a7-8c497ecf3bd7"
+            },
+            {
+              "columnName": "Key Issued",
+              "value": "={{ $json.key_issued_date }}",
+              "id": "631e27e8-1474-40e2-916b-488339bea6e0"
+            }
+          ]
+        }
+      },
+      "id": "log-to-master-brain",
+      "name": "Log to Master Brain (Google Sheets)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        1250,
+        300
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets - Master Brain"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "vault@lnlgroup.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "\u00f0\u0178\u008f\u203a\u00ef\u00b8\u008f Your Vault Has Been Architected",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Georgia', serif; background: #1a1a1a; color: #e8e8e8; }\n    .container { max-width: 600px; margin: 40px auto; background: #2a2a2a; border: 1px solid #d4af37; }\n    .header { background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); padding: 40px; text-align: center; border-bottom: 2px solid #d4af37; }\n    .logo { font-size: 28px; font-weight: bold; color: #d4af37; letter-spacing: 2px; }\n    .content { padding: 40px; }\n    .key-box { background: #1a1a1a; border: 2px solid #d4af37; padding: 20px; margin: 30px 0; text-align: center; }\n    .key { font-size: 32px; font-family: 'Courier New', monospace; color: #d4af37; letter-spacing: 3px; font-weight: bold; }\n    .cta-button { display: inline-block; background: #d4af37; color: #1a1a1a; padding: 15px 40px; text-decoration: none; font-weight: bold; margin: 20px 0; border-radius: 4px; }\n    .footer { padding: 30px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #444; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <div class=\"logo\">THE LNL GROUP</div>\n      <p style=\"color: #888; margin-top: 10px;\">LOGIC + LUXURY</p>\n    </div>\n    \n    <div class=\"content\">\n      <h1 style=\"color: #d4af37; font-size: 24px;\">The Key Delivery</h1>\n      \n      <p>{{ $json.owner_name }},</p>\n      \n      <p>Your Vault has been architected. The foundation of your Growth Architecture is now secure and awaiting your initialization.</p>\n      \n      <div class=\"key-box\">\n        <p style=\"margin: 0 0 10px 0; font-size: 14px; color: #888;\">YOUR ACCESS KEY</p>\n        <div class=\"key\">{{ $json.vault_key }}</div>\n      </div>\n      \n      <p><strong>Your next step:</strong> Initialize your extraction at the secure vault portal.</p>\n      \n      <a href=\"https://vault.lnlgroup.com\" class=\"cta-button\">ENTER THE VAULT \u00e2\u2020\u2019</a>\n      \n      <h2 style=\"color: #d4af37; margin-top: 40px;\">What Happens Next</h2>\n      \n      <ol style=\"line-height: 1.8;\">\n        <li><strong>Access Your Vault</strong> - Use your unique key to enter your private workspace</li>\n        <li><strong>Upload Pillar 1 Assets</strong> - Your brand assets, logos, colors, and existing materials</li>\n        <li><strong>The Mechanical Heart Activates</strong> - Our systems begin processing your digital foundation</li>\n        <li><strong>72-Hour Initialization</strong> - Your Growth Architecture build begins</li>\n      </ol>\n      \n      <div style=\"background: #1a1a1a; padding: 20px; margin: 30px 0; border-left: 3px solid #d4af37;\">\n        <p style=\"margin: 0; font-style: italic; color: #d4af37;\">\"The vault is not just storage. It's the bridge between where you are and the architecture you're about to become.\"</p>\n        <p style=\"margin: 10px 0 0 0; font-size: 12px; color: #888;\">\u00e2\u20ac\u201d The LNL Method</p>\n      </div>\n      \n      <p><strong>Important:</strong> Your access key is unique to you. Keep it secure. If you need assistance, reply to this email.</p>\n      \n      <p style=\"margin-top: 40px;\">Welcome to the architecture.</p>\n      \n      <p>The LNL Concierge</p>\n    </div>\n    \n    <div class=\"footer\">\n      <p>THE LNL GROUP<br>\n      Logic + Luxury Growth Architecture<br>\n      This is an automated message from The Mechanical Heart</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-welcome-email",
+      "name": "Send Welcome Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1450,
+        300
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24,
+              "id": "6f00e57c-923b-47e2-8545-96c6d376f1b1"
+            }
+          ]
+        }
+      },
+      "id": "schedule-24hr-check",
+      "name": "Schedule: 24hr Asset Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "2ed2b4104a59804eb681fc0fe732d51e",
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Pillar 1 Status",
+              "condition": "equals",
+              "selectValue": "Not Started"
+            },
+            {
+              "key": "Project Status",
+              "condition": "equals",
+              "selectValue": "Contract Signed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "query-pending-assets",
+      "name": "Query Pending Asset Clients",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        450,
+        500
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "LNL Concierge Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if 24 hours have passed since key was issued\nconst keyIssuedDate = new Date($json.properties['Key Issued Date'].date.start);\nconst now = new Date();\nconst hoursPassed = (now - keyIssuedDate) / (1000 * 60 * 60);\n\nif (hoursPassed >= 24 && hoursPassed < 48) {\n  return {\n    send_reminder: true,\n    client_name: $json.properties['Client Name'].title[0].plain_text,\n    email: $json.properties['Email'].email,\n    vault_key: $json.properties['Vault Key'].rich_text[0].plain_text,\n    owner_name: $json.properties['Owner Name'].rich_text[0].plain_text\n  };\n}\n\nreturn { send_reminder: false };"
+      },
+      "id": "check-24hr-elapsed",
+      "name": "Check 24hr Elapsed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.send_reminder }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-send-reminder",
+      "name": "IF Send Reminder",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        850,
+        500
+      ]
+    },
+    {
+      "parameters": {
+        "fromEmail": "vault@lnlgroup.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "\u00f0\u0178\u201c\u0081 Pillar 1: Extraction Awaiting Your Assets",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Georgia', serif; background: #1a1a1a; color: #e8e8e8; }\n    .container { max-width: 600px; margin: 40px auto; background: #2a2a2a; border: 1px solid #d4af37; }\n    .header { background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); padding: 40px; text-align: center; border-bottom: 2px solid #d4af37; }\n    .content { padding: 40px; }\n    .alert-box { background: #332200; border-left: 4px solid #d4af37; padding: 20px; margin: 20px 0; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1 style=\"color: #d4af37; margin: 0;\">\u00e2\u008f\u00b3 SYSTEM ADVISORY</h1>\n    </div>\n    \n    <div class=\"content\">\n      <p>{{ $json.owner_name }},</p>\n      \n      <div class=\"alert-box\">\n        <p style=\"margin: 0; font-weight: bold; color: #d4af37;\">PILLAR 1 EXTRACTION: AWAITING ASSETS</p>\n        <p style=\"margin: 10px 0 0 0;\">Your vault has been active for 24 hours, but we haven't detected any uploaded assets yet.</p>\n      </div>\n      \n      <p>The Mechanical Heart is ready to begin processing your Growth Architecture, but it requires your brand foundation files to initialize.</p>\n      \n      <h3 style=\"color: #d4af37;\">What We Need:</h3>\n      <ul>\n        <li>Logo files (PNG, SVG, AI preferred)</li>\n        <li>Brand colors and style guidelines</li>\n        <li>Headshots and team photography</li>\n        <li>Existing marketing materials</li>\n        <li>Website screenshots (if applicable)</li>\n      </ul>\n      \n      <p><a href=\"https://vault.lnlgroup.com\" style=\"color: #d4af37; text-decoration: none; font-weight: bold;\">\u00e2\u2020\u2019 Upload Assets Now</a></p>\n      \n      <p style=\"margin-top: 30px; font-size: 14px; color: #888;\">Your Access Key: <span style=\"font-family: 'Courier New', monospace; color: #d4af37;\">{{ $json.vault_key }}</span></p>\n      \n      <p style=\"margin-top: 40px;\">The LNL Concierge</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-24hr-reminder",
+      "name": "Send 24hr Reminder",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        450
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 48,
+              "id": "7ac73cc4-ca12-4df4-8fa8-6c5710b03bd5"
+            }
+          ]
+        }
+      },
+      "id": "schedule-48hr-check",
+      "name": "Schedule: 48hr LOGIC STALL Check",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        250,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "2ed2b4104a59804eb681fc0fe732d51e",
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Pillar 1 Status",
+              "condition": "equals",
+              "selectValue": "Not Started"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "query-stalled-clients",
+      "name": "Query Stalled Clients",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        450,
+        700
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "LNL Concierge Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if 48 hours have passed\nconst keyIssuedDate = new Date($json.properties['Key Issued Date'].date.start);\nconst now = new Date();\nconst hoursPassed = (now - keyIssuedDate) / (1000 * 60 * 60);\n\nif (hoursPassed >= 48) {\n  return {\n    logic_stall: true,\n    client_name: $json.properties['Client Name'].title[0].plain_text,\n    email: $json.properties['Email'].email,\n    phone: $json.properties['Phone'].phone_number,\n    owner_name: $json.properties['Owner Name'].rich_text[0].plain_text,\n    page_id: $json.id\n  };\n}\n\nreturn { logic_stall: false };"
+      },
+      "id": "check-48hr-elapsed",
+      "name": "Check 48hr Elapsed",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        650,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.logic_stall }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-logic-stall",
+      "name": "IF LOGIC STALL",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        850,
+        700
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": "={{ $json.page_id }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Project Status",
+              "selectValue": "Paused"
+            },
+            {
+              "key": "Pillar 1 Status",
+              "selectValue": "Assets Requested"
+            }
+          ]
+        }
+      },
+      "id": "update-status-stalled",
+      "name": "Update Status: LOGIC STALL",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        700
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "LNL Concierge Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "vault@lnlgroup.com",
+        "toEmail": "={{ $json.email }}",
+        "subject": "\u00f0\u0178\u0161\u00a8 LOGIC STALL: Build Paused - Action Required",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Georgia', serif; background: #1a1a1a; color: #e8e8e8; }\n    .container { max-width: 600px; margin: 40px auto; background: #2a2a2a; border: 2px solid #cc3300; }\n    .header { background: #cc3300; padding: 40px; text-align: center; }\n    .content { padding: 40px; }\n    .critical { background: #330000; border-left: 4px solid #cc3300; padding: 20px; margin: 20px 0; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h1 style=\"color: #ffffff; margin: 0; font-size: 32px;\">\u00e2\u0161\u00a0\u00ef\u00b8\u008f SYSTEM ALERT</h1>\n      <p style=\"color: #ffcccc; margin: 10px 0 0 0;\">LOGIC STALL DETECTED</p>\n    </div>\n    \n    <div class=\"content\">\n      <p>{{ $json.owner_name }},</p>\n      \n      <div class=\"critical\">\n        <p style=\"margin: 0; font-weight: bold; color: #cc3300; font-size: 18px;\">CRITICAL: PILLAR 1 EXTRACTION INCOMPLETE</p>\n        <p style=\"margin: 15px 0 0 0;\">Your Growth Architecture build has been <strong>automatically paused</strong> to preserve system integrity.</p>\n      </div>\n      \n      <p>It has been <strong>48 hours</strong> since your vault access was granted, and we have not received your Pillar 1 assets.</p>\n      \n      <p><strong>Why This Matters:</strong></p>\n      <p>The Mechanical Heart cannot initialize your Digital Facelift without your brand foundation. Every day of delay pushes back your launch timeline and extends your current labor leakage.</p>\n      \n      <h3 style=\"color: #d4af37;\">Immediate Action Required:</h3>\n      <ol>\n        <li>Access your vault at <a href=\"https://vault.lnlgroup.com\" style=\"color: #d4af37;\">vault.lnlgroup.com</a></li>\n        <li>Upload your brand assets (logos, colors, photos, materials)</li>\n        <li>System will auto-resume within 2 hours of asset detection</li>\n      </ol>\n      \n      <p style=\"margin-top: 30px;\"><strong>Need Help?</strong> Reply to this email or call {{ $json.phone }} and we'll guide you through the upload process.</p>\n      \n      <p style=\"margin-top: 40px; font-size: 14px; color: #888;\">This is an automated alert from The Mechanical Heart.<br>Build Status: PAUSED | Pillar 1: INCOMPLETE</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "send-logic-stall-alert",
+      "name": "Send LOGIC STALL Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        700
+      ],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "lnl-vault-login",
+        "method": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-vault-login",
+      "name": "Webhook: Vault Login Attempt",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": "2ed2b4104a59804eb681fc0fe732d51e",
+        "filterType": "manual",
+        "matchType": "allFilters",
+        "filters": {
+          "conditions": [
+            {
+              "key": "Vault Key",
+              "condition": "equals",
+              "textValue": "={{ $json.vault_key }}"
+            },
+            {
+              "key": "Key Status",
+              "condition": "equals",
+              "selectValue": "Active"
+            }
+          ]
+        },
+        "limit": 1,
+        "options": {}
+      },
+      "id": "validate-vault-key",
+      "name": "Validate Vault Key",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        450,
+        900
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "LNL Concierge Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "if-key-valid",
+      "name": "IF Key Valid",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        650,
+        900
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract client data from Notion result\nconst client = $input.all()[0].json;\n\nif (client && client.results && client.results.length > 0) {\n  const page = client.results[0];\n  const props = page.properties;\n  \n  // Increment login count\n  const currentLogins = props['Total Logins']?.number || 0;\n  \n  return {\n    auth: true,\n    page_id: page.id,\n    client_name: props['Client Name']?.title[0]?.plain_text || 'Client',\n    market: props['Market']?.select?.name || '',\n    project_status: props['Project Status']?.select?.name || '',\n    pillar_1_status: props['Pillar 1 Status']?.select?.name || '',\n    total_logins: currentLogins + 1,\n    last_login: new Date().toISOString(),\n    notion_url: page.url\n  };\n}\n\nreturn { auth: false };"
+      },
+      "id": "extract-client-data",
+      "name": "Extract Client Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        850,
+        850
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": "={{ $json.page_id }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Last Login",
+              "dateValue": "={{ $json.last_login }}"
+            },
+            {
+              "key": "Total Logins",
+              "numberValue": "={{ $json.total_logins }}"
+            }
+          ]
+        }
+      },
+      "id": "update-login-tracking",
+      "name": "Update Login Tracking",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [
+        1050,
+        850
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "LNL Concierge Notion"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\n  auth: $json.auth,\n  client_name: $json.client_name,\n  market: $json.market,\n  project_status: $json.project_status,\n  pillar_1_status: $json.pillar_1_status,\n  notion_url: $json.notion_url\n}) }}",
+        "options": {}
+      },
+      "id": "respond-success",
+      "name": "Respond: Auth Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1250,
+        850
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{ \"auth\": false, \"error\": \"Invalid or expired vault key\" }",
+        "options": {
+          "responseCode": 401
+        }
+      },
+      "id": "respond-failure",
+      "name": "Respond: Auth Failed",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        850,
+        950
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook: Contract Signed": {
+      "main": [
+        [
+          {
+            "node": "Format Vault Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Vault Key": {
+      "main": [
+        [
+          {
+            "node": "Create Notion Client Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Notion Client Page": {
+      "main": [
+        [
+          {
+            "node": "Populate Client Page Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Populate Client Page Template": {
+      "main": [
+        [
+          {
+            "node": "Log to Master Brain (Google Sheets)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Master Brain (Google Sheets)": {
+      "main": [
+        [
+          {
+            "node": "Send Welcome Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: 24hr Asset Check": {
+      "main": [
+        [
+          {
+            "node": "Query Pending Asset Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Pending Asset Clients": {
+      "main": [
+        [
+          {
+            "node": "Check 24hr Elapsed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check 24hr Elapsed": {
+      "main": [
+        [
+          {
+            "node": "IF Send Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Send Reminder": {
+      "main": [
+        [
+          {
+            "node": "Send 24hr Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule: 48hr LOGIC STALL Check": {
+      "main": [
+        [
+          {
+            "node": "Query Stalled Clients",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Query Stalled Clients": {
+      "main": [
+        [
+          {
+            "node": "Check 48hr Elapsed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check 48hr Elapsed": {
+      "main": [
+        [
+          {
+            "node": "IF LOGIC STALL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF LOGIC STALL": {
+      "main": [
+        [
+          {
+            "node": "Update Status: LOGIC STALL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Status: LOGIC STALL": {
+      "main": [
+        [
+          {
+            "node": "Send LOGIC STALL Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook: Vault Login Attempt": {
+      "main": [
+        [
+          {
+            "node": "Validate Vault Key",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Vault Key": {
+      "main": [
+        [
+          {
+            "node": "IF Key Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Key Valid": {
+      "main": [
+        [
+          {
+            "node": "Extract Client Data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respond: Auth Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Client Data": {
+      "main": [
+        [
+          {
+            "node": "Update Login Tracking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Login Tracking": {
+      "main": [
+        [
+          {
+            "node": "Respond: Auth Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 3,
+  "updatedAt": "2026-01-19T00:00:00.000Z",
+  "versionId": "1"
+}
