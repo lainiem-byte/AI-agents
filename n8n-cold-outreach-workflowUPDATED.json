@@ -1,0 +1,859 @@
+{
+  "name": "LNL Cold Outreach Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "days",
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "daily-trigger",
+      "name": "Daily Outreach Check (9 AM)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        300
+      ],
+      "notes": "Runs daily at 9 AM to check which leads need outreach"
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        500
+      ],
+      "notes": "Use for testing"
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "options": {}
+      },
+      "id": "get-all-leads",
+      "name": "Get All Leads",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        250,
+        400
+      ],
+      "notes": "Fetch all leads from master pipeline"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Logic Gate 1: Filter leads that need outreach today\nconst leads = $input.all().map(i => i.json);\nconst today = new Date();\nconst readyLeads = [];\n\nfor (const lead of leads) {\n  // Skip if already completed audit or marked idle\n  if (lead['Audit Status'] === 'Completed' || \n      lead['Audit Status'] === 'Idle' ||\n      lead['Status'] === 'closed_won' ||\n      lead['Status'] === 'closed_lost') {\n    continue;\n  }\n  \n  // Skip if no email\n  if (!lead['Email']) {\n    continue;\n  }\n  \n  // Determine current attempt based on tag\n  const currentTag = lead['Current Tag'] || '';\n  let attemptNumber = 0;\n  \n  if (currentTag.includes('_01') || currentTag === '') {\n    attemptNumber = 1;\n  } else if (currentTag.includes('_02')) {\n    attemptNumber = 2;\n  } else if (currentTag.includes('_03')) {\n    attemptNumber = 3;\n  } else if (currentTag.includes('_EXIT') || currentTag.includes('_04')) {\n    attemptNumber = 4;\n  }\n  \n  // Check timing based on last touch date\n  const lastTouch = lead['Last Contact'] ? new Date(lead['Last Contact']) : null;\n  const daysSinceLastTouch = lastTouch ? \n    Math.floor((today - lastTouch) / (1000 * 60 * 60 * 24)) : 999;\n  \n  // Timing logic based on attempt number\n  let shouldSend = false;\n  let nextAttempt = attemptNumber;\n  \n  if (!lastTouch && attemptNumber <= 1) {\n    // Never contacted - send first email\n    shouldSend = true;\n    nextAttempt = 1;\n  } else if (attemptNumber === 1 && daysSinceLastTouch >= 3) {\n    // Day 4: Send attempt 2\n    shouldSend = true;\n    nextAttempt = 2;\n  } else if (attemptNumber === 2 && daysSinceLastTouch >= 4) {\n    // Day 8: Send attempt 3\n    shouldSend = true;\n    nextAttempt = 3;\n  } else if (attemptNumber === 3 && daysSinceLastTouch >= 6) {\n    // Day 14: Send attempt 4 (exit)\n    shouldSend = true;\n    nextAttempt = 4;\n  }\n  \n  if (shouldSend) {\n    readyLeads.push({\n      ...lead,\n      attemptNumber: nextAttempt,\n      daysSinceLastTouch: daysSinceLastTouch\n    });\n  }\n}\n\nreturn readyLeads.map(lead => ({ json: lead }));"
+      },
+      "id": "logic-gate-timing",
+      "name": "Logic Gate: Check Timing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        500,
+        400
+      ],
+      "notes": "Determines which leads are ready for their next touch based on cadence timing"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "has-leads",
+              "leftValue": "={{ $json }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "filter-empty",
+      "name": "Filter Empty Results",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        750,
+        400
+      ],
+      "notes": "Skip if no leads ready for outreach"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Industry }}",
+                    "rightValue": "med_spa",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "condition-0-0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "med_spa",
+              "id": "rule-0"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Industry }}",
+                    "rightValue": "realtor",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "condition-1-0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "realtor",
+              "id": "rule-1"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Industry }}",
+                    "rightValue": "law_firm",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "condition-2-0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "law_firm",
+              "id": "rule-2"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "loose"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.Industry }}",
+                    "rightValue": "hvac_home_services",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "condition-3-0"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "hvac",
+              "id": "rule-3"
+            }
+          ],
+          "fallbackOutput": {
+            "fallbackOutput": "extra"
+          }
+        },
+        "options": {}
+      },
+      "id": "route-by-industry",
+      "name": "Route by Industry",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1000,
+        400
+      ],
+      "notes": "Routes leads to industry-specific script generators"
+    },
+    {
+      "parameters": {
+        "jsCode": "// MED SPA SCRIPTS (LNL Creative)\nconst lead = $input.first().json;\nconst attempt = lead.attemptNumber;\nconst city = lead.City || 'your city';\nconst businessName = lead['Business Name'] || 'your practice';\nconst ownerName = lead['Owner Name'] || '';\nconst firstName = ownerName.split(' ')[0] || 'there';\n\nconst scripts = {\n  1: {\n    subject: `The Prestige Gap at ${businessName}`,\n    body: `Hi ${firstName},\n\nI've been tracking the patient experience at ${businessName}. Your clinical results are world-class, but your digital footprint is currently creating a Prestige Gap.\n\nYour brand looks like a standard clinic, but your service is elite.\n\nI'm the Chief Architect at LNL Creative. We specialize in 'Digital Facelifts' for Med Spas in ${city}.\n\nInitializing the audit here: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_MED_01'\n  },\n  2: {\n    subject: `${city} Aesthetic Market Update`,\n    body: `${firstName},\n\nI was reviewing the ${city} aesthetic market this morning. Several competitors are catching up visually, but they lack your clinical depth.\n\nWe should align your Face with your Heart before the quarter ends.\n\nDid you have a moment to review the Audit?\n\nlnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_MED_02'\n  },\n  3: {\n    subject: `Visual Proof: Before/After Architectural Facelift`,\n    body: `${firstName},\n\nI was reviewing the patient journey for high-end clinics in ${city}. Most are losing up to 30% of their digital traffic because their 'Digital Face' doesn't match their clinical excellence.\n\nI've attached a quick screenshot of a 'Before/After' architectural facelift we just completed. It's not just about beauty; it's about establishing immediate authority.\n\nReady to see your diagnostic?\n\nlnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_MED_03'\n  },\n  4: {\n    subject: `Closing Your Diagnostic File`,\n    body: `${firstName},\n\nI haven't heard back, so I'm assuming your current brand architecture is meeting your 2026 goals.\n\nI'm closing your diagnostic file to focus on our new builds in ${city}.\n\nIf your priorities shift and you're ready to bridge the prestige gap later this year, you can re-initialize the process at lnlgroup.com/audit.\n\nBest of luck with the practice.\n\nBest,\nLNL Group`,\n    tag: 'C_MED_EXIT'\n  }\n};\n\nconst script = scripts[attempt] || scripts[1];\n\nreturn [{\n  ...lead,\n  emailSubject: script.subject,\n  emailBody: script.body,\n  newTag: script.tag,\n  pillar: 'Creative'\n}];"
+      },
+      "id": "med-spa-scripts",
+      "name": "Med Spa Scripts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        200
+      ],
+      "notes": "LNL Creative - Med Spa 4-touch sequence"
+    },
+    {
+      "parameters": {
+        "jsCode": "// REALTOR SCRIPTS (LNL Creative)\nconst lead = $input.first().json;\nconst attempt = lead.attemptNumber;\nconst city = lead.City || 'your market';\nconst businessName = lead['Business Name'] || 'your agency';\nconst ownerName = lead['Owner Name'] || '';\nconst firstName = ownerName.split(' ')[0] || 'there';\n\n// Determine if luxury market (Moscow) or growth market (Raleigh/Columbus)\nconst isLuxuryMarket = city.toLowerCase().includes('moscow');\n\nconst luxuryScripts = {\n  1: {\n    subject: `High-Net-Worth Authority in ${city}`,\n    body: `${firstName},\n\nIn the ${city} luxury market, your 'Digital Face' is your primary filter. High-net-worth clients expect an architectural standard.\n\nCurrently, your systems feel 'manual.'\n\nWe build high-end digital identities for Realtors who want to move from 'hustle' to 'authority.'\n\nSee the logic: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_REA_01'\n  },\n  2: {\n    subject: `Visual Authority in ${city} Luxury`,\n    body: `${firstName},\n\nIn the ${city} high-net-worth market, 'good' isn't enough. Your digital presence is competing with global standards of architecture and design.\n\nIf your 'Digital Face' looks like a standard agency template, it creates an immediate Prestige Gap.\n\nWe bridge that gap by building a visual identity that reflects the caliber of properties you represent.\n\nDid the Audit provide any clarity?\n\nlnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_REA_02'\n  },\n  3: {\n    subject: `The Authority Insight`,\n    body: `${firstName},\n\nIn luxury real estate, your digital presence is your 'pre-listing' presentation.\n\nIf a high-net-worth lead lands on your profile and sees 'Standard Agency' templates, you've lost the lead before the first call.\n\nWe specialize in building 'Architectural Authority' that does the selling for you.\n\nTake 4 minutes to map your friction here: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_REA_03'\n  },\n  4: {\n    subject: `Finalizing ${city} Project Queue`,\n    body: `${firstName},\n\nI'm finalizing the project queue for the ${city} luxury market for the next month.\n\nSince we haven't connected, I'm releasing your reserved slot back to the market.\n\nArchitecture requires precision and timing\u00e2\u20ac\u201dperhaps our schedules will align in a future quarter.\n\nBest,\nLNL Group`,\n    tag: 'C_REA_EXIT'\n  }\n};\n\nconst growthScripts = {\n  1: {\n    subject: `The Prestige Gap in ${city}`,\n    body: `Hi ${firstName},\n\nThe ${city} market is evolving rapidly with the recent tech influx. Your results are elite, but is your brand?\n\nMost top-producers here have a Prestige Gap\u00e2\u20ac\u201dthey sell million-dollar homes but have thousand-dollar websites.\n\nLet's align your Face with your Results.\n\nlnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_REA_01'\n  },\n  2: {\n    subject: `Checking in on our logic`,\n    body: `${firstName},\n\nIn a market where buyers are moving in from out-of-state, your 'Digital Face' is your first showing.\n\nIf it feels manual or dated, you're losing trust before the first DM.\n\nReady to see the diagnostic?\n\nlnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_REA_02'\n  },\n  3: {\n    subject: `Your Brand as a Filter`,\n    body: `${firstName},\n\nIn the luxury space, your brand should be a filter, not a net.\n\nWe build Architectural Authority that does the heavy lifting for you, so you only talk to 'Vault-ready' leads.\n\nHere is the logic behind our latest facelift in ${city}.\n\nSee the path: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_REA_03'\n  },\n  4: {\n    subject: `Closing Your File`,\n    body: `${firstName},\n\nI'm finalizing our intake for the ${city} market this quarter.\n\nSince we haven't connected, I'm assuming your current infrastructure is sufficient for your 2026 goals.\n\nI'm closing your file to focus on our active builds.\n\nThe Vault remains open if your priorities shift: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'C_REA_EXIT'\n  }\n};\n\nconst scripts = isLuxuryMarket ? luxuryScripts : growthScripts;\nconst script = scripts[attempt] || scripts[1];\n\nreturn [{\n  ...lead,\n  emailSubject: script.subject,\n  emailBody: script.body,\n  newTag: script.tag,\n  pillar: 'Creative'\n}];"
+      },
+      "id": "realtor-scripts",
+      "name": "Realtor Scripts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        350
+      ],
+      "notes": "LNL Creative - Realtor 4-touch sequence (Luxury vs Growth markets)"
+    },
+    {
+      "parameters": {
+        "jsCode": "// LAW FIRM SCRIPTS (LNL Automations)\nconst lead = $input.first().json;\nconst attempt = lead.attemptNumber;\nconst city = lead.City || 'your city';\nconst businessName = lead['Business Name'] || 'your firm';\nconst ownerName = lead['Owner Name'] || '';\nconst firstName = ownerName.split(' ')[0] || 'there';\n\nconst scripts = {\n  1: {\n    subject: `Labor Leakage Audit for ${businessName}`,\n    body: `${firstName},\n\nI'm reviewing operational workflows for law firms in ${city}.\n\nMost partners are currently suffering from Labor Leakage\u00e2\u20ac\u201dpaying for human hours to do what a Mechanical Heart should do automatically (intake, scheduling, document prep).\n\nWe install the systems that reclaim your billable hours.\n\nMap your friction: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_LAW_01'\n  },\n  2: {\n    subject: `Administrative Ceiling at ${businessName}`,\n    body: `${firstName},\n\nI'm noticing a trend in the ${city} legal market: Firms are scaling by adding more staff, which only adds more 'Manual Burden.'\n\nTrue scale comes from reclaiming the 10\u00e2\u20ac\u201c15 hours a week currently lost to intake, document assembly, and scheduling.\n\nWe install the systems that turn that 'Labor Leakage' back into billable equity.\n\nLet's see where your firm is leaking: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_LAW_02'\n  },\n  3: {\n    subject: `Quick Logic Check for ${businessName}`,\n    body: `${firstName},\n\nQuick logic check for ${businessName}: If your intake was 100% automated, how many billable hours would your partners reclaim this month?\n\nWe recently helped a firm in ${city} eliminate 12 hours of manual document prep per week. That is pure equity back into the firm.\n\nReady to see where your labor is leaking?\n\nlnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_LAW_03'\n  },\n  4: {\n    subject: `Archiving Your Labor Leakage File`,\n    body: `${firstName},\n\nI'm archiving your Labor Leakage file today.\n\nMy goal was to help you install a 'Mechanical Heart' to protect your time, but it seems now isn't the right window for a system overhaul.\n\nYour audit link will remain active for 24 more hours if you decide to initialize: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_LAW_EXIT'\n  }\n};\n\nconst script = scripts[attempt] || scripts[1];\n\nreturn [{\n  ...lead,\n  emailSubject: script.subject,\n  emailBody: script.body,\n  newTag: script.tag,\n  pillar: 'Automations'\n}];"
+      },
+      "id": "law-firm-scripts",
+      "name": "Law Firm Scripts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        500
+      ],
+      "notes": "LNL Automations - Law Firm 4-touch sequence"
+    },
+    {
+      "parameters": {
+        "jsCode": "// HVAC & HOME SERVICES SCRIPTS (LNL Automations)\nconst lead = $input.first().json;\nconst attempt = lead.attemptNumber;\nconst city = lead.City || 'your city';\nconst businessName = lead['Business Name'] || 'your business';\nconst ownerName = lead['Owner Name'] || '';\nconst firstName = ownerName.split(' ')[0] || 'there';\n\nconst scripts = {\n  1: {\n    subject: `The Mechanical Heart for ${businessName}`,\n    body: `Hi ${firstName},\n\nScaling an HVAC business in ${city} usually breaks at the 'Manual' level\u00e2\u20ac\u201drelying on people to remember to follow up.\n\nLNL Automations builds the 'Mechanical Heart' for home services.\n\nWe ensure every lead is captured, nurtured, and booked without you touching a keyboard.\n\nStart the build: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_HVA_01'\n  },\n  2: {\n    subject: `Logic Check: The ${city} Growth Ceiling`,\n    body: `Hi ${firstName},\n\nI was reviewing the home services volume in ${city} this week. With the influx of new residents, most HVAC firms are hitting a ceiling\u00e2\u20ac\u201dnot because they lack technicians, but because their 'Manual Heart' can't keep up with the intake.\n\nA lead that waits 10 minutes for a response in this market is a lead lost to a competitor.\n\nOur Mechanical Heart ensures you own the lead before they even finish their search.\n\nHave you had a chance to map your friction?\n\nlnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_HVA_02'\n  },\n  3: {\n    subject: `The Biggest Cost in HVAC`,\n    body: `${firstName},\n\nThe biggest cost in HVAC isn't labor\u00e2\u20ac\u201dit's 'Lead Leakage.'\n\nIf a lead calls after 6 PM and doesn't get an immediate, automated response, they call your competitor.\n\nA Mechanical Heart ensures you own the market 24/7 without hiring more office staff.\n\nWe build the systems that catch what humans miss.\n\nSee the logic: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_HVA_03'\n  },\n  4: {\n    subject: `Closing Operational Reviews for ${city}`,\n    body: `${firstName},\n\nI am closing out my operational reviews for home service providers in ${city}.\n\nI'll be focusing my attention on the firms currently undergoing their 'Heart' installations.\n\nIf you decide you're ready to stop the manual hustle, you know where to find the Vault.\n\nlnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_HVA_EXIT'\n  }\n};\n\nconst script = scripts[attempt] || scripts[1];\n\nreturn [{\n  ...lead,\n  emailSubject: script.subject,\n  emailBody: script.body,\n  newTag: script.tag,\n  pillar: 'Automations'\n}];"
+      },
+      "id": "hvac-scripts",
+      "name": "HVAC Scripts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        650
+      ],
+      "notes": "LNL Automations - HVAC/Home Services 4-touch sequence"
+    },
+    {
+      "parameters": {
+        "jsCode": "// INDUSTRY AGNOSTIC SCRIPTS (Master Brain)\n// Use for any high-level founder not in standard categories\nconst lead = $input.first().json;\nconst attempt = lead.attemptNumber;\nconst city = lead.City || 'your market';\nconst businessName = lead['Business Name'] || 'your business';\nconst ownerName = lead['Owner Name'] || '';\nconst firstName = ownerName.split(' ')[0] || 'there';\n\nconst scripts = {\n  1: {\n    subject: `Your Infrastructure vs. Your Ambition`,\n    body: `${firstName},\n\nMost businesses are a collection of 'Manual Tasks' held together by the founder's willpower.\n\nThat isn't a company; it's a job.\n\nI architect Mechanical Hearts and Digital Faces. I'm reaching out because I believe your brand has the potential to scale, but your current systems might be the ceiling.\n\nStart the audit to see the logic: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_GEN_01'\n  },\n  2: {\n    subject: `Growth Patterns in ${city}`,\n    body: `${firstName},\n\nI've been analyzing the growth patterns of founders in ${city} this week.\n\nThose winning are moving away from 'hiring more people' and toward 'installing better logic.'\n\nHow much of your day is spent on tasks that don't require your permission to run?\n\nlnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_GEN_02'\n  },\n  3: {\n    subject: `What Would You Do With 15 Extra Hours?`,\n    body: `${firstName},\n\nWhat would you do with an extra 15 hours a week?\n\nThat is the average 'Time Equity' our clients reclaim once their Mechanical Heart is installed.\n\nIt's not magic; it's just better architecture.\n\nYou can map your specific leakage in 4 minutes here: lnlgroup.com/audit\n\nBest,\nLNL Group`,\n    tag: 'A_GEN_03'\n  },\n  4: {\n    subject: `Moving Your File to Inactive`,\n    body: `${firstName},\n\nI'm moving your file to 'Inactive' status.\n\nAs an architect, I only work with founders ready to move from 'Manual' to 'Mechanical.'\n\nI wish you the best in your current build.\n\nThe Vault will remain open to you at vault.lnlgroup.com should you choose to initialize in the future.\n\nBest,\nLNL Group`,\n    tag: 'A_GEN_EXIT'\n  }\n};\n\nconst script = scripts[attempt] || scripts[1];\n\nreturn [{\n  ...lead,\n  emailSubject: script.subject,\n  emailBody: script.body,\n  newTag: script.tag,\n  pillar: 'General'\n}];"
+      },
+      "id": "agnostic-scripts",
+      "name": "Industry Agnostic Scripts",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1250,
+        800
+      ],
+      "notes": "Master Brain - Generic founder 4-touch sequence"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineAll",
+        "options": {}
+      },
+      "id": "merge-all-scripts",
+      "name": "Merge All Scripts",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1500,
+        450
+      ],
+      "notes": "Combines all industry-specific scripts"
+    },
+    {
+      "parameters": {
+        "fromEmail": "={{ $env.SENDER_EMAIL }}",
+        "toEmail": "={{ $json.Email }}",
+        "subject": "={{ $json.emailSubject }}",
+        "text": "={{ $json.emailBody }}",
+        "options": {
+          "replyTo": "={{ $env.REPLY_TO_EMAIL }}"
+        }
+      },
+      "id": "send-email",
+      "name": "Send Outreach Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        1750,
+        400
+      ],
+      "notes": "Sends the personalized outreach email"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": null,
+          "values": [
+            {
+              "id": "e9a8c4dd-4e20-45cc-b2f7-69af91d75dbe",
+              "name": "Current Tag",
+              "value": "={{ $json.newTag }}",
+              "type": "string"
+            },
+            {
+              "id": "d1ccdc71-982b-4528-9944-8693a78996be",
+              "name": "Last Contact",
+              "value": "={{ new Date().toISOString().split('T')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "f49165d5-7060-47ec-bae9-b8a40914003f",
+              "name": "Outreach Status",
+              "value": "={{ $json.attemptNumber === 4 ? 'exit_sent' : 'email_' + $json.attemptNumber + '_sent' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "id": "update-sheet-status",
+      "name": "Update Lead Status",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2000,
+        400
+      ],
+      "notes": "Updates tag, last contact date, and outreach status in sheet"
+    },
+    {
+      "parameters": {
+        "resource": "contact",
+        "operation": "update",
+        "contactId": "={{ $json.hubspot_contact_id }}",
+        "updateFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "outreach_status",
+                "value": "={{ $json.attemptNumber === 4 ? 'exit_sent' : 'email_' + $json.attemptNumber + '_sent' }}",
+                "id": "10f531d3-dcd7-4850-8454-15bfeda61007"
+              },
+              {
+                "property": "current_tag",
+                "value": "={{ $json.newTag }}",
+                "id": "a3932a23-a8fd-4dad-a8a0-698fcf231b41"
+              },
+              {
+                "property": "last_outreach_date",
+                "value": "={{ new Date().toISOString() }}",
+                "id": "167fe845-81f2-4748-9c94-38a5cad8ac44"
+              },
+              {
+                "property": "outreach_attempt",
+                "value": "={{ $json.attemptNumber }}",
+                "id": "ee3ddfdb-9f9b-4dac-852e-969f1c5e7a08"
+              }
+            ]
+          }
+        }
+      },
+      "id": "update-hubspot",
+      "name": "Update HubSpot Contact",
+      "type": "n8n-nodes-base.hubspot",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        600
+      ],
+      "notes": "Updates HubSpot with outreach status",
+      "credentials": {
+        "hubspotApi": {
+          "id": "hubspot-api",
+          "name": "HubSpot API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "is-exit",
+              "leftValue": "={{ $json.attemptNumber }}",
+              "rightValue": "4",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-if-exit",
+      "name": "Check If Exit (Attempt 4)",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [
+        2250,
+        400
+      ],
+      "notes": "Identifies leads that received their final touch"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": null,
+          "values": [
+            {
+              "id": "d20c3247-4f52-4494-b7d2-72053b483d5f",
+              "name": "Audit Status",
+              "value": "Idle",
+              "type": "string"
+            },
+            {
+              "id": "22e69ba2-e2ee-4373-9f84-d9957ecb9297",
+              "name": "Status",
+              "value": "nurture",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "mark-system-idle",
+      "name": "Mark as SYSTEM_IDLE",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2500,
+        400
+      ],
+      "notes": "Moves lead to quarterly nurture after 4th touch"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $env.GOOGLE_SHEET_ID }}"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Outreach Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": null,
+          "values": [
+            {
+              "id": "835d0a1e-9558-4480-beee-648148d284bc",
+              "name": "Date",
+              "value": "={{ new Date().toISOString().split('T')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "927ad324-4fe2-41c4-8fe2-97025e952b32",
+              "name": "Business Name",
+              "value": "={{ $json['Business Name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "19802cf7-28b0-4db2-9304-232b2cf89d0e",
+              "name": "Email",
+              "value": "={{ $json.Email }}",
+              "type": "string"
+            },
+            {
+              "id": "7696e48c-c8e8-4496-832a-43b41d9cdecd",
+              "name": "Industry",
+              "value": "={{ $json.Industry }}",
+              "type": "string"
+            },
+            {
+              "id": "54f3045e-623e-4338-af1f-ea8796b43019",
+              "name": "Pillar",
+              "value": "={{ $json.pillar }}",
+              "type": "string"
+            },
+            {
+              "id": "bd98e6e6-372b-47f9-a6bb-7cc98c1436dc",
+              "name": "Attempt",
+              "value": "={{ $json.attemptNumber }}",
+              "type": "string"
+            },
+            {
+              "id": "0056e761-5e1f-4f7e-adc2-07b916e414ad",
+              "name": "Tag",
+              "value": "={{ $json.newTag }}",
+              "type": "string"
+            },
+            {
+              "id": "41e65207-8de6-4296-93f5-fd87a6803fc2",
+              "name": "Subject",
+              "value": "={{ $json.emailSubject }}",
+              "type": "string"
+            },
+            {
+              "id": "89679fed-486d-46e4-ad99-9d7b8d3ce811",
+              "name": "Status",
+              "value": "sent",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "log-outreach",
+      "name": "Log Outreach Activity",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2250,
+        600
+      ],
+      "notes": "Logs all outreach for tracking and reporting"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "summary",
+              "name": "outreach_summary",
+              "value": "=Outreach run complete. Sent {{ $input.all().length }} emails today.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-summary",
+      "name": "Set Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2750,
+        500
+      ],
+      "notes": "Summary of outreach run"
+    }
+  ],
+  "connections": {
+    "Daily Outreach Check (9 AM)": {
+      "main": [
+        [
+          {
+            "node": "Get All Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get All Leads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get All Leads": {
+      "main": [
+        [
+          {
+            "node": "Logic Gate: Check Timing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Logic Gate: Check Timing": {
+      "main": [
+        [
+          {
+            "node": "Filter Empty Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Empty Results": {
+      "main": [
+        [
+          {
+            "node": "Route by Industry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Industry": {
+      "main": [
+        [
+          {
+            "node": "Med Spa Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Realtor Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Law Firm Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HVAC Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Industry Agnostic Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Med Spa Scripts": {
+      "main": [
+        [
+          {
+            "node": "Merge All Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Realtor Scripts": {
+      "main": [
+        [
+          {
+            "node": "Merge All Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Law Firm Scripts": {
+      "main": [
+        [
+          {
+            "node": "Merge All Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HVAC Scripts": {
+      "main": [
+        [
+          {
+            "node": "Merge All Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Industry Agnostic Scripts": {
+      "main": [
+        [
+          {
+            "node": "Merge All Scripts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge All Scripts": {
+      "main": [
+        [
+          {
+            "node": "Send Outreach Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Outreach Email": {
+      "main": [
+        [
+          {
+            "node": "Update Lead Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update HubSpot Contact",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Outreach Activity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Lead Status": {
+      "main": [
+        [
+          {
+            "node": "Check If Exit (Attempt 4)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Exit (Attempt 4)": {
+      "main": [
+        [
+          {
+            "node": "Mark as SYSTEM_IDLE",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as SYSTEM_IDLE": {
+      "main": [
+        [
+          {
+            "node": "Set Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Outreach Activity": {
+      "main": [
+        [
+          {
+            "node": "Set Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "pinData": {},
+  "tags": [
+    {
+      "name": "LNL Cold Outreach",
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    }
+  ]
+}
