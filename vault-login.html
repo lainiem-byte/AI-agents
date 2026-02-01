@@ -1,441 +1,504 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LNL Vault - Access Portal</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LNL Vault // Access Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --charcoal: #1a1a1a;
+            --charcoal-light: #2d2d2d;
+            --off-white: #f5f5f3;
+            --gold: #c9a55c;
+            --gold-hover: #d4b36a;
+            --error: #e74c3c;
+            --success: #27ae60;
+            --text-muted: #888888;
+        }
 
-    body {
-      font-family: 'Georgia', serif;
-      background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #e8e8e8;
-      padding: 20px;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    .container {
-      width: 100%;
-      max-width: 500px;
-      background: #2a2a2a;
-      border: 2px solid #d4af37;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-      animation: fadeIn 0.6s ease-out;
-    }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--charcoal);
+            color: var(--off-white);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+        .vault-container {
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+        }
 
-    .header {
-      background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-      padding: 50px 30px;
-      text-align: center;
-      border-bottom: 2px solid #d4af37;
-    }
+        /* Logo & Branding */
+        .logo-section {
+            margin-bottom: 48px;
+        }
 
-    .logo {
-      font-size: 32px;
-      font-weight: bold;
-      color: #d4af37;
-      letter-spacing: 4px;
-      margin-bottom: 10px;
-    }
+        .logo {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 8px;
+        }
 
-    .tagline {
-      color: #888;
-      font-size: 14px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
+        .vault-title {
+            font-size: 32px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
 
-    .content {
-      padding: 50px 40px;
-    }
+        .vault-subtitle {
+            font-size: 13px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
 
-    .title {
-      font-size: 24px;
-      color: #d4af37;
-      margin-bottom: 10px;
-      text-align: center;
-    }
+        /* Access Key Input */
+        .access-form {
+            background: var(--charcoal-light);
+            border: 1px solid #3d3d3d;
+            border-radius: 8px;
+            padding: 40px 32px;
+            margin-bottom: 24px;
+        }
 
-    .subtitle {
-      color: #888;
-      text-align: center;
-      margin-bottom: 40px;
-      font-size: 14px;
-    }
+        .form-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-align: left;
+        }
 
-    .form-group {
-      margin-bottom: 30px;
-    }
+        .key-input-wrapper {
+            position: relative;
+            margin-bottom: 24px;
+        }
 
-    .form-label {
-      display: block;
-      color: #888;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 10px;
-    }
+        .key-input {
+            width: 100%;
+            padding: 16px 20px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 18px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            background: var(--charcoal);
+            border: 2px solid #3d3d3d;
+            border-radius: 6px;
+            color: var(--off-white);
+            text-align: center;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
 
-    .form-input {
-      width: 100%;
-      padding: 15px;
-      background: #1a1a1a;
-      border: 1px solid #444;
-      color: #e8e8e8;
-      font-size: 18px;
-      font-family: 'Courier New', monospace;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      transition: all 0.3s ease;
-    }
+        .key-input:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(201, 165, 92, 0.1);
+        }
 
-    .form-input:focus {
-      outline: none;
-      border-color: #d4af37;
-      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
-    }
+        .key-input::placeholder {
+            color: #555;
+            letter-spacing: 2px;
+        }
 
-    .form-input::placeholder {
-      color: #555;
-      text-transform: none;
-      letter-spacing: normal;
-    }
+        .key-input.error {
+            border-color: var(--error);
+            animation: shake 0.5s ease;
+        }
 
-    .btn {
-      width: 100%;
-      padding: 18px;
-      background: #d4af37;
-      border: none;
-      color: #1a1a1a;
-      font-size: 16px;
-      font-weight: bold;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-family: 'Georgia', serif;
-    }
+        .key-input.success {
+            border-color: var(--success);
+        }
 
-    .btn:hover {
-      background: #c9a532;
-      box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
-    }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
 
-    .btn:active {
-      transform: translateY(2px);
-    }
+        /* Submit Button */
+        .submit-btn {
+            width: 100%;
+            padding: 16px 32px;
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: var(--gold);
+            color: var(--charcoal);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
 
-    .btn:disabled {
-      background: #555;
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
+        .submit-btn:hover {
+            background: var(--gold-hover);
+            transform: translateY(-1px);
+        }
 
-    .error-message {
-      background: #330000;
-      border-left: 4px solid #cc3300;
-      padding: 15px;
-      margin-top: 20px;
-      display: none;
-      animation: slideIn 0.3s ease-out;
-    }
+        .submit-btn:active {
+            transform: translateY(0);
+        }
 
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
 
-    .error-message.show {
-      display: block;
-    }
+        .submit-btn.loading {
+            position: relative;
+            color: transparent;
+        }
 
-    .error-message p {
-      margin: 0;
-      color: #ffcccc;
-      font-size: 14px;
-    }
+        .submit-btn.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 20px;
+            height: 20px;
+            margin: -10px 0 0 -10px;
+            border: 2px solid var(--charcoal);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
 
-    .success-message {
-      background: #003300;
-      border-left: 4px solid #00cc00;
-      padding: 15px;
-      margin-top: 20px;
-      display: none;
-      animation: slideIn 0.3s ease-out;
-    }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
 
-    .success-message.show {
-      display: block;
-    }
+        /* Status Messages */
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-top: 16px;
+            display: none;
+        }
 
-    .success-message p {
-      margin: 0;
-      color: #ccffcc;
-      font-size: 14px;
-    }
+        .status-message.error {
+            display: block;
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            color: #e74c3c;
+        }
 
-    .loading {
-      text-align: center;
-      margin-top: 20px;
-      display: none;
-    }
+        .status-message.success {
+            display: block;
+            background: rgba(39, 174, 96, 0.1);
+            border: 1px solid rgba(39, 174, 96, 0.3);
+            color: #27ae60;
+        }
 
-    .loading.show {
-      display: block;
-    }
+        /* Initialization Animation */
+        .init-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--charcoal);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
 
-    .loading-spinner {
-      display: inline-block;
-      width: 40px;
-      height: 40px;
-      border: 3px solid rgba(212, 175, 55, 0.1);
-      border-radius: 50%;
-      border-top-color: #d4af37;
-      animation: spin 1s ease-in-out infinite;
-    }
+        .init-overlay.active {
+            display: flex;
+            animation: fadeIn 0.5s ease;
+        }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
 
-    .loading-text {
-      margin-top: 15px;
-      color: #888;
-      font-size: 14px;
-    }
+        .init-logo {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 48px;
+        }
 
-    .footer {
-      padding: 30px;
-      text-align: center;
-      font-size: 11px;
-      color: #666;
-      border-top: 1px solid #333;
-    }
+        .init-text {
+            font-size: 13px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 32px;
+        }
 
-    .footer a {
-      color: #d4af37;
-      text-decoration: none;
-    }
+        .init-progress {
+            width: 200px;
+            height: 2px;
+            background: #3d3d3d;
+            border-radius: 1px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
 
-    .footer a:hover {
-      text-decoration: underline;
-    }
+        .init-progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--gold);
+            transition: width 0.3s ease;
+        }
 
-    .key-format-hint {
-      font-size: 12px;
-      color: #666;
-      margin-top: 8px;
-      font-family: 'Courier New', monospace;
-    }
+        .init-status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
 
-    /* Initialization animation for successful login */
-    @keyframes initialize {
-      0% { opacity: 0; transform: scale(0.9); }
-      50% { opacity: 1; transform: scale(1.05); }
-      100% { opacity: 1; transform: scale(1); }
-    }
+        /* Footer */
+        .footer {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+        }
 
-    .initializing {
-      animation: initialize 0.6s ease-out;
-    }
-  </style>
+        .footer a {
+            color: var(--gold);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Contact Link */
+        .contact-link {
+            margin-top: 24px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .contact-link a {
+            color: var(--off-white);
+            text-decoration: none;
+            border-bottom: 1px solid #555;
+            transition: border-color 0.3s ease;
+        }
+
+        .contact-link a:hover {
+            border-color: var(--gold);
+        }
+
+        /* Responsive */
+        @media (max-width: 520px) {
+            .access-form {
+                padding: 32px 24px;
+            }
+
+            .vault-title {
+                font-size: 26px;
+            }
+
+            .key-input {
+                font-size: 16px;
+                padding: 14px 16px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">THE LNL GROUP</div>
-      <div class="tagline">Logic + Luxury</div>
-    </div>
-
-    <div class="content">
-      <h1 class="title">Vault Access</h1>
-      <p class="subtitle">Enter your unique access key to initialize your workspace</p>
-
-      <form id="vaultForm">
-        <div class="form-group">
-          <label class="form-label" for="vaultKey">Access Key</label>
-          <input 
-            type="text" 
-            id="vaultKey" 
-            class="form-input" 
-            placeholder="LNL-XXX-XXXXX"
-            maxlength="14"
-            required
-            autocomplete="off"
-          >
-          <div class="key-format-hint">Format: LNL-XXX-XXXXX</div>
+    <div class="vault-container">
+        <div class="logo-section">
+            <div class="logo">LNL Group</div>
+            <h1 class="vault-title">The Vault</h1>
+            <p class="vault-subtitle">Client Access Portal</p>
         </div>
 
-        <button type="submit" class="btn" id="submitBtn">
-          Initialize Vault
-        </button>
-      </form>
+        <form class="access-form" id="accessForm">
+            <label class="form-label" for="accessKey">Enter Access Key</label>
+            <div class="key-input-wrapper">
+                <input 
+                    type="text" 
+                    id="accessKey" 
+                    class="key-input" 
+                    placeholder="LNL-XXX-XXXXX"
+                    maxlength="14"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+            </div>
+            <button type="submit" class="submit-btn" id="submitBtn">
+                Initialize Vault
+            </button>
+            <div class="status-message" id="statusMessage"></div>
+        </form>
 
-      <div class="loading" id="loading">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Authenticating...</div>
-      </div>
+        <p class="contact-link">
+            Don't have an access key? <a href="https://lnlgroup.com/contact">Contact the Architect</a>
+        </p>
 
-      <div class="error-message" id="errorMessage">
-        <p id="errorText"></p>
-      </div>
-
-      <div class="success-message" id="successMessage">
-        <p id="successText"></p>
-      </div>
+        <footer class="footer">
+            <p>© 2026 <a href="https://lnlgroup.com">LNL Group</a> // Growth Architecture</p>
+        </footer>
     </div>
 
-    <div class="footer">
-      <p>Your vault is secured by The Mechanical Heart<br>
-      <a href="https://lnlgroup.com">LNL Group</a> | Growth Architecture</p>
+    <!-- Initialization Overlay -->
+    <div class="init-overlay" id="initOverlay">
+        <div class="init-logo">LNL Group</div>
+        <div class="init-text">Initializing Vault</div>
+        <div class="init-progress">
+            <div class="init-progress-bar" id="progressBar"></div>
+        </div>
+        <div class="init-status" id="initStatus">Verifying access credentials...</div>
     </div>
-  </div>
 
-  <script>
-    // Auto-format vault key as user types
-    const vaultKeyInput = document.getElementById('vaultKey');
-    
-    vaultKeyInput.addEventListener('input', function(e) {
-      let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-      
-      // Format: LNL-XXX-XXXXX
-      if (value.length > 3 && !value.startsWith('LNL')) {
-        value = 'LNL' + value.substring(3);
-      }
-      
-      let formatted = '';
-      if (value.length > 0) formatted += value.substring(0, 3);
-      if (value.length > 3) formatted += '-' + value.substring(3, 6);
-      if (value.length > 6) formatted += '-' + value.substring(6, 11);
-      
-      e.target.value = formatted;
-    });
+    <script>
+        // Configuration - Update this with your n8n webhook URL
+        const WEBHOOK_URL = 'YOUR_N8N_WEBHOOK_URL_HERE';
+        
+        // DOM Elements
+        const form = document.getElementById('accessForm');
+        const keyInput = document.getElementById('accessKey');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const initOverlay = document.getElementById('initOverlay');
+        const progressBar = document.getElementById('progressBar');
+        const initStatus = document.getElementById('initStatus');
 
-    // Handle form submission
-    document.getElementById('vaultForm').addEventListener('submit', async function(e) {
-      e.preventDefault();
-      
-      const vaultKey = vaultKeyInput.value.trim();
-      const submitBtn = document.getElementById('submitBtn');
-      const loading = document.getElementById('loading');
-      const errorMessage = document.getElementById('errorMessage');
-      const successMessage = document.getElementById('successMessage');
-      const errorText = document.getElementById('errorText');
-      const successText = document.getElementById('successText');
-      
-      // Hide previous messages
-      errorMessage.classList.remove('show');
-      successMessage.classList.remove('show');
-      
-      // Validate key format
-      const keyPattern = /^LNL-[A-Z0-9]{3}-[A-Z0-9]{5}$/;
-      if (!keyPattern.test(vaultKey)) {
-        errorText.textContent = 'Invalid key format. Please enter a valid vault key (LNL-XXX-XXXXX).';
-        errorMessage.classList.add('show');
-        return;
-      }
-      
-      // Show loading state
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Authenticating...';
-      loading.classList.add('show');
-      
-      try {
-        // ==================================================================
-        // IMPORTANT: UPDATE THIS URL WITH YOUR N8N WEBHOOK URL
-        // ==================================================================
-        // After importing the Concierge Agent workflow into n8n:
-        // 1. Find the "Webhook: Vault Login Attempt" node
-        // 2. Copy the Production URL (looks like: https://your-n8n.app.n8n.cloud/webhook/lnl-vault-login)
-        // 3. Replace the URL below with your actual webhook URL
-        // ==================================================================
-        
-        const response = await fetch('https://YOUR-N8N-INSTANCE.app.n8n.cloud/webhook/lnl-vault-login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            vault_key: vaultKey
-          })
-        });
-        
-        const data = await response.json();
-        
-        // Hide loading
-        loading.classList.remove('show');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Initialize Vault';
-        
-        if (data.auth === true) {
-          // Success! Show success message
-          successText.innerHTML = `
-            <strong>Access Granted: ${data.client_name}</strong><br>
-            Initializing your workspace...
-          `;
-          successMessage.classList.add('show');
-          document.querySelector('.container').classList.add('initializing');
-          
-          // Redirect to Notion vault after 2 seconds
-          setTimeout(() => {
-            if (data.notion_url) {
-              window.location.href = data.notion_url;
-            } else {
-              // Fallback if no notion_url returned
-              successText.innerHTML += '<br><br>Your vault is ready. Please check your email for the direct link.';
+        // Format input as user types (LNL-XXX-XXXXX)
+        keyInput.addEventListener('input', (e) => {
+            let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            
+            if (value.length > 3) {
+                value = value.slice(0, 3) + '-' + value.slice(3);
             }
-          }, 2000);
-          
-        } else {
-          // Authentication failed
-          errorText.textContent = 'Invalid or expired vault key. Please check your key and try again.';
-          errorMessage.classList.add('show');
-        }
-        
-      } catch (error) {
-        console.error('Vault authentication error:', error);
-        
-        // Hide loading
-        loading.classList.remove('show');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Initialize Vault';
-        
-        // Show error message
-        errorText.textContent = 'Unable to connect to the vault server. Please try again in a moment.';
-        errorMessage.classList.add('show');
-      }
-    });
+            if (value.length > 7) {
+                value = value.slice(0, 7) + '-' + value.slice(7);
+            }
+            
+            e.target.value = value.slice(0, 14);
+            
+            // Remove error state on input
+            keyInput.classList.remove('error');
+            statusMessage.className = 'status-message';
+            statusMessage.textContent = '';
+        });
 
-    // Clear error message when user starts typing
-    vaultKeyInput.addEventListener('focus', function() {
-      document.getElementById('errorMessage').classList.remove('show');
-      document.getElementById('successMessage').classList.remove('show');
-    });
-  </script>
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const key = keyInput.value.trim();
+            
+            // Validate format
+            if (!key.match(/^LNL-[A-Z0-9]{3}-[A-Z0-9]{5}$/)) {
+                showError('Invalid key format. Expected: LNL-XXX-XXXXX');
+                return;
+            }
+
+            // Start loading
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        access_key: key,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.auth === true) {
+                    // Success - show initialization
+                    keyInput.classList.add('success');
+                    showInitialization(data);
+                } else {
+                    // Auth failed
+                    showError(data.message || 'Access denied. Invalid or expired key.');
+                }
+            } catch (error) {
+                showError('System error. Please contact the Architect.');
+                console.error('Auth error:', error);
+            } finally {
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+            }
+        });
+
+        function showError(message) {
+            keyInput.classList.add('error');
+            statusMessage.className = 'status-message error';
+            statusMessage.textContent = message;
+        }
+
+        function showInitialization(clientData) {
+            initOverlay.classList.add('active');
+            
+            const stages = [
+                { progress: 20, status: 'Verifying access credentials...' },
+                { progress: 40, status: 'Loading client profile...' },
+                { progress: 60, status: `Connecting to ${clientData.market || 'market'} architecture...` },
+                { progress: 80, status: 'Preparing vault environment...' },
+                { progress: 100, status: 'Initialization complete.' }
+            ];
+
+            let currentStage = 0;
+
+            const interval = setInterval(() => {
+                if (currentStage < stages.length) {
+                    progressBar.style.width = stages[currentStage].progress + '%';
+                    initStatus.textContent = stages[currentStage].status;
+                    currentStage++;
+                } else {
+                    clearInterval(interval);
+                    // Redirect to client's Notion page or dashboard
+                    setTimeout(() => {
+                        if (clientData.vault_url) {
+                            window.location.href = clientData.vault_url;
+                        } else {
+                            // Fallback - show success message
+                            initStatus.textContent = 'Redirecting to your vault...';
+                        }
+                    }, 500);
+                }
+            }, 600);
+        }
+
+        // Focus input on load
+        window.addEventListener('load', () => {
+            keyInput.focus();
+        });
+    </script>
 </body>
 </html>
