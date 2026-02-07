@@ -20,7 +20,11 @@
       "Bash(bd ready:*)",
       "Bash(bd update:*)",
       "Bash(bd show:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(git push:*)",
+      "Bash(bd sync:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: Cold Outreach Agent - resolve data loss, wiring, and phantom node bugs\n\n- Added Preserve Lead Data passthrough node to snapshot lead data before SMTP\n- Fixed all downstream expressions to use $\\(''Preserve Lead Data''\\).item.json\n- Fixed Check If Exit wiring \\(output 0 → IDLE, output 1 → Summary\\)  \n- Removed disabled HubSpot/Log nodes causing 190 double-count\n- Workflow now correctly updates sheet with real Email, Tag, Attempt data\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
