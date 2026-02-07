@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__n8n__tools_documentation",
+      "mcp__n8n__n8n_list_workflows",
+      "mcp__n8n__n8n_executions",
+      "mcp__n8n__n8n_health_check",
+      "mcp__n8n__n8n_get_workflow",
+      "Bash(ls:*)",
+      "mcp__n8n__get_node",
+      "mcp__n8n__n8n_update_partial_workflow",
+      "mcp__n8n__n8n_validate_workflow",
+      "mcp__n8n__n8n_autofix_workflow",
+      "mcp__n8n__n8n_test_workflow",
+      "Bash(bd list:*)",
+      "Bash(bd stats:*)",
+      "Bash(bd create:*)",
+      "Bash(bd close:*)",
+      "WebFetch(domain:docs.google.com)",
+      "Bash(bd ready:*)",
+      "Bash(bd update:*)",
+      "Bash(bd show:*)",
+      "Bash(python:*)"
+    ]
+  }
+}

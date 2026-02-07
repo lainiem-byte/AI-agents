@@ -1,0 +1,6 @@
+.env
+client_secret*.json
+*.credentials.json
+check_exec*.py
+extract_nodes.py
+vault-login*.html
