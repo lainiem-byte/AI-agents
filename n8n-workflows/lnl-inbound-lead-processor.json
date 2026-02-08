@@ -1,0 +1,374 @@
+{
+  "name": "LNL Inbound Lead Processor",
+  "nodes": [
+    {
+      "id": "wh01",
+      "name": "Typebot Lead Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 300],
+      "webhookId": "typebot-lead-capture",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "typebot-lead-capture",
+        "responseMode": "onReceived"
+      },
+      "notes": "INGESTION LAYER: Receives POST from Typebot with fields: customer_name, customer_email, source_path, creatives_q1_revenue, creatives_q2_challenge, creatives_q3_timeline, creatives_q4_authority, automations_q1_revenue, automations_q2_bottleneck, automations_q3_timeline, automations_q4_goals, timestamp."
+    },
+    {
+      "id": "gs01",
+      "name": "Read Lead Pipeline",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [250, 300],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit#gid=0"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "DEDUP CHECK (Step 1): Reads all existing rows from Lead Pipeline tab (gid=0) in the Master Brain Sheet to check for duplicate emails before processing the new lead."
+    },
+    {
+      "id": "cd01",
+      "name": "Dedup Check",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Dedup Check: Compare incoming email against existing Lead Pipeline rows\nconst webhookData = $('Typebot Lead Webhook').first().json.body;\nconst incomingEmail = (webhookData.customer_email || '').toLowerCase().trim();\n\n// Get all existing rows from the sheet read\nconst existingRows = $input.all();\n\n// Check if this email already exists in the pipeline\nlet isDuplicate = false;\nfor (const row of existingRows) {\n  const existingEmail = (row.json.Email || row.json.email || '').toLowerCase().trim();\n  if (existingEmail && existingEmail === incomingEmail) {\n    isDuplicate = true;\n    break;\n  }\n}\n\nif (isDuplicate) {\n  // Stop execution - lead already exists\n  return [];\n}\n\n// Pass through the webhook data for scoring\nreturn [{\n  json: {\n    ...webhookData,\n    isDuplicate: false\n  }\n}];"
+      },
+      "notes": "INTELLIGENCE LAYER: Compares incoming customer_email against all existing Email values in Lead Pipeline. Returns empty array (stops flow) if duplicate found. Passes webhook data forward if new lead."
+    },
+    {
+      "id": "cd02",
+      "name": "Score Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [750, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Lead Scoring Engine: Calculate Audit Score (0-10) and classify lead\nconst lead = $input.first().json;\n\nlet auditScore = 0;\nlet scoreBreakdown = [];\n\n// --- Revenue info: +2 ---\nconst revenueFields = [lead.creatives_q1_revenue, lead.automations_q1_revenue];\nconst hasRevenue = revenueFields.some(v => v && v.toString().trim() !== '');\nif (hasRevenue) {\n  auditScore += 2;\n  scoreBreakdown.push('Revenue info provided: +2');\n}\n\n// --- Revenue > $500K bonus: +1 ---\nconst revenueText = (lead.creatives_q1_revenue || '') + ' ' + (lead.automations_q1_revenue || '');\nconst revenueNumbers = revenueText.match(/[0-9,]+/g);\nif (revenueNumbers) {\n  const maxRevenue = Math.max(...revenueNumbers.map(n => parseInt(n.replace(/,/g, ''), 10)));\n  if (maxRevenue > 500000) {\n    auditScore += 1;\n    scoreBreakdown.push('Revenue > $500K: +1');\n  }\n}\n\n// --- Challenge/bottleneck described: +2 ---\nconst challengeFields = [lead.creatives_q2_challenge, lead.automations_q2_bottleneck];\nconst hasChallenge = challengeFields.some(v => v && v.toString().trim().length > 0);\nif (hasChallenge) {\n  auditScore += 2;\n  scoreBreakdown.push('Challenge/bottleneck described: +2');\n}\n\n// --- Urgent timeline: +2 ---\nconst timelineFields = [lead.creatives_q3_timeline, lead.automations_q3_timeline];\nconst timelineText = timelineFields.filter(Boolean).join(' ').toLowerCase();\nconst urgentKeywords = ['now', 'asap', 'immediately', 'this month'];\nconst isUrgent = urgentKeywords.some(kw => timelineText.includes(kw));\nif (isUrgent) {\n  auditScore += 2;\n  scoreBreakdown.push('Urgent timeline: +2');\n}\n\n// --- Q4 response (authority/goals): +2 ---\nconst q4Fields = [lead.creatives_q4_authority, lead.automations_q4_goals];\nconst hasQ4 = q4Fields.some(v => v && v.toString().trim().length > 0);\nif (hasQ4) {\n  auditScore += 2;\n  scoreBreakdown.push('Q4 response provided: +2');\n}\n\n// --- Full questionnaire (4+ answers): +2 ---\nconst allAnswers = [\n  lead.creatives_q1_revenue, lead.creatives_q2_challenge,\n  lead.creatives_q3_timeline, lead.creatives_q4_authority,\n  lead.automations_q1_revenue, lead.automations_q2_bottleneck,\n  lead.automations_q3_timeline, lead.automations_q4_goals\n];\nconst answerCount = allAnswers.filter(v => v && v.toString().trim() !== '').length;\nif (answerCount >= 4) {\n  auditScore += 2;\n  scoreBreakdown.push('Full questionnaire (4+ answers): +2');\n}\n\n// Cap score at 10\nauditScore = Math.min(auditScore, 10);\n\n// --- Industry inference from source_path ---\nconst sourcePath = (lead.source_path || '').toLowerCase();\nlet industry = 'General';\nif (sourcePath.includes('creatives_questionnaire') || sourcePath.includes('creatives-questionnaire')) {\n  industry = 'Creative Services';\n} else if (sourcePath.includes('automations_questionnaire') || sourcePath.includes('automations-questionnaire')) {\n  industry = 'Business Services';\n}\n\n// --- Build notes from questionnaire responses ---\nconst notesParts = [];\nif (lead.creatives_q1_revenue) notesParts.push('Revenue (Creatives): ' + lead.creatives_q1_revenue);\nif (lead.creatives_q2_challenge) notesParts.push('Challenge (Creatives): ' + lead.creatives_q2_challenge);\nif (lead.creatives_q3_timeline) notesParts.push('Timeline (Creatives): ' + lead.creatives_q3_timeline);\nif (lead.creatives_q4_authority) notesParts.push('Authority (Creatives): ' + lead.creatives_q4_authority);\nif (lead.automations_q1_revenue) notesParts.push('Revenue (Automations): ' + lead.automations_q1_revenue);\nif (lead.automations_q2_bottleneck) notesParts.push('Bottleneck (Automations): ' + lead.automations_q2_bottleneck);\nif (lead.automations_q3_timeline) notesParts.push('Timeline (Automations): ' + lead.automations_q3_timeline);\nif (lead.automations_q4_goals) notesParts.push('Goals (Automations): ' + lead.automations_q4_goals);\n\n// --- Generate Lead ID ---\nconst now = new Date();\nconst leadId = 'LEAD-' + now.getFullYear() +\n  String(now.getMonth() + 1).padStart(2, '0') +\n  String(now.getDate()).padStart(2, '0') + '-' +\n  String(now.getHours()).padStart(2, '0') +\n  String(now.getMinutes()).padStart(2, '0') +\n  String(now.getSeconds()).padStart(2, '0') + '-' +\n  Math.random().toString(36).substring(2, 6).toUpperCase();\n\nreturn [{\n  json: {\n    lead_id: leadId,\n    timestamp: now.toISOString(),\n    customer_name: lead.customer_name || '',\n    customer_email: lead.customer_email || '',\n    market: 'Remote',\n    industry: industry,\n    lead_source: 'Website Typebot',\n    audit_score: auditScore,\n    status: 'NEW',\n    notes: notesParts.join(' | '),\n    score_breakdown: scoreBreakdown.join('; '),\n    source_path: lead.source_path || '',\n    // Pass through raw questionnaire data for emails\n    creatives_q1_revenue: lead.creatives_q1_revenue || '',\n    creatives_q2_challenge: lead.creatives_q2_challenge || '',\n    creatives_q3_timeline: lead.creatives_q3_timeline || '',\n    creatives_q4_authority: lead.creatives_q4_authority || '',\n    automations_q1_revenue: lead.automations_q1_revenue || '',\n    automations_q2_bottleneck: lead.automations_q2_bottleneck || '',\n    automations_q3_timeline: lead.automations_q3_timeline || '',\n    automations_q4_goals: lead.automations_q4_goals || ''\n  }\n}];"
+      },
+      "notes": "INTELLIGENCE LAYER: Calculates Audit Score (0-10) based on: revenue info (+2), revenue >$500K (+1 bonus), challenge/bottleneck (+2), urgent timeline (+2), Q4 response (+2), 4+ answers (+2). Also infers Industry from source_path and generates unique Lead ID."
+    },
+    {
+      "id": "gs02",
+      "name": "Write to Lead Pipeline",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1000, 300],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit#gid=0"
+        },
+        "columns": {
+          "value": {
+            "Lead ID": "={{ $json.lead_id }}",
+            "Timestamp": "={{ $json.timestamp }}",
+            "Full Name": "={{ $json.customer_name }}",
+            "Business Name": "",
+            "Email": "={{ $json.customer_email }}",
+            "Market": "={{ $json.market }}",
+            "Industry": "={{ $json.industry }}",
+            "Lead Source": "={{ $json.lead_source }}",
+            "Audit Score": "={{ $json.audit_score }}",
+            "Status": "={{ $json.status }}",
+            "Notes": "={{ $json.notes }}"
+          },
+          "schema": [
+            {"id": "Lead ID", "type": "string", "display": true, "required": false, "displayName": "Lead ID", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Timestamp", "type": "string", "display": true, "required": false, "displayName": "Timestamp", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Full Name", "type": "string", "display": true, "required": false, "displayName": "Full Name", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Business Name", "type": "string", "display": true, "required": false, "displayName": "Business Name", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Email", "type": "string", "display": true, "required": false, "displayName": "Email", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Market", "type": "string", "display": true, "required": false, "displayName": "Market", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Industry", "type": "string", "display": true, "required": false, "displayName": "Industry", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Lead Source", "type": "string", "display": true, "required": false, "displayName": "Lead Source", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Audit Score", "type": "string", "display": true, "required": false, "displayName": "Audit Score", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Status", "type": "string", "display": true, "required": false, "displayName": "Status", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Notes", "type": "string", "display": true, "required": false, "displayName": "Notes", "defaultMatch": false, "canBeUsedToMatch": true}
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "EXECUTION LAYER: Appends new lead row to Lead Pipeline tab with columns: Lead ID, Timestamp, Full Name, Business Name (empty), Email, Market (Remote), Industry (inferred), Lead Source (Website Typebot), Audit Score, Status (NEW), Notes (concatenated questionnaire responses)."
+    },
+    {
+      "id": "if01",
+      "name": "IF VIP Lead",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1250, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": ""
+          },
+          "conditions": [
+            {
+              "id": "vip-score-check",
+              "leftValue": "={{ $json.audit_score }}",
+              "rightValue": 8.5,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "notes": "INTELLIGENCE LAYER: Routes leads with Audit Score > 8.5 to VIP path (true/output 0). All leads also continue to confirmation email and internal notification via separate connections from Write to Lead Pipeline."
+    },
+    {
+      "id": "gs03",
+      "name": "Write VIP Escalation",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1500, 100],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "VIP Escalations"
+        },
+        "columns": {
+          "value": {
+            "Lead ID": "={{ $json.lead_id }}",
+            "Timestamp": "={{ $json.timestamp }}",
+            "Full Name": "={{ $json.customer_name }}",
+            "Email": "={{ $json.customer_email }}",
+            "Audit Score": "={{ $json.audit_score }}",
+            "Industry": "={{ $json.industry }}",
+            "Notes": "={{ $json.notes }}",
+            "Score Breakdown": "={{ $json.score_breakdown }}"
+          },
+          "schema": [
+            {"id": "Lead ID", "type": "string", "display": true, "required": false, "displayName": "Lead ID", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Timestamp", "type": "string", "display": true, "required": false, "displayName": "Timestamp", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Full Name", "type": "string", "display": true, "required": false, "displayName": "Full Name", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Email", "type": "string", "display": true, "required": false, "displayName": "Email", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Audit Score", "type": "string", "display": true, "required": false, "displayName": "Audit Score", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Industry", "type": "string", "display": true, "required": false, "displayName": "Industry", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Notes", "type": "string", "display": true, "required": false, "displayName": "Notes", "defaultMatch": false, "canBeUsedToMatch": true},
+            {"id": "Score Breakdown", "type": "string", "display": true, "required": false, "displayName": "Score Breakdown", "defaultMatch": false, "canBeUsedToMatch": true}
+          ],
+          "mappingMode": "defineBelow",
+          "matchingColumns": []
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "EXECUTION LAYER (VIP): Appends high-scoring lead (>8.5) to VIP Escalations tab in the Master Brain Sheet for priority follow-up and tracking."
+    },
+    {
+      "id": "em01",
+      "name": "Send VIP Alert Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1750, 100],
+      "parameters": {
+        "fromEmail": "hello@lnlgroups.com",
+        "toEmail": "lainiem@lnlcreatives.com",
+        "subject": "=VIP LEAD ALERT: {{ $json.customer_name }} - Score {{ $json.audit_score }}/10",
+        "emailFormat": "html",
+        "html": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n<h2 style=\"color: #d4380d;\">VIP Lead Alert</h2>\n<p><strong>This lead scored above 8.5 and requires immediate attention.</strong></p>\n<hr style=\"border: 1px solid #eee;\">\n<table style=\"border-collapse: collapse; width: 100%;\">\n<tr><td style=\"padding: 8px; font-weight: bold; width: 140px;\">Lead ID:</td><td style=\"padding: 8px;\">{{ $json.lead_id }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Name:</td><td style=\"padding: 8px;\">{{ $json.customer_name }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Email:</td><td style=\"padding: 8px;\">{{ $json.customer_email }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Audit Score:</td><td style=\"padding: 8px; color: #d4380d; font-weight: bold;\">{{ $json.audit_score }}/10</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Industry:</td><td style=\"padding: 8px;\">{{ $json.industry }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Score Breakdown:</td><td style=\"padding: 8px;\">{{ $json.score_breakdown }}</td></tr>\n</table>\n<hr style=\"border: 1px solid #eee;\">\n<h3>Questionnaire Responses</h3>\n<p>{{ $json.notes }}</p>\n<hr style=\"border: 1px solid #eee;\">\n<p><em>Action Required: Reach out within 2 hours for VIP leads.</em></p>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "bdxKTxBstG9tYJkB",
+          "name": "SMTP account"
+        }
+      },
+      "notes": "EXECUTION LAYER (VIP): Sends urgent VIP alert email to lainiem@lnlcreatives.com for leads scoring above 8.5. Includes full lead details and score breakdown. 2-hour response SLA."
+    },
+    {
+      "id": "em02",
+      "name": "Send Confirmation Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1500, 500],
+      "parameters": {
+        "fromEmail": "hello@lnlgroups.com",
+        "toEmail": "={{ $json.customer_email }}",
+        "subject": "LNL Group - We received your inquiry",
+        "emailFormat": "html",
+        "html": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n<h2 style=\"color: #333;\">Thank you, {{ $json.customer_name }}!</h2>\n<p>We have received your inquiry and appreciate you taking the time to share details about your business.</p>\n<p>A member of our team will review your responses and <strong>reach out to you within 24 hours</strong> to discuss how we can help.</p>\n<p>In the meantime, feel free to book a time that works best for you:</p>\n<p style=\"text-align: center; margin: 24px 0;\">\n<a href=\"https://calendly.com/lnlgroup\" style=\"display: inline-block; background-color: #ff6d5a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">Book a Discovery Call</a>\n</p>\n<p>We look forward to connecting with you.</p>\n<br>\n<p>Best regards,<br><strong>LNL Group</strong><br>hello@lnlgroups.com</p>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "bdxKTxBstG9tYJkB",
+          "name": "SMTP account"
+        }
+      },
+      "notes": "EXECUTION LAYER: Sends professional confirmation email to the lead's email address. Thanks them, sets 24-hour response expectation, includes booking link placeholder (update Calendly URL before going live)."
+    },
+    {
+      "id": "em03",
+      "name": "Send Internal Notification",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1750, 500],
+      "parameters": {
+        "fromEmail": "hello@lnlgroups.com",
+        "toEmail": "lainiem@lnlcreatives.com",
+        "subject": "=New Website Lead: {{ $json.customer_name }} - Score {{ $json.audit_score }}/10",
+        "emailFormat": "html",
+        "html": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n<h2>New Inbound Lead Received</h2>\n<hr style=\"border: 1px solid #eee;\">\n<table style=\"border-collapse: collapse; width: 100%;\">\n<tr><td style=\"padding: 8px; font-weight: bold; width: 140px;\">Lead ID:</td><td style=\"padding: 8px;\">{{ $json.lead_id }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Name:</td><td style=\"padding: 8px;\">{{ $json.customer_name }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Email:</td><td style=\"padding: 8px;\">{{ $json.customer_email }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Source:</td><td style=\"padding: 8px;\">Website Typebot ({{ $json.source_path }})</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Industry:</td><td style=\"padding: 8px;\">{{ $json.industry }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Market:</td><td style=\"padding: 8px;\">{{ $json.market }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Audit Score:</td><td style=\"padding: 8px; font-weight: bold;\">{{ $json.audit_score }}/10</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Score Breakdown:</td><td style=\"padding: 8px;\">{{ $json.score_breakdown }}</td></tr>\n<tr><td style=\"padding: 8px; font-weight: bold;\">Status:</td><td style=\"padding: 8px;\">{{ $json.status }}</td></tr>\n</table>\n<hr style=\"border: 1px solid #eee;\">\n<h3>Questionnaire Responses</h3>\n<table style=\"border-collapse: collapse; width: 100%;\">\n<tr><td style=\"padding: 6px; font-weight: bold;\">Creatives Q1 (Revenue):</td><td style=\"padding: 6px;\">{{ $json.creatives_q1_revenue }}</td></tr>\n<tr><td style=\"padding: 6px; font-weight: bold;\">Creatives Q2 (Challenge):</td><td style=\"padding: 6px;\">{{ $json.creatives_q2_challenge }}</td></tr>\n<tr><td style=\"padding: 6px; font-weight: bold;\">Creatives Q3 (Timeline):</td><td style=\"padding: 6px;\">{{ $json.creatives_q3_timeline }}</td></tr>\n<tr><td style=\"padding: 6px; font-weight: bold;\">Creatives Q4 (Authority):</td><td style=\"padding: 6px;\">{{ $json.creatives_q4_authority }}</td></tr>\n<tr><td style=\"padding: 6px; font-weight: bold;\">Automations Q1 (Revenue):</td><td style=\"padding: 6px;\">{{ $json.automations_q1_revenue }}</td></tr>\n<tr><td style=\"padding: 6px; font-weight: bold;\">Automations Q2 (Bottleneck):</td><td style=\"padding: 6px;\">{{ $json.automations_q2_bottleneck }}</td></tr>\n<tr><td style=\"padding: 6px; font-weight: bold;\">Automations Q3 (Timeline):</td><td style=\"padding: 6px;\">{{ $json.automations_q3_timeline }}</td></tr>\n<tr><td style=\"padding: 6px; font-weight: bold;\">Automations Q4 (Goals):</td><td style=\"padding: 6px;\">{{ $json.automations_q4_goals }}</td></tr>\n</table>\n<hr style=\"border: 1px solid #eee;\">\n<p><em>Lead has been logged to the Master Brain Sheet - Lead Pipeline tab.</em></p>\n</div>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "bdxKTxBstG9tYJkB",
+          "name": "SMTP account"
+        }
+      },
+      "notes": "EXECUTION LAYER: Sends internal notification to lainiem@lnlcreatives.com with full lead details, audit score, score breakdown, and all questionnaire responses."
+    }
+  ],
+  "connections": {
+    "Typebot Lead Webhook": {
+      "main": [
+        [
+          {
+            "node": "Read Lead Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Lead Pipeline": {
+      "main": [
+        [
+          {
+            "node": "Dedup Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Dedup Check": {
+      "main": [
+        [
+          {
+            "node": "Score Lead",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Score Lead": {
+      "main": [
+        [
+          {
+            "node": "Write to Lead Pipeline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write to Lead Pipeline": {
+      "main": [
+        [
+          {
+            "node": "IF VIP Lead",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Confirmation Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send Internal Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF VIP Lead": {
+      "main": [
+        [
+          {
+            "node": "Write VIP Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Write VIP Escalation": {
+      "main": [
+        [
+          {
+            "node": "Send VIP Alert Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
