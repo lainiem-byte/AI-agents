@@ -33,6 +33,7 @@
           "mode": "url",
           "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit#gid=0"
         },
+        "range": "A:Z",
         "options": {}
       },
       "credentials": {
@@ -240,7 +241,7 @@
         "toEmail": "={{ $json.customer_email }}",
         "subject": "LNL Group - We received your inquiry",
         "emailFormat": "html",
-        "html": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n<h2 style=\"color: #333;\">Thank you, {{ $json.customer_name }}!</h2>\n<p>We have received your inquiry and appreciate you taking the time to share details about your business.</p>\n<p>A member of our team will review your responses and <strong>reach out to you within 24 hours</strong> to discuss how we can help.</p>\n<p>In the meantime, feel free to book a time that works best for you:</p>\n<p style=\"text-align: center; margin: 24px 0;\">\n<a href=\"https://calendly.com/lnlgroup\" style=\"display: inline-block; background-color: #ff6d5a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">Book a Discovery Call</a>\n</p>\n<p>We look forward to connecting with you.</p>\n<br>\n<p>Best regards,<br><strong>LNL Group</strong><br>hello@lnlgroups.com</p>\n</div>",
+        "html": "=<div style=\"font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;\">\n<h2 style=\"color: #333;\">Thank you, {{ $json.customer_name }}!</h2>\n<p>We have received your inquiry and appreciate you taking the time to share details about your business.</p>\n<p>A member of our team will review your responses and <strong>reach out to you within 24 hours</strong> to discuss how we can help.</p>\n<p>In the meantime, feel free to book a time that works best for you:</p>\n<p style=\"text-align: center; margin: 24px 0;\">\n<a href=\"https://calendar.app.google/42s3yeczkFAvyGqF7\" style=\"display: inline-block; background-color: #ff6d5a; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;\">Book a Discovery Call</a>\n</p>\n<p>We look forward to connecting with you.</p>\n<br>\n<p>Best regards,<br><strong>LNL Group</strong><br>hello@lnlgroups.com</p>\n</div>",
         "options": {
           "appendAttribution": false
         }
@@ -251,7 +252,7 @@
           "name": "SMTP account"
         }
       },
-      "notes": "EXECUTION LAYER: Sends professional confirmation email to the lead's email address. Thanks them, sets 24-hour response expectation, includes booking link placeholder (update Calendly URL before going live)."
+      "notes": "EXECUTION LAYER: Sends professional confirmation email to the lead's email address. Thanks them, sets 24-hour response expectation, includes Google Calendar booking link."
     },
     {
       "id": "em03",
