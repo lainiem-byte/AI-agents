@@ -1,0 +1,11 @@
+import { Bubble } from "@typebot.io/react";
+
+const App = () => {
+  return (
+    <Bubble
+      typebot="faq-pyuwfms"
+      apiHost="https://typebot.io"
+      theme={{ button: { backgroundColor: "#008080" } }}
+    />
+  );
+};

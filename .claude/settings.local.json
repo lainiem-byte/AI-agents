@@ -28,7 +28,14 @@
       "Bash(node -e:*)",
       "mcp__n8n__get_template",
       "Bash(git rm:*)",
-      "mcp__n8n__n8n_create_workflow"
+      "mcp__n8n__n8n_create_workflow",
+      "mcp__n8n__n8n_update_full_workflow",
+      "Bash(curl:*)",
+      "Bash(ssh:*)",
+      "mcp__memory__search_nodes",
+      "Bash(git log:*)",
+      "mcp__memory__add_observations",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: Typebot embed on lnlgroups.com + beads tracking updates\n\n- Patched React bundle: old Typebot ID -> faq-pyuwfms\n- Changed button color: gold -> teal \\(#008080\\)  \n- Added iframe-based Typebot embed in index.html\n- Created issues: booking form, contact form, Sheets mismatch, Typebot flow\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

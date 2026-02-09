@@ -1,0 +1,11 @@
+<script type="module">
+  import Typebot from 'https://cdn.jsdelivr.net/npm/@typebot.io/js@0/dist/web.js'
+
+  Typebot.initBubble({
+    typebot: "faq-pyuwfms",
+    theme: {
+      button: { backgroundColor: "#008080" },
+      chatWindow: { backgroundColor: "#1D1D1D" },
+    },
+  });
+</script>
