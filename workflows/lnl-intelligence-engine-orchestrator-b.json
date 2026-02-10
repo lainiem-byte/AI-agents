@@ -1,0 +1,339 @@
+{
+  "name": "LNL Intelligence Engine (Orchestrator B)",
+  "nodes": [
+    {
+      "id": "trigger-schedule-001",
+      "name": "Every 20 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 20
+            }
+          ]
+        }
+      },
+      "notes": "Intelligence Engine trigger: runs every 20 minutes to check for CALL_SCHEDULED leads needing pre-call intelligence"
+    },
+    {
+      "id": "read-lead-pipeline-001",
+      "name": "Read Lead Pipeline",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [280, 80],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Lead Pipeline",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit#gid=0"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Reads all rows from Lead Pipeline tab (gid=0) in Master Brain"
+    },
+    {
+      "id": "read-precall-intel-001",
+      "name": "Read Pre-call Intelligence",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [280, 300],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pre-call Intelligence",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "CRITICAL: Tab name is 'Pre-call Intelligence' (lowercase c). Reads existing rows to check for already-populated entries."
+    },
+    {
+      "id": "read-legacy-slots-001",
+      "name": "Read Legacy Slots",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [280, 520],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Legacy Slots",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Reads Legacy Slots tab for slot availability data by market"
+    },
+    {
+      "id": "merge-reads-001",
+      "name": "Wait For All Reads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [520, 300],
+      "parameters": {
+        "mode": "chooseBranch",
+        "numberInputs": 3
+      },
+      "notes": "Synchronization gate: waits for all 3 sheet reads to complete before proceeding"
+    },
+    {
+      "id": "filter-rate-limit-001",
+      "name": "Filter & Rate Limit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Intelligence Engine: Filter eligible leads, enrich with slots, rate limit\nconst pipelineItems = $('Read Lead Pipeline').all().map(i => i.json);\nconst preCallItems = $('Read Pre-call Intelligence').all().map(i => i.json);\nconst legacySlotItems = $('Read Legacy Slots').all().map(i => i.json);\n\nconst now = new Date();\nconst MAX_PER_RUN = 3;\n\n// Build set of Lead IDs/Emails already in Pre-call Intelligence\nconst existingLeadIds = new Set();\nconst existingEmails = new Set();\nfor (const row of preCallItems) {\n  if (row['Lead ID']) existingLeadIds.add(String(row['Lead ID']).trim());\n  if (row['Email']) existingEmails.add(row['Email'].toLowerCase().trim());\n}\n\n// Build legacy slot lookup by market\nconst slotsByMarket = {};\nfor (const slot of legacySlotItems) {\n  const market = (slot['Market'] || '').toLowerCase().trim();\n  if (market) {\n    if (!slotsByMarket[market]) slotsByMarket[market] = [];\n    slotsByMarket[market].push(slot);\n  }\n}\n\nconst results = [];\n\nfor (const lead of pipelineItems) {\n  const status = (lead['Status'] || '').toUpperCase().trim();\n  if (status !== 'CALL_SCHEDULED') continue;\n\n  const callDateRaw = lead['Call Scheduled Date'] || '';\n  if (!callDateRaw) continue;\n  const callDate = new Date(callDateRaw);\n  if (isNaN(callDate.getTime()) || callDate <= now) continue;\n\n  const leadId = String(lead['Lead ID'] || '').trim();\n  const email = (lead['Email'] || '').toLowerCase().trim();\n  if (leadId && existingLeadIds.has(leadId)) continue;\n  if (email && existingEmails.has(email)) continue;\n\n  const market = (lead['Market'] || '').toLowerCase().trim();\n  const marketSlots = slotsByMarket[market] || [];\n  const totalAvailable = marketSlots.reduce((sum, s) => sum + (Number(s['Slots Available']) || 0), 0);\n  const slotSummary = marketSlots.map(s => ({\n    market: s['Market'],\n    month: s['Month'],\n    available: s['Slots Available'],\n    total: s['Total Slots'],\n    waitlist: s['Waitlist Count'],\n    nextAvailable: s['Next Available']\n  }));\n\n  results.push({\n    ...lead,\n    _callDate: callDate.toISOString(),\n    _callTimestamp: callDate.getTime(),\n    _legacySlotsAvailable: totalAvailable,\n    _legacySlotDetails: JSON.stringify(slotSummary),\n    _market: lead['Market'] || ''\n  });\n}\n\n// Sort by soonest call, limit to MAX_PER_RUN\nresults.sort((a, b) => a._callTimestamp - b._callTimestamp);\nconst limited = results.slice(0, MAX_PER_RUN);\n\nreturn limited.map(r => ({ json: r }));"
+      },
+      "notes": "Filters CALL_SCHEDULED leads with future dates, excludes already-processed, enriches with legacy slots, sorts by soonest call, limits to 3 per run"
+    },
+    {
+      "id": "if-business-name-001",
+      "name": "IF Business Name",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1000, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-business-name",
+              "leftValue": "={{ $json['Business Name'] }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Only generate intelligence for leads with a Business Name"
+    },
+    {
+      "id": "generate-intel-001",
+      "name": "Generate Intelligence",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1240, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.anthropic.com/v1/messages",
+        "authentication": "none",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "={{$env.ANTHROPIC_API_KEY}}"
+            },
+            {
+              "name": "anthropic-version",
+              "value": "2023-06-01"
+            },
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"claude-sonnet-4-5-20250929\",\n  \"max_tokens\": 2500,\n  \"system\": \"You are the LNL Intelligence Engine \u2014 a sales intelligence architect for LNL Group.\\n\\nLNL eliminates two critical problems for service businesses:\\n\\n1. THE PRESTIGE GAP (Brand Gap)\\nTheir digital presence looks cheaper than their actual service. The gap between real-world quality and digital face is hemorrhaging premium clients daily.\\n\\n2. LABOR LEAKAGE (Manual Tax)\\nEvery hour on manual follow-ups, confirmations, lead tracking, and admin is an hour NOT on revenue. We quantify this as a Labor Leakage Score (0-10). Above 7 means bleeding tens of thousands annually.\\n\\nLNL's solution \u2014 the L&L Method:\\n- ASSET EXTRACTION (Authority): Mine brand DNA into premium digital assets that close the Prestige Gap.\\n- SYSTEMS MINING (Architecture): Build anti-fragile automation that eliminates Labor Leakage and creates Operational Freedom.\\n\\nWe offer LIMITED Legacy Slots per market per quarter \u2014 exclusive implementation partnerships.\\n\\nGenerate devastatingly precise pre-call intelligence. Make every data point a weapon. Return ONLY valid JSON \u2014 no markdown, no code fences, no extra text.\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Generate a pre-call intelligence briefing for this lead.\\n\\nReturn ONLY a JSON object with these exact keys:\\n\\n- psychic_opening: City-and-industry-specific pattern-interrupt opener. Reference real market dynamics (growth trends, competition, seasonal patterns). Show you understand their world. NOT generic. (2-3 sentences)\\n\\n- logic_hammer: Mathematical proof of pain. Use exact scores to quantify cost of inaction. High Labor Leakage (>7) = estimate annual hours/dollars wasted. Low Aesthetic = quantify the Prestige Gap cost. Make the math undeniable. (2-3 sentences)\\n\\n- architectural_path: Specific 3-phase L&L Method roadmap: Phase 1 Asset Extraction (what digital assets to rebuild), Phase 2 Systems Mining (what manual processes to automate), Phase 3 Operational Freedom (measurable outcome: hours reclaimed, response time, consistency). Include timelines. (3-4 sentences)\\n\\n- scarcity_close: Reference actual Legacy Slot data provided. Genuine urgency only \u2014 never fabricate. (1-2 sentences)\\n\\n- key_objections: Top 3 objections with rebuttals. Format each as 'Objection -> Rebuttal'. Common: cost -> ROI math, timeline -> phased approach, tech overwhelm -> done-for-you. (3-4 sentences)\\n\\n- proof_assets: Industry-relevant proof points with ROI figures and timelines. (2-3 sentences)\\n\\nLEAD DATA:\\n- Name: {{ $json['Full Name'] }}\\n- Business: {{ $json['Business Name'] }}\\n- Email: {{ $json['Email'] }}\\n- Market: {{ $json['Market'] }}\\n- Industry: {{ $json['Industry'] }}\\n- Audit Score: {{ $json['Audit Score'] || 'N/A' }}/10\\n- Aesthetic Score: {{ $json['Aesthetic Score'] || 'N/A' }}/10\\n- Labor Leakage Score: {{ $json['Labor Leakage Score'] || 'N/A' }}/10\\n- Notes: {{ $json['Notes'] || 'N/A' }}\\n- Call Scheduled: {{ $json['Call Scheduled Date'] || 'N/A' }}\\n- Lead Source: {{ $json['Lead Source'] || 'N/A' }}\\n- Pipeline Value: {{ $json['Pipeline Value'] || 'N/A' }}\\n\\nMARKET INTELLIGENCE:\\n- Legacy Slots Available: {{ $json._legacySlotsAvailable }}\\n- Slot Details: {{ $json._legacySlotDetails }}\"\n    }\n  ]\n}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "notes": "Calls Anthropic Claude API with enhanced LNL prompt (Prestige Gap, Labor Leakage, Legacy Slots language)"
+    },
+    {
+      "id": "parse-response-001",
+      "name": "Parse Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1480, 300],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Parse Claude API response with 3-tier fallback\nconst lead = $('IF Business Name').item.json;\nconst response = $json;\n\nlet intelligence = {};\n\ntry {\n  const textContent = response.content && response.content[0] && response.content[0].text\n    ? response.content[0].text\n    : JSON.stringify(response);\n\n  // Tier 1: Direct JSON parse\n  try {\n    intelligence = JSON.parse(textContent);\n  } catch (e1) {\n    // Tier 2: Extract from markdown code fences\n    const fenceMatch = textContent.match(/```(?:json)?\\s*([\\s\\S]*?)```/);\n    if (fenceMatch) {\n      intelligence = JSON.parse(fenceMatch[1].trim());\n    } else {\n      // Tier 3: Find any JSON object in text\n      const objMatch = textContent.match(/\\{[\\s\\S]*\\}/);\n      if (objMatch) {\n        intelligence = JSON.parse(objMatch[0]);\n      } else {\n        throw new Error('No JSON found in response');\n      }\n    }\n  }\n} catch (err) {\n  intelligence = {\n    psychic_opening: 'PARSE_ERROR: ' + err.message + ' - Review manually',\n    logic_hammer: '',\n    architectural_path: '',\n    scarcity_close: '',\n    key_objections: '',\n    proof_assets: ''\n  };\n}\n\n// Generate unique Call ID\nconst ts = Date.now().toString(36).toUpperCase();\nconst rand = Math.random().toString(36).substring(2, 6).toUpperCase();\n\nreturn {\n  json: {\n    'Call ID': 'CALL-' + ts + '-' + rand,\n    'Lead ID': lead['Lead ID'] || '',\n    'Call Date/Time': lead['Call Scheduled Date'] || '',\n    'Business Name': lead['Business Name'] || '',\n    'Contact Name': lead['Full Name'] || '',\n    'Email': lead['Email'] || '',\n    'Market': lead['Market'] || '',\n    'Industry': lead['Industry'] || '',\n    'Audit Score': lead['Audit Score'] || '',\n    'Aesthetic Score': lead['Aesthetic Score'] || '',\n    'Labor Leakage Score': lead['Labor Leakage Score'] || '',\n    'Psychic Opening': intelligence.psychic_opening || '',\n    'Logic Hammer': intelligence.logic_hammer || '',\n    'Architectural Path': intelligence.architectural_path || '',\n    'Scarcity Close': intelligence.scarcity_close || '',\n    'Key Objections': typeof intelligence.key_objections === 'object'\n      ? JSON.stringify(intelligence.key_objections)\n      : (intelligence.key_objections || ''),\n    'Proof Assets': intelligence.proof_assets || '',\n    'Brief Sent': 'FALSE',\n    'Brief Sent Time': ''\n  }\n};"
+      },
+      "notes": "3-tier fallback: direct JSON parse, markdown fence extraction, regex object match. Maps to Pre-call Intelligence columns."
+    },
+    {
+      "id": "write-precall-001",
+      "name": "Write to Pre-call Intelligence",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1720, 300],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pre-call Intelligence",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED",
+          "handlingExtraData": "insertInNewColumn"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Appends generated intelligence to 'Pre-call Intelligence' tab (lowercase c)"
+    },
+    {
+      "id": "prepare-log-001",
+      "name": "Prepare Log Entry",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1960, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Prepare hygiene log entry for intelligence generation run\nconst items = $input.all();\nconst count = items.length;\nconst names = items.map(i => i.json['Business Name']).filter(Boolean).join(', ');\nconst now = new Date().toISOString();\n\nreturn [{\n  json: {\n    'Date': now,\n    'Action': 'Pre-call Intelligence Generated',\n    'Records Affected': count,\n    'Details': 'Intelligence Engine generated briefings for ' + count + ' lead(s): ' + (names || 'N/A'),\n    'System Status': 'HEALTHY - Intelligence Engine run complete'\n  }\n}];"
+      },
+      "notes": "Formats a single hygiene log entry summarizing the intelligence generation run"
+    },
+    {
+      "id": "log-hygiene-001",
+      "name": "Log to Sheet Hygiene Log",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2200, 300],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet Hygiene Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Appends run summary to Sheet Hygiene Log for observability"
+    }
+  ],
+  "connections": {
+    "Every 20 Minutes": {
+      "main": [
+        [
+          { "node": "Read Lead Pipeline", "type": "main", "index": 0 },
+          { "node": "Read Pre-call Intelligence", "type": "main", "index": 0 },
+          { "node": "Read Legacy Slots", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Read Lead Pipeline": {
+      "main": [[{ "node": "Wait For All Reads", "type": "main", "index": 0 }]]
+    },
+    "Read Pre-call Intelligence": {
+      "main": [[{ "node": "Wait For All Reads", "type": "main", "index": 1 }]]
+    },
+    "Read Legacy Slots": {
+      "main": [[{ "node": "Wait For All Reads", "type": "main", "index": 2 }]]
+    },
+    "Wait For All Reads": {
+      "main": [[{ "node": "Filter & Rate Limit", "type": "main", "index": 0 }]]
+    },
+    "Filter & Rate Limit": {
+      "main": [[{ "node": "IF Business Name", "type": "main", "index": 0 }]]
+    },
+    "IF Business Name": {
+      "main": [[{ "node": "Generate Intelligence", "type": "main", "index": 0 }]]
+    },
+    "Generate Intelligence": {
+      "main": [[{ "node": "Parse Response", "type": "main", "index": 0 }]]
+    },
+    "Parse Response": {
+      "main": [[{ "node": "Write to Pre-call Intelligence", "type": "main", "index": 0 }]]
+    },
+    "Write to Pre-call Intelligence": {
+      "main": [[{ "node": "Prepare Log Entry", "type": "main", "index": 0 }]]
+    },
+    "Prepare Log Entry": {
+      "main": [[{ "node": "Log to Sheet Hygiene Log", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
