@@ -1,0 +1,311 @@
+{
+  "name": "LNL Data Integrity Guardian (Orchestrator C)",
+  "id": "CmTZLPNhkrmyOyxg",
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "nodes": [
+    {
+      "id": "guardian-001",
+      "name": "Every 6 Hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 6 }]
+        }
+      },
+      "notes": "Data Integrity Guardian: runs every 6 hours to validate Master Brain data quality"
+    },
+    {
+      "id": "guardian-002",
+      "name": "Read Lead Pipeline",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [280, 80],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Lead Pipeline"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Reads all rows from Lead Pipeline (gid=0)"
+    },
+    {
+      "id": "guardian-003",
+      "name": "Read Pre-call Intelligence",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [280, 300],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Pre-call Intelligence",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "CRITICAL: Tab name is 'Pre-call Intelligence' (lowercase c)"
+    },
+    {
+      "id": "guardian-004",
+      "name": "Read Legacy Slots",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [280, 520],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Legacy Slots",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Reads Legacy Slots tab for slot validation"
+    },
+    {
+      "id": "guardian-005",
+      "name": "Wait For All Reads",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [520, 300],
+      "parameters": {
+        "mode": "chooseBranch",
+        "numberInputs": 3
+      },
+      "notes": "Synchronization gate: waits for all 3 sheet reads before validation"
+    },
+    {
+      "id": "guardian-006",
+      "name": "Validate Data Integrity",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Data Integrity Guardian: Comprehensive Validation\nconst pipelineItems = $('Read Lead Pipeline').all().map(i => i.json);\nconst preCallItems = $('Read Pre-call Intelligence').all().map(i => i.json);\nconst legacySlotItems = $('Read Legacy Slots').all().map(i => i.json);\n\nconst now = new Date();\nconst issues = [];\n\nconst VALID_STATUSES = ['NEW', 'AUDIT_SENT', 'CALL_SCHEDULED', 'PROPOSAL_SENT', 'CONTRACT_SIGNED', 'EXIT_SENT', 'IDLE'];\nconst CLOSED_STATUSES = ['CONTRACT_SIGNED', 'EXIT_SENT'];\n\n// --- LEAD PIPELINE CHECKS ---\n\n// 1. Duplicate email detection\nconst emailCount = {};\nconst emailRows = {};\nfor (let idx = 0; idx < pipelineItems.length; idx++) {\n  const lead = pipelineItems[idx];\n  const email = (lead['Email'] || '').toLowerCase().trim();\n  if (!email) continue;\n  if (!emailCount[email]) { emailCount[email] = 0; emailRows[email] = []; }\n  emailCount[email]++;\n  emailRows[email].push(lead['Lead ID'] || 'Row ' + (idx + 2));\n}\nfor (const [email, count] of Object.entries(emailCount)) {\n  if (count > 1) {\n    issues.push({\n      tab: 'Lead Pipeline', type: 'DUPLICATE_EMAIL', severity: 'HIGH',\n      detail: email + ' appears ' + count + ' times: ' + emailRows[email].join(', ')\n    });\n  }\n}\n\n// 2. Required field checks\nfor (const lead of pipelineItems) {\n  const id = lead['Lead ID'] || '';\n  const missing = [];\n  if (!lead['Lead ID']) missing.push('Lead ID');\n  if (!lead['Email']) missing.push('Email');\n  if (!lead['Full Name']) missing.push('Full Name');\n  if (!lead['Status']) missing.push('Status');\n  if (missing.length > 0) {\n    issues.push({\n      tab: 'Lead Pipeline', type: 'MISSING_REQUIRED', severity: 'MEDIUM',\n      detail: (id || 'Unknown') + ': Missing ' + missing.join(', ')\n    });\n  }\n}\n\n// 3. Invalid status values\nfor (const lead of pipelineItems) {\n  const status = (lead['Status'] || '').toUpperCase().trim();\n  if (status && !VALID_STATUSES.includes(status)) {\n    issues.push({\n      tab: 'Lead Pipeline', type: 'INVALID_STATUS', severity: 'MEDIUM',\n      detail: (lead['Lead ID'] || 'Unknown') + ': Status \"' + lead['Status'] + '\" not in valid set'\n    });\n  }\n}\n\n// 4. Score range validation (0-10)\nfor (const lead of pipelineItems) {\n  for (const sf of ['Audit Score', 'Aesthetic Score', 'Labor Leakage Score']) {\n    const raw = lead[sf];\n    if (raw === '' || raw === undefined || raw === null) continue;\n    const val = Number(raw);\n    if (isNaN(val) || val < 0 || val > 10) {\n      issues.push({\n        tab: 'Lead Pipeline', type: 'INVALID_SCORE', severity: 'LOW',\n        detail: (lead['Lead ID'] || 'Unknown') + ': ' + sf + ' = \"' + raw + '\" (must be 0-10)'\n      });\n    }\n  }\n}\n\n// 5. Stale lead detection (30+ days no contact, not closed)\nfor (const lead of pipelineItems) {\n  const status = (lead['Status'] || '').toUpperCase().trim();\n  if (CLOSED_STATUSES.includes(status)) continue;\n  const lastContact = lead['Last Contact Date'] ? new Date(lead['Last Contact Date']) : null;\n  if (lastContact && !isNaN(lastContact.getTime())) {\n    const daysSince = (now - lastContact) / 86400000;\n    if (daysSince > 30) {\n      issues.push({\n        tab: 'Lead Pipeline', type: 'STALE_LEAD', severity: 'LOW',\n        detail: (lead['Lead ID'] || 'Unknown') + ' (' + (lead['Business Name'] || 'N/A') + '): No contact in ' + Math.round(daysSince) + ' days, status=' + status\n      });\n    }\n  }\n}\n\n// --- PRE-CALL INTELLIGENCE CHECKS ---\nconst pipelineLeadIds = new Set(pipelineItems.map(l => (l['Lead ID'] || '').trim()).filter(Boolean));\nconst pipelineEmails = new Set(pipelineItems.map(l => (l['Email'] || '').toLowerCase().trim()).filter(Boolean));\n\n// 6. Orphaned pre-call entries\nfor (const pc of preCallItems) {\n  const leadId = (pc['Lead ID'] || '').trim();\n  const email = (pc['Email'] || '').toLowerCase().trim();\n  if (leadId && !pipelineLeadIds.has(leadId) && (!email || !pipelineEmails.has(email))) {\n    issues.push({\n      tab: 'Pre-call Intelligence', type: 'ORPHANED_ENTRY', severity: 'MEDIUM',\n      detail: 'Call ' + (pc['Call ID'] || 'unknown') + ': Lead ID \"' + leadId + '\" not found in Pipeline'\n    });\n  }\n}\n\n// 7. Parse error detection\nfor (const pc of preCallItems) {\n  if ((pc['Psychic Opening'] || '').includes('PARSE_ERROR')) {\n    issues.push({\n      tab: 'Pre-call Intelligence', type: 'PARSE_ERROR', severity: 'MEDIUM',\n      detail: 'Call ' + (pc['Call ID'] || 'unknown') + ': AI generation failed - manual review needed'\n    });\n  }\n}\n\n// --- CROSS-TAB CHECKS ---\nconst preCallLeadIds = new Set(preCallItems.map(pc => (pc['Lead ID'] || '').trim()).filter(Boolean));\nconst preCallEmails = new Set(preCallItems.map(pc => (pc['Email'] || '').toLowerCase().trim()).filter(Boolean));\n\n// 8. CALL_SCHEDULED leads missing pre-call intelligence\nfor (const lead of pipelineItems) {\n  const status = (lead['Status'] || '').toUpperCase().trim();\n  if (status !== 'CALL_SCHEDULED') continue;\n  const leadId = (lead['Lead ID'] || '').trim();\n  const email = (lead['Email'] || '').toLowerCase().trim();\n  if (!preCallLeadIds.has(leadId) && !preCallEmails.has(email)) {\n    issues.push({\n      tab: 'Cross-Tab', type: 'MISSING_INTEL', severity: 'MEDIUM',\n      detail: leadId + ' (' + (lead['Business Name'] || 'N/A') + '): CALL_SCHEDULED but no Pre-call Intelligence'\n    });\n  }\n}\n\n// --- LEGACY SLOTS CHECKS ---\nfor (const slot of legacySlotItems) {\n  const available = Number(slot['Slots Available']);\n  if (!isNaN(available) && available < 0) {\n    issues.push({\n      tab: 'Legacy Slots', type: 'NEGATIVE_SLOTS', severity: 'HIGH',\n      detail: (slot['Market'] || 'Unknown') + ' / ' + (slot['Month'] || 'Unknown') + ': Slots Available = ' + available\n    });\n  }\n}\n\n// --- DATA QUALITY SCORE ---\nconst totalRecords = pipelineItems.length + preCallItems.length + legacySlotItems.length;\nconst qualityScore = totalRecords > 0 ? Math.max(0, Math.round((1 - (issues.length / totalRecords)) * 100)) : 100;\n\nconst highCount = issues.filter(i => i.severity === 'HIGH').length;\nconst medCount = issues.filter(i => i.severity === 'MEDIUM').length;\nconst lowCount = issues.filter(i => i.severity === 'LOW').length;\n\nreturn [{ json: {\n  timestamp: now.toISOString(),\n  issueCount: issues.length,\n  highSeverity: highCount,\n  mediumSeverity: medCount,\n  lowSeverity: lowCount,\n  qualityScore,\n  pipelineCount: pipelineItems.length,\n  preCallCount: preCallItems.length,\n  slotCount: legacySlotItems.length,\n  totalRecords,\n  issues,\n  overallStatus: highCount > 0 ? 'CRITICAL' : issues.length > 0 ? 'NEEDS_ATTENTION' : 'CLEAN'\n}}];"
+      },
+      "notes": "10-point validation: duplicate emails, required fields, invalid statuses, score ranges, stale leads, orphaned intel, parse errors, missing intel for scheduled calls, cross-tab consistency, negative slots"
+    },
+    {
+      "id": "guardian-007",
+      "name": "IF Issues Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1000, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-issues",
+              "leftValue": "={{ $json.issueCount }}",
+              "rightValue": "0",
+              "operator": { "type": "number", "operation": "gt" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Routes to report path if any data quality issues detected"
+    },
+    {
+      "id": "guardian-008",
+      "name": "Format Integrity Report",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 200],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Format data integrity report for email + sheet logging\nconst d = $json;\nconst issues = d.issues || [];\n\nlet subject = '';\nif (d.overallStatus === 'CRITICAL') subject = '[CRITICAL] LNL Data Integrity Report';\nelse if (d.overallStatus === 'NEEDS_ATTENTION') subject = '[ATTENTION] LNL Data Integrity Report';\nelse subject = '[CLEAN] LNL Data Integrity Report';\n\nlet body = 'LNL DATA INTEGRITY GUARDIAN REPORT\\n===================================\\n';\nbody += 'Time: ' + d.timestamp + '\\n';\nbody += 'Status: ' + d.overallStatus + '\\n';\nbody += 'Quality Score: ' + d.qualityScore + '/100\\n\\n';\nbody += 'Records Scanned:\\n';\nbody += '  Lead Pipeline: ' + d.pipelineCount + '\\n';\nbody += '  Pre-call Intelligence: ' + d.preCallCount + '\\n';\nbody += '  Legacy Slots: ' + d.slotCount + '\\n';\nbody += '  Total: ' + d.totalRecords + '\\n\\n';\nbody += 'Issues: ' + d.issueCount + ' (HIGH: ' + d.highSeverity + ' | MEDIUM: ' + d.mediumSeverity + ' | LOW: ' + d.lowSeverity + ')\\n\\n';\n\nif (issues.length > 0) {\n  const byType = {};\n  for (const i of issues) {\n    if (!byType[i.type]) byType[i.type] = [];\n    byType[i.type].push(i);\n  }\n  for (const [type, typeIssues] of Object.entries(byType)) {\n    body += '--- ' + type + ' (' + typeIssues.length + ') ---\\n';\n    for (const i of typeIssues.slice(0, 10)) {\n      body += '  [' + i.severity + '] ' + i.tab + ': ' + i.detail + '\\n';\n    }\n    if (typeIssues.length > 10) body += '  ... and ' + (typeIssues.length - 10) + ' more\\n';\n    body += '\\n';\n  }\n}\n\nbody += '---\\nLNL Data Integrity Guardian (Orchestrator C)\\nAutomated data hygiene';\n\nconst summary = 'Q' + d.qualityScore + '/100 | H:' + d.highSeverity + ' M:' + d.mediumSeverity + ' L:' + d.lowSeverity;\n\nreturn {\n  json: {\n    subject, body,\n    'Date': d.timestamp,\n    'Action': 'Data Integrity Scan - ' + d.overallStatus,\n    'Records Affected': d.issueCount,\n    'Details': summary + ' | ' + d.pipelineCount + ' leads, ' + d.preCallCount + ' intel, ' + d.slotCount + ' slots',\n    'System Status': d.overallStatus + ' (Score: ' + d.qualityScore + '/100)'\n  }\n};"
+      },
+      "notes": "Formats email report grouped by issue type (max 10 per type) and Sheet Hygiene Log entry"
+    },
+    {
+      "id": "guardian-009",
+      "name": "Send Integrity Report",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1520, 100],
+      "parameters": {
+        "operation": "send",
+        "fromEmail": "={{$env.SMTP_FROM || 'LNL Data Guardian <noreply@lnlautomations.com>'}}",
+        "toEmail": "={{$env.ALERT_EMAIL || 'lnlscreatives71@gmail.com'}}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.body }}",
+        "options": { "appendAttribution": false }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "bdxKTxBstG9tYJkB",
+          "name": "Cold Outreach_lead generation"
+        }
+      },
+      "notes": "Sends data integrity report email"
+    },
+    {
+      "id": "guardian-010",
+      "name": "Log Integrity Issues",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1520, 300],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet Hygiene Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": { "cellFormat": "USER_ENTERED" }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Logs integrity scan results to Sheet Hygiene Log"
+    },
+    {
+      "id": "guardian-011",
+      "name": "Prepare All Clear",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1240, 500],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Prepare all-clear log entry\nconst d = $json;\nconst now = new Date().toISOString();\n\nreturn {\n  json: {\n    'Date': d.timestamp || now,\n    'Action': 'Data Integrity Scan - All Clear',\n    'Records Affected': 0,\n    'Details': 'Score: ' + (d.qualityScore || 100) + '/100 | ' + (d.pipelineCount || 0) + ' leads, ' + (d.preCallCount || 0) + ' intel, ' + (d.slotCount || 0) + ' slots scanned',\n    'System Status': 'CLEAN'\n  }\n};"
+      },
+      "notes": "Formats all-clear log entry when no data quality issues found"
+    },
+    {
+      "id": "guardian-012",
+      "name": "Log All Clear",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1520, 500],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet Hygiene Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": { "cellFormat": "USER_ENTERED" }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Logs all-clear status to Sheet Hygiene Log"
+    }
+  ],
+  "connections": {
+    "Every 6 Hours": {
+      "main": [[
+        { "node": "Read Lead Pipeline", "type": "main", "index": 0 },
+        { "node": "Read Pre-call Intelligence", "type": "main", "index": 0 },
+        { "node": "Read Legacy Slots", "type": "main", "index": 0 }
+      ]]
+    },
+    "Read Lead Pipeline": {
+      "main": [[{ "node": "Wait For All Reads", "type": "main", "index": 0 }]]
+    },
+    "Read Pre-call Intelligence": {
+      "main": [[{ "node": "Wait For All Reads", "type": "main", "index": 1 }]]
+    },
+    "Read Legacy Slots": {
+      "main": [[{ "node": "Wait For All Reads", "type": "main", "index": 2 }]]
+    },
+    "Wait For All Reads": {
+      "main": [[{ "node": "Validate Data Integrity", "type": "main", "index": 0 }]]
+    },
+    "Validate Data Integrity": {
+      "main": [[{ "node": "IF Issues Found", "type": "main", "index": 0 }]]
+    },
+    "IF Issues Found": {
+      "main": [
+        [{ "node": "Format Integrity Report", "type": "main", "index": 0 }],
+        [{ "node": "Prepare All Clear", "type": "main", "index": 0 }]
+      ]
+    },
+    "Format Integrity Report": {
+      "main": [[
+        { "node": "Send Integrity Report", "type": "main", "index": 0 },
+        { "node": "Log Integrity Issues", "type": "main", "index": 0 }
+      ]]
+    },
+    "Prepare All Clear": {
+      "main": [[{ "node": "Log All Clear", "type": "main", "index": 0 }]]
+    }
+  }
+}
