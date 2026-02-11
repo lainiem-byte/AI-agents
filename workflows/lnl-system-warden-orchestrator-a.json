@@ -1,0 +1,343 @@
+{
+  "name": "LNL System Warden (Orchestrator A)",
+  "nodes": [
+    {
+      "id": "warden-001",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 300],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 15
+            }
+          ]
+        }
+      },
+      "notes": "System Warden health check: runs every 15 minutes to monitor all LNL workflows"
+    },
+    {
+      "id": "warden-002",
+      "name": "Get Recent Executions",
+      "type": "n8n-nodes-base.n8n",
+      "typeVersion": 1,
+      "position": [280, 300],
+      "parameters": {
+        "resource": "execution",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": 200
+      },
+      "notes": "Fetches last 200 executions from n8n API. REQUIRES n8nApi credentials - configure in n8n Settings > API > Create API Key, then add credential here."
+    },
+    {
+      "id": "warden-003",
+      "name": "Analyze System Health",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [560, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// System Warden: Health Analyzer\n// Monitors 8 LNL workflows for errors and heartbeat freshness\n\nconst MONITORED = [\n  { id: 'DE81QfyyeSOaA778', name: 'Lead Gen Agent', type: 'schedule', maxStaleMin: 180 },\n  { id: 'lhytfLiKaudl5vKa', name: 'Cold Outreach Agent', type: 'schedule', maxStaleMin: 180 },\n  { id: 'LVlhpUizS3NE2aNj', name: 'Pre-Call Intelligence', type: 'schedule', maxStaleMin: 180 },\n  { id: 'jmqcSnF8v4lJWHIf', name: 'Personal Assistant', type: 'webhook', maxStaleMin: 0 },\n  { id: 'm475ggRUeYhCBTOr', name: 'Inbound Processor', type: 'webhook', maxStaleMin: 0 },\n  { id: '5kKTxZAh3ZJaZHeP', name: 'Booking-to-Pipeline', type: 'webhook', maxStaleMin: 0 },\n  { id: 'lc1kXeqQ9eOJaQ7X', name: 'Concierge Agent', type: 'webhook', maxStaleMin: 0 },\n  { id: 'Xuz30f7XIKUHqjJV', name: 'Intelligence Engine', type: 'schedule', maxStaleMin: 30 }\n];\n\nconst executions = $input.all().map(i => i.json);\nconst now = new Date();\nconst issues = [];\nconst report = [];\n\nconst byWf = {};\nfor (const e of executions) {\n  const wid = e.workflowId;\n  if (!wid) continue;\n  if (!byWf[wid]) byWf[wid] = [];\n  byWf[wid].push(e);\n}\n\nfor (const wf of MONITORED) {\n  const execs = byWf[wf.id] || [];\n  const errors = execs.filter(e => e.status === 'error');\n  const successes = execs.filter(e => e.status === 'success');\n\n  if (errors.length > 0) {\n    issues.push({\n      workflow: wf.name, id: wf.id, type: 'ERROR', severity: 'HIGH',\n      detail: errors.length + ' error(s). Latest: ' + (errors[0].stoppedAt || 'unknown'),\n      executionId: errors[0].id\n    });\n  }\n\n  if (wf.type === 'schedule' && wf.maxStaleMin > 0) {\n    if (successes.length > 0) {\n      const last = new Date(successes[0].stoppedAt || successes[0].startedAt);\n      const mins = (now - last) / 60000;\n      if (mins > wf.maxStaleMin) {\n        issues.push({\n          workflow: wf.name, id: wf.id, type: 'STALE', severity: 'MEDIUM',\n          detail: 'No success in ' + Math.round(mins) + 'min (expected every ' + wf.maxStaleMin + 'min)'\n        });\n      }\n    } else if (execs.length === 0) {\n      issues.push({\n        workflow: wf.name, id: wf.id, type: 'NO_DATA', severity: 'LOW',\n        detail: 'No recent executions found'\n      });\n    }\n  }\n\n  report.push({\n    name: wf.name,\n    status: errors.length > 0 ? 'ERROR' : 'OK',\n    errors: errors.length,\n    successes: successes.length,\n    lastExec: execs.length > 0 ? (execs[0].stoppedAt || execs[0].startedAt || 'unknown') : 'none'\n  });\n}\n\nconst status = issues.some(i => i.severity === 'HIGH') ? 'CRITICAL' :\n               issues.length > 0 ? 'WARNING' : 'HEALTHY';\n\nreturn [{ json: { timestamp: now.toISOString(), overallStatus: status, issueCount: issues.length, issues, report } }];"
+      },
+      "notes": "Analyzes executions against workflow registry. Checks for errors (all workflows) and stale heartbeats (schedule-based only)."
+    },
+    {
+      "id": "warden-004",
+      "name": "IF Issues Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [840, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "has-issues",
+              "leftValue": "={{ $json.issueCount }}",
+              "rightValue": "0",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Routes to alert path if any issues detected, otherwise logs all-clear"
+    },
+    {
+      "id": "warden-005",
+      "name": "Format Health Alert",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 200],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Format health alert for email + sheet logging\nconst d = $json;\nconst issues = d.issues || [];\n\nlet subject = '';\nif (d.overallStatus === 'CRITICAL') subject = '[CRITICAL] LNL System Warden Alert';\nelse if (d.overallStatus === 'WARNING') subject = '[WARNING] LNL System Warden Alert';\nelse subject = '[OK] LNL System Warden - All Clear';\n\nlet body = 'LNL SYSTEM WARDEN REPORT\\n========================\\n';\nbody += 'Time: ' + d.timestamp + '\\nStatus: ' + d.overallStatus + '\\nIssues: ' + d.issueCount + '\\n\\n';\n\nif (issues.length > 0) {\n  body += '--- ISSUES ---\\n\\n';\n  for (const i of issues) {\n    body += '[' + i.severity + '] ' + i.workflow + '\\n  Type: ' + i.type + '\\n  ' + i.detail + '\\n\\n';\n  }\n}\n\nbody += '--- WORKFLOW STATUS ---\\n\\n';\nfor (const r of (d.report || [])) {\n  const icon = r.status === 'ERROR' ? 'X' : 'OK';\n  body += '[' + icon + '] ' + r.name + ' | Errors: ' + r.errors + ' | Successes: ' + r.successes + ' | Last: ' + r.lastExec + '\\n';\n}\n\nbody += '\\n---\\nLNL System Warden (Orchestrator A)';\n\nconst issueSummary = issues.map(i => '[' + i.severity + '] ' + i.workflow + ': ' + i.type).join('; ');\n\nreturn {\n  json: {\n    subject, body,\n    'Date': d.timestamp,\n    'Action': 'System Warden Alert - ' + d.overallStatus,\n    'Records Affected': d.issueCount,\n    'Details': issueSummary || 'No issues',\n    'System Status': d.overallStatus\n  }\n};"
+      },
+      "notes": "Formats email subject/body and Sheet Hygiene Log fields for health alerts"
+    },
+    {
+      "id": "warden-006",
+      "name": "Send Health Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1400, 100],
+      "parameters": {
+        "operation": "send",
+        "fromEmail": "={{$env.SMTP_FROM || 'LNL System Warden <noreply@lnlautomations.com>'}}",
+        "toEmail": "={{$env.ALERT_EMAIL || 'lnlscreatives71@gmail.com'}}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "bdxKTxBstG9tYJkB",
+          "name": "SMTP"
+        }
+      },
+      "notes": "Sends health alert email via SMTP. Configure ALERT_EMAIL env var or edit toEmail directly."
+    },
+    {
+      "id": "warden-007",
+      "name": "Log Health Alert",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1400, 300],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet Hygiene Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Logs health alert to Sheet Hygiene Log in Master Brain"
+    },
+    {
+      "id": "warden-008",
+      "name": "Prepare All Clear",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 500],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Prepare all-clear log entry\nconst d = $json;\nconst now = new Date().toISOString();\n\nreturn {\n  json: {\n    'Date': d.timestamp || now,\n    'Action': 'System Warden Health Check',\n    'Records Affected': 0,\n    'Details': 'All ' + (d.report || []).length + ' monitored workflows healthy',\n    'System Status': 'HEALTHY'\n  }\n};"
+      },
+      "notes": "Formats all-clear log entry when no issues detected"
+    },
+    {
+      "id": "warden-009",
+      "name": "Log All Clear",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1400, 500],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet Hygiene Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Logs all-clear status to Sheet Hygiene Log"
+    },
+    {
+      "id": "warden-010",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [0, 700],
+      "parameters": {},
+      "notes": "Catches real-time errors from any workflow that has this workflow set as its Error Workflow. Configure other workflows: Settings > Error Workflow > select this workflow."
+    },
+    {
+      "id": "warden-011",
+      "name": "Format Error Details",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [280, 700],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Format error details for email + sheet logging\nconst err = $json;\nconst now = new Date().toISOString();\n\nconst wfName = (err.workflow && err.workflow.name) || 'Unknown Workflow';\nconst wfId = (err.workflow && err.workflow.id) || 'unknown';\nconst errMsg = (err.execution && err.execution.error && err.execution.error.message) || 'No error message';\nconst execId = (err.execution && err.execution.id) || 'unknown';\nconst failedNode = (err.execution && err.execution.lastNodeExecuted) || 'Unknown Node';\n\nconst subject = '[ERROR] ' + wfName + ' - LNL System Warden';\n\nlet body = 'LNL SYSTEM WARDEN - ERROR ALERT\\n================================\\n\\n';\nbody += 'Time: ' + now + '\\n';\nbody += 'Workflow: ' + wfName + ' (' + wfId + ')\\n';\nbody += 'Execution ID: ' + execId + '\\n';\nbody += 'Failed Node: ' + failedNode + '\\n';\nbody += 'Error: ' + errMsg + '\\n\\n';\nbody += 'Review: https://n8n.srv1244684.hstgr.cloud/workflow/' + wfId + '/executions/' + execId + '\\n\\n';\nbody += '---\\nLNL System Warden (Orchestrator A)\\nAutomated error detection';\n\nreturn {\n  json: {\n    subject, body,\n    'Date': now,\n    'Action': 'Workflow Error Caught',\n    'Records Affected': 1,\n    'Details': wfName + ': ' + errMsg + ' (Node: ' + failedNode + ')',\n    'System Status': 'ERROR - ' + wfName\n  }\n};"
+      },
+      "notes": "Formats real-time error data for email alert and Sheet Hygiene Log"
+    },
+    {
+      "id": "warden-012",
+      "name": "Send Error Alert",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [560, 600],
+      "parameters": {
+        "operation": "send",
+        "fromEmail": "={{$env.SMTP_FROM || 'LNL System Warden <noreply@lnlautomations.com>'}}",
+        "toEmail": "={{$env.ALERT_EMAIL || 'lnlscreatives71@gmail.com'}}",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "text",
+        "text": "={{ $json.body }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "bdxKTxBstG9tYJkB",
+          "name": "SMTP"
+        }
+      },
+      "notes": "Sends immediate error alert email"
+    },
+    {
+      "id": "warden-013",
+      "name": "Log Error",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [560, 800],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet Hygiene Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {}
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Logs error details to Sheet Hygiene Log"
+    }
+  ],
+  "connections": {
+    "Every 15 Minutes": {
+      "main": [
+        [
+          { "node": "Get Recent Executions", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Get Recent Executions": {
+      "main": [
+        [
+          { "node": "Analyze System Health", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Analyze System Health": {
+      "main": [
+        [
+          { "node": "IF Issues Found", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF Issues Found": {
+      "main": [
+        [
+          { "node": "Format Health Alert", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Prepare All Clear", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Format Health Alert": {
+      "main": [
+        [
+          { "node": "Send Health Alert", "type": "main", "index": 0 },
+          { "node": "Log Health Alert", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Prepare All Clear": {
+      "main": [
+        [
+          { "node": "Log All Clear", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Error Trigger": {
+      "main": [
+        [
+          { "node": "Format Error Details", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Format Error Details": {
+      "main": [
+        [
+          { "node": "Send Error Alert", "type": "main", "index": 0 },
+          { "node": "Log Error", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
