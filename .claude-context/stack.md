@@ -26,8 +26,14 @@
 - **HubSpot** (primary CRM)
   - Source of truth for leads, contacts, and deals
   - Intelligence Layer hub for lead scoring and routing
+  - Account ID: 244721155
   - Dashboard: https://app.hubspot.com/global-home/50796003
-  - **API Access**: Connected via Anthropic HubSpot MCP connector (direct API queries enabled)
+  - **API Access**:
+    - Private App: "LNL Lead Generation" (token stored in n8n credentials)
+    - Scopes: crm.objects.contacts.*, crm.objects.deals.*, crm.schemas.contacts.*, crm.schemas.deals.*
+    - Anthropic HubSpot MCP connector (direct CRM queries from Claude Code / Claude Desktop)
+  - **Custom Properties**: 17 contact + 4 deal properties under `lnl_custom` group (see HUBSPOT_SETUP_GUIDE.md)
+  - **Pipeline**: "LNL Sales Pipeline" — 9 stages (New Lead → Closed Won/Lost + Nurture)
 
 
 ## Communication & Collaboration

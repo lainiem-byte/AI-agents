@@ -1,313 +1,184 @@
 # LNL HubSpot CRM Setup Guide
 
-## Overview
+## Status: DEPLOYED (2026-02-14)
 
-This guide walks you through setting up HubSpot for the LNL Lead Generation system. Since you have a fresh HubSpot account, we'll configure everything from scratch.
+All custom properties, pipeline stages, and deal properties have been created via the HubSpot API.
 
 ---
 
-## 1. Custom Properties to Create
+## 1. Custom Contact Properties (17 total)
 
-### Contact Properties
-
-Navigate to: **Settings → Properties → Contact Properties → Create Property**
+**Property Group:** `lnl_custom` (LNL Custom Properties)
 
 | Property Name | Internal Name | Field Type | Description |
 |--------------|---------------|------------|-------------|
-| Lead Score | `lead_score` | Number | LNL scoring algorithm result (0-150) |
+| LNL Lead Score | `lead_score` | Number | AI-generated lead score (0-150) from n8n scoring engine |
 | Lead Tier | `lead_tier` | Dropdown | hot, warm, cold |
-| Industry Vertical | `industry_vertical` | Dropdown | med_spa, realtor, law_firm, hvac_home_services |
-| Product Recommendations | `product_recommendations` | Multi-line text | Suggested LNL products |
-| Scoring Breakdown | `scoring_breakdown` | Multi-line text | Detailed scoring reasons |
-| Google Rating | `google_rating` | Number | Business Google rating (1-5) |
-| Review Count | `review_count` | Number | Total Google reviews |
-| Social Facebook | `social_facebook` | Single-line text | Facebook URL |
-| Social Instagram | `social_instagram` | Single-line text | Instagram URL |
-| Social LinkedIn | `social_linkedin` | Single-line text | LinkedIn URL |
+| Industry Vertical | `industry_vertical` | Dropdown | med_spa, realtor, law_firm, hvac_home_services, other |
+| Product Recommendations | `product_recommendations` | Multi-line text | AI-generated service recommendations |
+| Scoring Breakdown | `scoring_breakdown` | Multi-line text | Detailed AI scoring rationale |
+| Google Rating | `google_rating` | Number | Google Maps business rating (0-5) |
+| Review Count | `review_count` | Number | Total Google/Yelp review count |
+| Facebook URL | `social_facebook` | Single-line text | Business Facebook page URL |
+| Instagram URL | `social_instagram` | Single-line text | Business Instagram profile URL |
+| LinkedIn URL | `hs_linkedin_url` | Single-line text | **Built-in HubSpot property** |
 | Has Chatbot | `has_chatbot` | Checkbox | Website has chatbot |
-| Has Booking System | `has_booking` | Checkbox | Website has booking |
+| Has Online Booking | `has_booking` | Checkbox | Website has booking capability |
 | Has Email Capture | `has_email_capture` | Checkbox | Website has email signup |
-| Is Luxury Target | `is_luxury_target` | Checkbox | Med Spa/Realtor luxury segment |
-| Lead Source | `lead_source` | Dropdown | google_maps, yelp, website, referral |
-| Scraped Date | `scraped_date` | Date | When lead was captured |
-| Outreach Status | `outreach_status` | Dropdown | pending, contacted, engaged, no_response |
-
-### Dropdown Options
-
-**Lead Tier:**
-- hot
-- warm
-- cold
-
-**Industry Vertical:**
-- med_spa
-- realtor
-- law_firm
-- hvac_home_services
-
-**Lead Source:**
-- google_maps
-- yelp
-- website_typebot
-- referral
-- manual
-
-**Outreach Status:**
-- pending
-- contacted
-- engaged
-- replied
-- meeting_booked
-- no_response
-- unsubscribed
+| Luxury Target | `is_luxury_target` | Checkbox | Flagged as luxury/premium positioning target |
+| Lead Source Detail | `lead_source_detail` | Dropdown | google_maps, yelp, website, typebot, referral, cold_outreach, linkedin, facebook, instagram |
+| Outreach Status | `outreach_status` | Dropdown | pending, contacted, engaged, replied, meeting_booked, no_response, unsubscribed |
+| Scraped Date | `scraped_date` | Date | When lead was scraped from Google Maps/Yelp |
+| LNL Division | `lnl_division` | Dropdown | automations, creatives, shadow_operator |
 
 ---
 
-## 2. Deal Pipeline Setup
+## 2. Deal Pipeline: "LNL Sales Pipeline"
 
-Navigate to: **Settings → Objects → Deals → Pipelines**
+**Pipeline ID:** `default` (renamed from HubSpot default)
 
-### Create Pipeline: "LNL Sales Pipeline"
+| Order | Stage Name | Stage ID | Probability |
+|-------|-----------|----------|-------------|
+| 0 | New Lead | `appointmentscheduled` | 10% |
+| 1 | Contacted | `qualifiedtobuy` | 20% |
+| 2 | Engaged | `presentationscheduled` | 30% |
+| 3 | Discovery Call | `decisionmakerboughtin` | 40% |
+| 4 | Proposal Sent | `contractsent` | 60% |
+| 5 | Negotiation | `1303206475` | 80% |
+| 6 | Closed Won | `closedwon` | 100% |
+| 7 | Closed Lost | `closedlost` | 0% |
+| 8 | Nurture | `1303206476` | 5% |
 
-| Stage Name | Internal Name | Probability | Description |
-|------------|---------------|-------------|-------------|
-| New Lead | `new_lead` | 10% | Just scraped/captured |
-| Contacted | `contacted` | 20% | Initial outreach sent |
-| Engaged | `engaged` | 30% | Opened/clicked/replied |
-| Discovery Call | `discovery_call` | 40% | Meeting scheduled |
-| Proposal Sent | `proposal_sent` | 60% | Offer delivered |
-| Negotiation | `negotiation` | 80% | Discussing terms |
-| Closed Won | `closed_won` | 100% | Client signed |
-| Closed Lost | `closed_lost` | 0% | Not moving forward |
-| Nurture | `nurture` | 5% | Long-term follow-up |
-
-### Deal Properties to Add
-
-| Property Name | Internal Name | Field Type |
-|--------------|---------------|------------|
-| Product Interest | `product_interest` | Multiple checkboxes |
-| Estimated Deal Value | `estimated_value` | Number |
-| Loss Reason | `loss_reason` | Dropdown |
-| Win Source | `win_source` | Dropdown |
-
-**Product Interest Options:**
-- Lead-to-Client Logic (Conversion Engine)
-- Master Brain (Custom AI Agents)
-- Custom Architecture (Systems Integration)
-- Auto-Pilot Content Factory
-
-**Loss Reason Options:**
-- Budget
-- Timing
-- Competitor
-- No Response
-- Not a Fit
-- Other
+> **Note:** Stage IDs retain original HubSpot internal names since the default pipeline was modified in-place. Use the IDs above when referencing stages in n8n workflows.
 
 ---
 
-## 3. Lists to Create
+## 3. Deal Custom Properties (4 total)
 
-Navigate to: **Contacts → Lists → Create List**
+**Property Group:** `lnl_custom`
 
-### Active Lists (Auto-updating)
-
-**1. Hot Leads - Ready for Outreach**
-- Filter: Lead Tier = hot AND Outreach Status = pending
-
-**2. Warm Leads - Nurture Sequence**
-- Filter: Lead Tier = warm AND Outreach Status = pending
-
-**3. Med Spa Leads**
-- Filter: Industry Vertical = med_spa
-
-**4. Realtor Leads**
-- Filter: Industry Vertical = realtor
-
-**5. Law Firm Leads**
-- Filter: Industry Vertical = law_firm
-
-**6. HVAC/Home Services Leads**
-- Filter: Industry Vertical = hvac_home_services
-
-**7. No Chatbot - Master Brain Opportunity**
-- Filter: Has Chatbot = No
-
-**8. No Booking - Conversion Engine Opportunity**
-- Filter: Has Booking System = No
-
-**9. Engaged Leads**
-- Filter: Outreach Status = engaged OR replied
-
-**10. Raleigh-Durham Leads**
-- Filter: City contains "Raleigh" OR City contains "Durham"
-
-**11. Columbus OH Leads**
-- Filter: City = Columbus AND State = OH
-
-**12. Moscow ID Leads**
-- Filter: City = Moscow AND State = ID
+| Property Name | Internal Name | Field Type | Options |
+|--------------|---------------|------------|---------|
+| Product Interest | `product_interest` | Multiple checkboxes | lead_to_client, master_brain, custom_architecture, content_factory, shadow_operator |
+| Estimated Value | `estimated_value` | Number | — |
+| Loss Reason | `loss_reason` | Dropdown | budget, timing, competitor, no_response, not_a_fit, other |
+| Win Source | `win_source` | Dropdown | cold_outreach, typebot, referral, social, networking |
 
 ---
 
-## 4. Views to Create
+## 4. API Access
 
-Navigate to: **Contacts → All Contacts → Edit Columns**
+### Private App: "LNL Lead Generation"
 
-### Recommended Contact View Columns
+**Required Scopes:**
+- `crm.objects.contacts.read` / `crm.objects.contacts.write`
+- `crm.objects.deals.read` / `crm.objects.deals.write`
+- `crm.schemas.contacts.read` / `crm.schemas.contacts.write`
+- `crm.schemas.deals.read` / `crm.schemas.deals.write`
 
-1. Name
-2. Company
-3. Email
-4. Phone
-5. Lead Score
-6. Lead Tier
-7. Industry Vertical
-8. Product Recommendations
-9. Outreach Status
-10. City
-11. State
-12. Last Activity Date
+### MCP Connector
+HubSpot is also connected via the **Anthropic HubSpot MCP connector** for direct CRM queries from Claude Code and Claude Desktop.
 
-### Recommended Deal View Columns
-
-1. Deal Name
-2. Company
-3. Deal Stage
-4. Product Interest
-5. Amount
-6. Close Date
-7. Owner
+### n8n Integration
+1. In n8n → **Credentials** → Add "HubSpot API" credential
+2. Enter the Private App access token
+3. Use HubSpot nodes with the property internal names listed above
 
 ---
 
-## 5. Workflow Automations (Optional)
-
-Navigate to: **Automation → Workflows → Create Workflow**
-
-### Workflow 1: Hot Lead Alert
-
-**Trigger:** Contact property "Lead Tier" = hot AND "Outreach Status" = pending
-
-**Actions:**
-1. Send internal email notification
-2. Create task: "Follow up with hot lead"
-3. Delay: 24 hours
-4. If no activity → Send reminder
-
-### Workflow 2: Lead Score Update Notification
-
-**Trigger:** Contact property "Lead Score" is updated AND > 80
-
-**Actions:**
-1. Send Slack notification (if connected)
-2. Update Lead Tier to "hot"
-3. Create task: "Review high-scoring lead"
-
-### Workflow 3: No Response Follow-up
-
-**Trigger:** Contact property "Outreach Status" = contacted
-**Enrollment criteria:** Last contacted > 3 days ago
-
-**Actions:**
-1. Send follow-up email (use sequence)
-2. Update Outreach Status to "engaged" or "no_response"
-
----
-
-## 6. API Configuration
-
-### Get Your HubSpot API Key
-
-1. Go to **Settings → Integrations → Private Apps**
-2. Click **Create a private app**
-3. Name it: "LNL Lead Generation"
-4. Select scopes:
-   - `crm.objects.contacts.read`
-   - `crm.objects.contacts.write`
-   - `crm.objects.deals.read`
-   - `crm.objects.deals.write`
-   - `crm.schemas.contacts.read`
-   - `crm.schemas.deals.read`
-5. Click **Create app**
-6. Copy the access token
-
-### Add to n8n Environment Variables
-
-```
-HUBSPOT_API_KEY=your_access_token_here
-```
-
----
-
-## 7. Integration with n8n
-
-### HubSpot Credentials in n8n
-
-1. In n8n, go to **Credentials**
-2. Click **Add Credential**
-3. Search for "HubSpot"
-4. Select "HubSpot API"
-5. Enter your access token
-6. Save
-
-### Required Custom Property Internal Names
-
-Make sure these exact internal names match in HubSpot:
-
-```
-lead_score
-lead_tier
-industry_vertical
-product_recommendations
-scoring_breakdown
-google_rating
-social_facebook
-social_instagram
-social_linkedin
-outreach_status
-```
-
----
-
-## 8. Testing Checklist
-
-- [ ] All custom properties created
-- [ ] Pipeline stages configured
-- [ ] Lists created and filtering correctly
-- [ ] API key generated
-- [ ] n8n credentials configured
-- [ ] Test contact created successfully
-- [ ] Test deal created successfully
-- [ ] Custom properties updating correctly
-
----
-
-## Quick Reference: Property Internal Names
-
-Use these in n8n when updating HubSpot:
+## 5. Property Internal Names for n8n
 
 ```javascript
-// Contact properties
+// Contact properties - use these exact names in n8n HubSpot nodes
 {
   "lead_score": 85,
   "lead_tier": "hot",
   "industry_vertical": "med_spa",
   "product_recommendations": "Lead-to-Client Logic, Master Brain",
-  "scoring_breakdown": "+25: No chatbot | +20: No booking",
+  "scoring_breakdown": "+25: No chatbot | +20: No booking | +15: High Google rating",
   "google_rating": 4.5,
+  "review_count": 127,
   "social_facebook": "https://facebook.com/example",
   "social_instagram": "https://instagram.com/example",
-  "outreach_status": "pending"
+  "has_chatbot": "false",
+  "has_booking": "false",
+  "has_email_capture": "true",
+  "is_luxury_target": "true",
+  "lead_source_detail": "google_maps",
+  "outreach_status": "pending",
+  "scraped_date": "2026-02-14",
+  "lnl_division": "automations"
+}
+
+// Deal properties
+{
+  "product_interest": "lead_to_client;master_brain",
+  "estimated_value": 5000,
+  "loss_reason": "budget",
+  "win_source": "cold_outreach"
+}
+
+// Deal stage IDs for pipeline updates
+{
+  "new_lead": "appointmentscheduled",
+  "contacted": "qualifiedtobuy",
+  "engaged": "presentationscheduled",
+  "discovery_call": "decisionmakerboughtin",
+  "proposal_sent": "contractsent",
+  "negotiation": "1303206475",
+  "closed_won": "closedwon",
+  "closed_lost": "closedlost",
+  "nurture": "1303206476"
 }
 ```
 
 ---
 
-## Support
+## 6. Lists to Create (Manual in HubSpot UI)
 
-If you encounter issues:
-1. Verify property internal names match exactly
-2. Check API scopes include write permissions
-3. Ensure dropdown values match exactly (case-sensitive)
-4. Test with a single contact before bulk import
+These active lists auto-update based on property filters:
+
+| List Name | Filter |
+|-----------|--------|
+| Hot Leads - Ready for Outreach | lead_tier = hot AND outreach_status = pending |
+| Warm Leads - Nurture Sequence | lead_tier = warm AND outreach_status = pending |
+| Med Spa Leads | industry_vertical = med_spa |
+| Realtor Leads | industry_vertical = realtor |
+| Law Firm Leads | industry_vertical = law_firm |
+| HVAC/Home Services Leads | industry_vertical = hvac_home_services |
+| No Chatbot - Master Brain Opportunity | has_chatbot = false |
+| No Booking - Conversion Engine Opportunity | has_booking = false |
+| Engaged Leads | outreach_status = engaged OR replied |
+
+---
+
+## 7. n8n Workflow Integration (Deployed 2026-02-14)
+
+All 4 lead-handling workflows now sync to HubSpot. Credential: `hubspotAppToken` (ID: `o4uV5HH0UT13vGy0`).
+
+| Workflow | ID | HubSpot Nodes | What Syncs |
+|---|---|---|---|
+| Lead Gen Agent | `DE81QfyyeSOaA778` | Create Contact → Create Deal → Update Custom Properties | Scraped leads: contact + deal + 13 custom props |
+| Inbound Lead Processor | `m475ggRUeYhCBTOr` | Sync Contact → Update Lead Properties | Typebot leads: contact + 9 custom props |
+| Cold Outreach Agent | `lhytfLiKaudl5vKa` | Sync Outreach + Mark Nurture | outreach_status (contacted/no_response) |
+| Booking-to-Pipeline | `5kKTxZAh3ZJaZHeP` | Sync Booking | outreach_status=meeting_booked + call_scheduled_date |
+
+All HubSpot nodes use `onError: continueRegularOutput` — CRM failures never block core pipeline operations.
+
+---
+
+## 8. Testing Checklist
+
+- [x] All custom contact properties created (20 total)
+- [x] All custom deal properties created (4/4)
+- [x] Pipeline stages configured (9 stages)
+- [x] Property group `lnl_custom` created
+- [x] API key generated with required scopes
+- [x] MCP connector verified
+- [x] n8n HubSpot credentials configured (credential ID: o4uV5HH0UT13vGy0)
+- [x] n8n workflows wired to HubSpot sync (4/4 workflows)
+- [ ] End-to-end test: Typebot submission → Sheets + HubSpot contact
+- [ ] End-to-end test: Lead Gen scrape → Sheets + HubSpot contact + deal
+- [ ] End-to-end test: Cold Outreach email → HubSpot status update
+- [ ] End-to-end test: Calendar booking → HubSpot meeting_booked
+- [ ] Lists created in HubSpot UI
