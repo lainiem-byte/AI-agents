@@ -6,21 +6,28 @@ export interface VaultClient {
   notionUrl: string;
 }
 
+// Industry vault landing pages — clients are redirected here after auth
+// New client entries are added by the vault credential generation workflow
 export const vaultClients: Record<string, VaultClient> = {
-  "RALEIGH_MED": {
-    name: "Raleigh Medical",
+  "DEMO_MEDSPA": {
+    name: "Demo Med Spa",
     industry: "medspa",
-    notionUrl: "https://notion.so/PLACEHOLDER_RALEIGH_MED"
+    notionUrl: "https://www.notion.so/3f5c3ac39e9d44e1b89558c89eb299bb"
   },
-  "COLUMBUS_RE": {
-    name: "Columbus Real Estate",
+  "DEMO_REALTOR": {
+    name: "Demo Real Estate",
     industry: "realtor",
-    notionUrl: "https://notion.so/PLACEHOLDER_COLUMBUS_RE"
+    notionUrl: "https://www.notion.so/81c5f71a1492451bb9afa5a95b1bd39f"
   },
-  "DEMO": {
-    name: "Demo Client",
-    industry: "medspa",
-    notionUrl: ""
+  "DEMO_LAW": {
+    name: "Demo Law Firm",
+    industry: "law",
+    notionUrl: "https://www.notion.so/3952b5325c5345d1a972d33e2a54c74b"
+  },
+  "DEMO_HOME": {
+    name: "Demo Home Services",
+    industry: "home-services",
+    notionUrl: "https://www.notion.so/ef81056d84554e1f9cbdb46a949b6535"
   }
 };
 
