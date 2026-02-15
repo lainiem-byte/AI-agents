@@ -167,23 +167,24 @@ export async function registerRoutes(
   app.post("/api/vault/authenticate", async (req, res) => {
     try {
       const { clientId, accessKey } = req.body;
-      
+
       if (!clientId || !accessKey) {
         return res.status(400).json({ success: false, error: "Missing credentials" });
       }
 
       const client = validateVaultAccess(clientId, accessKey);
-      
+
       if (client) {
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           clientName: client.name,
-          redirectUrl: client.redirectUrl 
+          industry: client.industry,
+          notionUrl: client.notionUrl,
         });
       } else {
-        res.status(401).json({ 
-          success: false, 
-          error: "Invalid credentials. Please verify your Client ID and Access Key." 
+        res.status(401).json({
+          success: false,
+          error: "Invalid credentials. Please verify your Client ID and Access Key."
         });
       }
     } catch (error) {

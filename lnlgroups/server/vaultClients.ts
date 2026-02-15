@@ -1,20 +1,26 @@
+export type VaultIndustry = "medspa" | "realtor" | "law" | "home-services";
+
 export interface VaultClient {
   name: string;
-  redirectUrl: string;
+  industry: VaultIndustry;
+  notionUrl: string;
 }
 
 export const vaultClients: Record<string, VaultClient> = {
   "RALEIGH_MED": {
     name: "Raleigh Medical",
-    redirectUrl: "https://drive.google.com/drive/folders/PLACEHOLDER_RALEIGH_MED"
+    industry: "medspa",
+    notionUrl: "https://notion.so/PLACEHOLDER_RALEIGH_MED"
   },
   "COLUMBUS_RE": {
     name: "Columbus Real Estate",
-    redirectUrl: "https://notion.so/PLACEHOLDER_COLUMBUS_RE"
+    industry: "realtor",
+    notionUrl: "https://notion.so/PLACEHOLDER_COLUMBUS_RE"
   },
   "DEMO": {
     name: "Demo Client",
-    redirectUrl: "/portfolio/creatives"
+    industry: "medspa",
+    notionUrl: ""
   }
 };
 

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "wouter";
 import { Lock, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ export default function VaultAccessModal({ isOpen, onClose }: VaultAccessModalPr
   const [accessKey, setAccessKey] = useState("");
   const [error, setError] = useState("");
   const [isUnlocking, setIsUnlocking] = useState(false);
+  const [, setLocation] = useLocation();
 
   const handleUnlock = async () => {
     setError("");
@@ -33,15 +35,19 @@ export default function VaultAccessModal({ isOpen, onClose }: VaultAccessModalPr
 
       const data = await response.json();
 
-      if (data.success && data.redirectUrl) {
-        if (data.redirectUrl.startsWith("http")) {
-          window.open(data.redirectUrl, "_blank");
-        } else {
-          window.location.href = data.redirectUrl;
-        }
+      if (data.success) {
+        // Store vault session data for the dashboard
+        sessionStorage.setItem("vault_session", JSON.stringify({
+          clientName: data.clientName,
+          industry: data.industry,
+          notionUrl: data.notionUrl,
+          authenticatedAt: new Date().toISOString(),
+        }));
+
         onClose();
         setClientId("");
         setAccessKey("");
+        setLocation("/vault");
       } else {
         setError(data.error || "Invalid credentials. Please verify your Client ID and Access Key.");
       }
@@ -63,7 +69,7 @@ export default function VaultAccessModal({ isOpen, onClose }: VaultAccessModalPr
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md bg-[#1A1A1D] border border-white/10 text-white p-0 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#C9A86C] via-[#FFD700] to-[#C9A86C]" />
-        
+
         <DialogHeader className="p-6 pb-2">
           <div className="flex items-center justify-center mb-4">
             <div className="w-16 h-16 rounded-full bg-[#C9A86C]/10 flex items-center justify-center border border-[#C9A86C]/30">
