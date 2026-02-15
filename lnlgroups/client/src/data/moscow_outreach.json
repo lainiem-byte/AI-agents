@@ -1,0 +1,19 @@
+{
+  "moscow_engagement": [
+    {
+      "target": "The Local Icon (e.g., BookPeople or Moscow Food Co-op)",
+      "type": "Relational Spotlight",
+      "script": "Hey {{business_name}} team! I'm Lainie from LNL. We're currently architecting a 'Local Authority' campaign for a client here in Moscow. We're featuring the Main Street pillars that make the Palouse special, and your space is at the top of our list. Would you be open to a quick 'Themed Engagement' shoot next Thursday? We'd love to tag you and drive some of our high-end traffic your way."
+    },
+    {
+      "target": "Farmers Market Vendors / Artisans",
+      "type": "The Saturday Pulse",
+      "script": "Hi {{contact_name}}! Caught your booth at the Farmers Market last Saturday. At LNL Creatives, we're building out a 'Saturday in Moscow' content series. We'd love to feature your process in our next Brand Growth cycle. It's all about showing the authentic, relational side of Moscow business. Mind if we stop by for 10 minutes to capture some 'Guide' level content?"
+    },
+    {
+      "target": "University District / New Main St Businesses",
+      "type": "The Growth Architect",
+      "script": "Hello! I'm Lainie, founder of LNL. We noticed your new space on Public Avenue. We specialize in 'Local Authority' content and AI-driven automation for boutique brands in Idaho. We're currently offering a 'Community Pillar' strategy session for businesses near the U of I. I'd love to show you the 'Map' we've built for Moscow's 2025 growth."
+    }
+  ]
+}

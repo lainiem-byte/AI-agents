@@ -1,0 +1,19 @@
+{
+  "columbus_engagement": [
+    {
+      "target": "Short North Gallery / Tech Startup",
+      "type": "The Tech Surge",
+      "script": "Hi {{contact_name}}, I'm Lainie from LNL. We've been tracking the 200% surge in tech-driven commercial interest in the Short North this year. We are currently architecting an 'Institutional Authority' campaign for the district and wanted to feature {{business_name}} as a flagship. We use an n8n + Replicate stack to ensure local brands scale at the same speed as the neighborhood. Are you open to a strategy session at High Street next week?"
+    },
+    {
+      "target": "German Village Real Estate / Boutique Law",
+      "type": "Institutional Authority",
+      "script": "Good morning {{contact_name}}. I'm the founder of LNL Group. We specialize in building the 'Digital Map' for historic Columbus districts. We're currently on-location in German Village capturing content that highlights the prestige of the brick-and-mortar landscape. We'd love to include {{business_name}} in our '2025 Market Spotlight.' Our approach is about 'Strategic Precision'—ensuring your digital presence matches the physical authority of the Village."
+    },
+    {
+      "target": "The Peninsula / Downtown Developer",
+      "type": "The Blueprint Strategy",
+      "script": "Hello! I'm Lainie, an AI Workflow Architect. We've been watching the expansion at The Peninsula and have built a technical 'Blueprint' specifically for high-end developments in Columbus. We automate the content-to-lead pipeline using a custom AI stack, allowing your team to focus on the vision while we manage the autonomous growth. I'd love to show you our Scioto Mile case study and how we can apply it to your current phase."
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+To ensure your Logic + Luxury framework is immediately felt, the messaging on each page must speak directly to the specific "pain point" that led the visitor to that domain.
+
+Here are the Hero Section headlines and sub-headlines for your three-domain architecture.
+
+1. lnlgroup.com (The Master Brain)
+Focus: High-level strategy and the total integration of both wings.
+
+Main Headline: Growth Architecture: Where Logic Meets Luxury.
+
+Sub-headline: We align your brand’s prestige with your business’s precision. From Raleigh to Moscow, we engineer the digital infrastructure that justifies your premium price point and automates your scale.
+
+Call to Action (CTA): [Apply for a Growth Audit]
+
+2. lnlcreatives.com (The Digital Face)
+Focus: Aesthetics, Brand-Mining, and Market Authority.
+
+Main Headline: The Digital Facelift: Architecting Unrivaled Market Prestige.
+
+Sub-headline: Your brand must justify your pricing before you ever speak to a lead. We use proprietary Brand-Mining to extract your hidden authority and build a visual presence that commands respect in luxury markets.
+
+Call to Action (CTA): [Start Your Aesthetic Audit]
+
+3. lnlautomations.com (The Mechanical Heart)
+Focus: Systems, AI, and Reclaiming Time.
+
+Main Headline: The Mechanical Heart: Systems Architected for Scale.
+
+Sub-headline: Scaling shouldn't mean working more hours—it should mean better logic. We install custom AI ecosystems and Lead-to-Client Logic that eliminate labor leakage and reclaim your "Zone of Genius."
+
+Call to Action (CTA): [Map Your System Logic]
+
+Visual Logic for the Hero Sections
+lnlgroup.com: Use a video background of high-end architecture or minimalist cityscapes (Raleigh/Moscow).
+
+lnlcreatives.com: Use high-contrast, editorial-style imagery. Think "Vogue" meets "Silicon Valley."
+
+lnlautomations.com: Use a clean, dark-mode interface with subtle animated flow-lines or "Mechanical Heart" schematics to represent n8n/AI logic.
+
+The "LNL" Navigation Bar
+Since all three domains lead to the same app (Option 2), your navigation bar should be consistent across all pages to encourage cross-wing exploration:
+
+LNL GROUP | CREATIVE | AUTOMATIONS | [CLIENT LOGIN]

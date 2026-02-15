@@ -1,0 +1,49 @@
+{
+  "locations": [
+    {
+      "id": "raleigh",
+      "city": "Raleigh / Durham, NC",
+      "theme": "High-Growth Tech Meets Historic Charm",
+      "neighborhoods": ["Glenwood South", "North Hills", "Downtown Durham"],
+      "copy": "From the vibrant energy of Glenwood South to the historic streets of Oakwood, Raleigh isn't just growing—it’s evolving. Our strategy captures the modern skyline and the unique character of local staples to anchor your brand in the Triangle's high-end reality.",
+      "landmarks": ["The Dillon", "Boylan Bridge", "American Tobacco Campus"],
+      "hashtags": ["#RaleighRising", "#TriangleTech", "#GlenwoodSouthLife"],
+      "value_add_custom": "Digital Localization: 10 custom posts, local market research, and trending Raleigh hashtag integration.",
+      "value_add_growth": "Physical Presence: 20 posts, monthly in-person shoot days in Raleigh, and geo-targeted ad setup for the Triangle market.",
+      "pricing": {
+        "custom": "$700–$1,100/mo",
+        "growth": "$1,400–$1,500/mo"
+      }
+    },
+    {
+      "id": "columbus",
+      "city": "Columbus, OH",
+      "theme": "Strategic Precision & Stealth Growth",
+      "neighborhoods": ["Short North", "German Village", "The Peninsula"],
+      "copy": "Columbus is the quiet giant of the Midwest. We focus on the brick-lined streets of German Village and the rapid tech surge in the Short North to position your business as a leader in a stable, powerful demographic.",
+      "landmarks": ["The Peninsula", "Schiller Park", "Scioto Mile"],
+      "hashtags": ["#CbusSmallBiz", "#ShortNorthArts", "#GermanVillageCharm"],
+      "value_add_custom": "Strategic Localization: 10 custom posts, 200% surge tech-data research for Central Ohio, and institutional tagging.",
+      "value_add_growth": "Institutional Authority: 20 posts, monthly on-location shoots at Scioto Mile, and investor-focused geo-targeting.",
+      "pricing": {
+        "custom": "$700–$1,100/mo",
+        "growth": "$1,400–$1,500+/mo"
+      }
+    },
+    {
+      "id": "moscow",
+      "city": "Moscow, ID",
+      "theme": "Community Pillar & Relational Growth",
+      "neighborhoods": ["Main Street", "The Palouse", "University District"],
+      "copy": "In Moscow, authority is built on relationships. We lean into the Saturday morning culture of the Farmers Market and the beauty of the Palouse to make your brand a permanent pillar of the community.",
+      "landmarks": ["BookPeople of Moscow", "Moscow Food Co-op", "Palouse Hills"],
+      "hashtags": ["#MoscowIdaho", "#PalouseLife", "#ShopLocalMoscow"],
+      "value_add_custom": "Relational Localization: 10 custom posts, Moscow Farmers Market trend research, and Palouse-specific geotagging.",
+      "value_add_growth": "Deep Community Engagement: 20 posts, monthly Main St shoots, and 1 themed engagement with local staples like the Food Co-op.",
+      "pricing": {
+        "custom": "$700–$1,100/mo",
+        "growth": "$1,400–$1,500+/mo"
+      }
+    }
+  ]
+}

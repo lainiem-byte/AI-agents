@@ -1,0 +1,45 @@
+This Interactive Workflow UI is the centerpiece of your lnlautomations.com page. Instead of telling clients you "do automations," you are letting them play with the "Mechanical Heart" itself.
+
+When they click through these phases, they see the Logic (the invisible backend) and the Luxury (the client-facing result) working in perfect harmony.
+
+1. The UI Concept: "The LNL Pulse"
+Visuals: A horizontal or vertical timeline with glowing "Logic Nodes."
+
+Interactivity: When a user clicks a Phase, the node "pulses" and the description box updates with a sleek fade-in animation.
+
+Design Instruction for Replit Agent: "Use Tailwind CSS and Framer Motion for smooth transitions. The background should be a deep midnight black (#050505) with thin, glowing circuit-style lines connecting the steps."
+
+2. The Code Block (Copy & Paste to Replit Agent)
+"Please build an Interactive Workflow Component for the Automations page. Use the following data and structure:
+
+State Management: Create a state to track the 'Active Phase' (default to Phase 1).
+
+Content Data:
+
+Phase 1: Capture | Logic: Master Brain analyzes questionnaire inputs. | Luxury: Client receives an instant, high-prestige confirmation.
+
+Phase 2: Audit | Logic: n8n agent scrapes website for Aesthetic Gaps. | Luxury: Client is categorized for a custom Digital Facelift.
+
+Phase 3: Engagement | Logic: Automation triggers a precision SMS/Email invite. | Luxury: High-speed response (under 45 seconds).
+
+Phase 4: Activation | Logic: Payment triggers the initialization of the LNL Vault. | Luxury: Seamless, white-glove onboarding.
+
+Style Requirements:
+
+Use a 'Glassmorphism' effect for the content card (transparent background with a subtle blur).
+
+The active node should glow with a subtle 'pulse' animation.
+
+Include a 'Run Simulation' button that auto-scrolls through the phases to show the speed of the Mechanical Heart."
+
+3. The "Master Brain" Commentary (On-Page Text)
+Beneath the interactive element, add this short copy to reinforce your authority:
+
+"A System that Scales Without You." This isn't a sequence of tasks; it’s an Architectural Pipeline. We build these systems for our clients in Raleigh, Columbus, and Moscow to ensure that while they are focused on their Zone of Genius, their Mechanical Heart is busy capturing revenue and building prestige.
+
+4. Why this works for LNL:
+Transparency: It demystifies AI. Clients often fear what they don't understand; this makes it look organized and elite.
+
+Proof of Concept: It shows that you’ve already architected your own business. If your website is this smart, they’ll trust you to build theirs.
+
+Engagement: It keeps users on the page longer, which is a signal to search engines that your site is high-value.

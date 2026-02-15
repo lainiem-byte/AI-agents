@@ -1,0 +1,19 @@
+{
+  "raleigh_engagement": [
+    {
+      "target": "Glenwood South Lifestyle / Hospitality",
+      "type": "The Vibrant Pulse",
+      "script": "Hey {{contact_name}}, I'm Lainie from LNL. We're currently architecting a 'Local Authority' series focused on the energy of Glenwood South. Your space perfectly captures the high-end, vibrant nightlife that defines Raleigh right now. We'd love to include {{business_name}} in our next shoot day to anchor our 'Brand Growth' strategy in the neighborhood's pulse. Are you open to a 15-minute content capture session next Tuesday?"
+    },
+    {
+      "target": "North Hills Tech / Modern Professional",
+      "type": "Scalable Authority",
+      "script": "Good morning {{contact_name}}. I'm the founder of LNL Group. We specialize in building 'Digital Blueprints' for Raleigh's high-growth districts. We're currently featuring the modern evolution of North Hills and the tech-forward businesses driving it. We'd love to feature {{business_name}} as a flagship in our 'Triangle Vision' project. We bridge the gap between high-end storytelling and AI-driven automation—I'd love to show you the map we've built for your sector."
+    },
+    {
+      "target": "Durham Innovation / American Tobacco Campus",
+      "type": "The Heritage Architect",
+      "script": "Hello! I'm Lainie, an AI Workflow Architect. We've been tracking the incredible growth around the American Tobacco Campus and have built a technical automation stack specifically for high-growth Durham brands. We automate the content-to-lead pipeline using Flux.1 [Schnell] and n8n, allowing your team to focus on the vision while we manage the autonomous growth. Let's sit down and look at how we can architect your 2025 presence in the Triangle."
+    }
+  ]
+}

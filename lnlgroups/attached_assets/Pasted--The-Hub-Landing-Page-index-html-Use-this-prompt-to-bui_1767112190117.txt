@@ -1,0 +1,29 @@
+. The "Hub" Landing Page (index.html)
+Use this prompt to build the split-screen entry point.
+"Build a luxury agency 'Hub' site for LNL Group in index.html.
+• The Structure:
+    1. Hero: A split-screen design. Left side 'Creative Authority,' right side 'Workflow Intelligence.'
+    2. Section 1 (The Face): Focus on 'Brand-Mining' for Med Spas and Real Estate. Use serif fonts and teal accents.
+    3. Section 2 (The Brain): Focus on 'AI Agents & Systems.' Use sans-serif Montserrat fonts and cobalt blue accents.
+    4. Section 3 (The Ecosystem): A unified section showing the 'Bundle'—how branding and automation create total scale.
+• The Visuals: High-end architectural vibes. Clean, expensive, and powerful.
+• Footer: Include links to Raleigh, Columbus, and Moscow local service areas."
+C. The LNL Automations Page (automations.html)
+Use this prompt for the "Universal" tech page.
+"Build a premium tech agency site for LNL Automations in automations.html.
+• The Aesthetic: Sophisticated Dark Mode. Deep Charcoal (#1A1A1B) background with Electric Cobalt (#2E5BFF) accents. Use 'Glow' effects around buttons.
+• Hero Section: Headline: 'Scale Without the Headcount.' Sub-headline: 'Custom AI Agents & Workflows designed for the modern small business owner.'
+• Core Services:
+    1. AI Lead Concierge: 24/7 qualifying and booking.
+    2. Workflow Architecture: Connecting apps to eliminate manual data entry.
+    3. The Intelligence Suite: Custom-trained AI agents for internal knowledge.
+• Pricing Table: Tier 1: Concierge (1.5k),Tier2:Engine(3.5k), Tier 3: Enterprise.
+• CTA: 'Request Your Workflow Audit'."
+D. The LNL Creative Page (creative.html)
+Use this prompt for the Luxury branding page.
+"Build the LNL Creative page in creative.html.
+• Design: Deep Charcoal background with Signature Teal (#008080) accents. Use organic textures (marble/linen) and serif fonts for headlines.
+• Testimonial Section: Use a 'Strategic Feedback' layout with Teal quotation marks.
+    ◦ Quote 1: 'LNL doesn't just create posts; they study the architecture of a brand.'
+    ◦ Quote 2: 'In the luxury market, image is everything. LNL Creative understands that.'
+• Timeline: A vertical list showing the 'Brand-Mining' process: Extraction, First Reveal, Deployment."

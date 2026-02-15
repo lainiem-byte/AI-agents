@@ -1,0 +1,46 @@
+In the LNL Method, the "Client Login" is more than a utility—it is a Logic Gate. It signifies that the visitor is moving from the public "Digital Face" into the private "Mechanical Heart" of their partnership with you.
+
+Even if your backend is currently a secure Google Drive or a Notion-based LNL Vault, the website must make it feel like a high-security, proprietary portal.
+
+1. The UI Component: "Vault Access"
+Placement: Far right of the Global Navigation Bar. Button Style: Outline button (Ghost button) with a thin 1px border. Hover Effect: The button fills with your primary brand color (e.g., Gold or Deep Charcoal) and the text flips to white. The Label: Do not use "Client Login." Use "Vault Access" or "Secure Login."
+
+2. The "Logic Gate" (Instructions for Replit Agent)
+You want your Replit agent to build a specific interaction when that button is clicked. Copy and paste this to the agent:
+
+"I need to implement the Vault Access logic.
+
+Create a 'Vault Access' button in the navbar.
+
+When clicked, it should trigger a sleek, minimalist Modal (Pop-up).
+
+The Modal should have two fields: 'Client ID' and 'Access Key.'
+
+The Secret Sauce: If the user enters a valid code, redirect them to their specific folder URL.
+
+The Marketing Logic: If they don't have a code, provide a small text link at the bottom of the modal that says: 'Not a client? Apply for an Audit to receive your Vault credentials.'"
+
+3. The "Vault Access" Modal Copy
+Inside that pop-up, the text needs to reinforce the Logic + Luxury brand:
+
+Headline: Accessing The LNL Vault.
+
+Sub-headline: Enter your architectural credentials to access your mined assets and system logic.
+
+Placeholder Text (Field 1): Client Identifier
+
+Placeholder Text (Field 2): Secure Access Key
+
+Button Text: [Unlock Vault]
+
+4. Why this is a "Sales Machine" Feature:
+When a prospect (like a Realtor in Columbus) sees "Vault Access" in your menu, it creates Exclusivity. They realize that your clients aren't just getting "emails"—they are getting a secure, architected experience. It makes the LNL Group feel much larger and more established than a standard agency.
+
+5. Where do the buttons actually go?
+For now, you can manually set the "Access Keys" in a simple JSON file in Replit:
+
+Key "RALEIGH_MED": Redirects to a specific Google Drive folder.
+
+Key "COLUMBUS_RE": Redirects to a Notion Client Portal.
+
+Key "DEMO": Redirects to a sample "Aesthetic Audit" page to show them what they could have.

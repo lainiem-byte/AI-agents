@@ -1,0 +1,124 @@
+{
+  "locations": [
+    {
+      "id": "raleigh",
+      "city": "Raleigh / Durham, NC",
+      "theme": "High-Growth Tech Meets Historic Charm",
+      "neighborhoods": ["Glenwood South", "North Hills", "Downtown Durham"],
+      "copy": "From the vibrant energy of Glenwood South to the historic streets of Oakwood, Raleigh isn't just growing—it's evolving. Our strategy captures the modern skyline and the unique character of local staples to anchor your brand in the Triangle's high-end reality.",
+      "landmarks": ["The Dillon", "Boylan Bridge", "American Tobacco Campus"],
+      "hashtags": ["#RaleighRising", "#TriangleTech", "#GlenwoodSouthLife"],
+      "value_add_custom": "Digital Localization: 10 custom posts, local market research, and trending Raleigh hashtag integration.",
+      "value_add_growth": "Physical Presence: 20 posts, monthly in-person shoot days in Raleigh, and geo-targeted ad setup for the Triangle market.",
+      "pricing": {
+        "custom": "$700–$1,100/mo",
+        "growth": "$1,400–$1,500/mo"
+      },
+      "case_study": {
+        "title": "Modern Condos & Vibrant Nightlife",
+        "image_key": "glenwood",
+        "location": "Glenwood South, Raleigh, NC",
+        "challenge": "Translate the physical vibrancy of Glenwood South into a digital experience that drives condo pre-sales.",
+        "solution": "Hyper-local targeting using \"Digital Localization\" and on-site lifestyle photography capturing the specific \"Live, Work, Play\" atmosphere."
+      },
+      "portfolio": [
+        {
+          "id": 1,
+          "title": "Raleigh Realty",
+          "category": "Full Management",
+          "location": "Glenwood South",
+          "image_key": "raleighRealty",
+          "tags": ["Walkable Boutiques", "Vibrant Dining"]
+        },
+        {
+          "id": 2,
+          "title": "Durham Distillery",
+          "category": "Content Only",
+          "location": "Downtown Durham",
+          "image_url": "https://images.unsplash.com/photo-1572025442646-866d16c84a54?auto=format&fit=crop&q=80&w=800",
+          "tags": ["Cocktail Culture", "Local Ingredients"]
+        }
+      ]
+    },
+    {
+      "id": "columbus",
+      "city": "Columbus, OH",
+      "theme": "Strategic Precision & Stealth Growth",
+      "neighborhoods": ["Short North", "German Village", "The Peninsula"],
+      "copy": "Columbus is the quiet giant of the Midwest. We focus on the brick-lined streets of German Village and the rapid tech surge in the Short North to position your business as a leader in a stable, powerful demographic.",
+      "landmarks": ["The Peninsula", "Schiller Park", "Scioto Mile"],
+      "hashtags": ["#CbusSmallBiz", "#ShortNorthArts", "#GermanVillageCharm"],
+      "value_add_custom": "Strategic Localization: 10 custom posts, 200% surge tech-data research for Central Ohio, and institutional tagging.",
+      "value_add_growth": "Institutional Authority: 20 posts, monthly on-location shoots at Scioto Mile, and investor-focused geo-targeting.",
+      "pricing": {
+        "custom": "$700–$1,100/mo",
+        "growth": "$1,400–$1,500+/mo"
+      },
+      "case_study": {
+        "title": "German Village & Commercial Growth",
+        "image_key": "germanVillage",
+        "location": "German Village, Columbus, OH",
+        "challenge": "Leveraging the prestige of historic German Village to build 'Brick-and-Mortar Authority' for a growing commercial brand.",
+        "solution": "Visual storytelling that integrates the brand into the iconic brick-lined streets, signaling permanence and institutional trust."
+      },
+      "portfolio": [
+        {
+          "id": 3,
+          "title": "High Street Hops",
+          "category": "Full Management",
+          "location": "Short North",
+          "image_key": "columbus",
+          "tags": ["Craft Brews", "Art Walk"]
+        },
+        {
+          "id": 4,
+          "title": "Schiller Park Estates",
+          "category": "Content Only",
+          "location": "German Village",
+          "image_url": "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?auto=format&fit=crop&q=80&w=800",
+          "tags": ["Brick & Mortar", "Historic Authority"]
+        }
+      ]
+    },
+    {
+      "id": "moscow",
+      "city": "Moscow, ID",
+      "theme": "Community Pillar & Relational Growth",
+      "neighborhoods": ["Main Street", "The Palouse", "University District"],
+      "copy": "In Moscow, authority is built on relationships. We lean into the Saturday morning culture of the Farmers Market and the beauty of the Palouse to make your brand a permanent pillar of the community.",
+      "landmarks": ["BookPeople of Moscow", "Moscow Food Co-op", "Palouse Hills"],
+      "hashtags": ["#MoscowIdaho", "#PalouseLife", "#ShopLocalMoscow"],
+      "value_add_custom": "Relational Localization: 10 custom posts, Moscow Farmers Market trend research, and Palouse-specific geotagging.",
+      "value_add_growth": "Deep Community Engagement: 20 posts, monthly Main St shoots, and 1 themed engagement with local staples like the Food Co-op.",
+      "pricing": {
+        "custom": "$700–$1,100/mo",
+        "growth": "$1,400–$1,500+/mo"
+      },
+      "case_study": {
+        "title": "Main Street & Artisanal Growth",
+        "image_key": "moscow",
+        "location": "Main Street, Moscow, ID",
+        "challenge": "Capturing the unique architectural evolution of Main Street while highlighting deep local business partnerships.",
+        "solution": "A visual campaign showcasing the brand as a central hub for the community, bridging the gap between university energy and local tradition."
+      },
+      "portfolio": [
+        {
+          "id": 5,
+          "title": "Palouse Provisions",
+          "category": "Full Management",
+          "location": "Main Street",
+          "image_url": "https://images.unsplash.com/photo-1488459716781-31db52582fe9?auto=format&fit=crop&q=80&w=800",
+          "tags": ["Local Partnerships", "Community"]
+        },
+        {
+          "id": 6,
+          "title": "Vandal Coffee",
+          "category": "Content Only",
+          "location": "University District",
+          "image_url": "https://images.unsplash.com/photo-1497935586351-b67a49e012bf?auto=format&fit=crop&q=80&w=800",
+          "tags": ["Study Spot", "Morning Ritual"]
+        }
+      ]
+    }
+  ]
+}

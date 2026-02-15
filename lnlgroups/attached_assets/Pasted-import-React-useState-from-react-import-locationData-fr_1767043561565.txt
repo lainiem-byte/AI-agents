@@ -1,0 +1,68 @@
+import React, { useState } from 'react';
+import locationData from '../data/locations.json';
+
+const LocationShowcase = () => {
+  const [activeTab, setActiveTab] = useState(locationData.locations[0]);
+
+  return (
+    <div className="max-w-6xl mx-auto py-12 px-4 bg-slate-50 rounded-xl shadow-sm">
+      {/* Tab Navigation */}
+      <div className="flex justify-center space-x-4 mb-8">
+        {locationData.locations.map((loc) => (
+          <button
+            key={loc.id}
+            onClick={() => setActiveTab(loc)}
+            className={`px-6 py-2 rounded-full font-medium transition-all ${
+              activeTab.id === loc.id 
+              ? 'bg-black text-white' 
+              : 'bg-white text-gray-600 border border-gray-200 hover:border-black'
+            }`}
+          >
+            {loc.city.split(',')[0]}
+          </button>
+        ))}
+      </div>
+
+      {/* Content Display */}
+      <div className="grid md:grid-cols-2 gap-12 items-center animate-fadeIn">
+        <div>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">{activeTab.city}</h2>
+          <p className="text-sm font-semibold uppercase tracking-widest text-blue-600 mb-2">
+            {activeTab.angle}
+          </p>
+          <p className="text-lg text-gray-700 leading-relaxed mb-6">
+            {activeTab.copy}
+          </p>
+          
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-bold text-gray-900">Priority Neighborhoods:</h4>
+              <p className="text-gray-600">{activeTab.neighborhoods.join(' • ')}</p>
+            </div>
+            <div>
+              <h4 className="font-bold text-gray-900">2025 Landmarks & Geotags:</h4>
+              <p className="text-gray-600 italic">{activeTab.landmarks.join(', ')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Visual Strategy Card */}
+        <div className="bg-white p-8 border border-gray-100 shadow-xl rounded-2xl">
+          <h3 className="text-xl font-bold mb-4">Local Authority Strategy</h3>
+          <div className="flex flex-wrap gap-2 mb-6">
+            {activeTab.hashtags.map(tag => (
+              <span key={tag} className="text-sm bg-gray-100 px-3 py-1 rounded text-gray-600">{tag}</span>
+            ))}
+          </div>
+          <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+            <p className="text-sm text-blue-800 italic">
+              "Our {activeTab.id === 'raleigh' ? 'Brand Growth Tier' : 'Custom Content Pack'} includes specific targeting for this region's 2025 demographics."
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LocationShowcase;

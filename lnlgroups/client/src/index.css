@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Roboto:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap');
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: 'Roboto', sans-serif;
+  --font-display: 'Montserrat', sans-serif;
+  --font-serif: 'Instrument Serif', serif;
+
+  /* LNL Brand Tokens */
+  --color-lnl-dark: #1A1A1D;
+  --color-lnl-gold: #C9A86C;
+  --color-lnl-violet: #8B5CF6;
+  --color-lnl-cyan: #06B6D4;
+  --color-lnl-pearl: #FAFAF9;
+
+  /* Semantic Colors - Default to LNL Dark Theme */
+  --color-background: var(--color-lnl-dark);
+  --color-foreground: var(--color-lnl-pearl);
+
+  --color-primary: var(--color-lnl-gold);
+  --color-primary-foreground: var(--color-lnl-dark);
+
+  --color-secondary: #242428;
+  --color-secondary-foreground: var(--color-lnl-pearl);
+
+  --color-muted: #2D2D32;
+  --color-muted-foreground: #a1a1aa;
+
+  --color-accent: var(--color-lnl-violet);
+  --color-accent-foreground: #ffffff;
+
+  --color-card: #1E1E22;
+  --color-card-foreground: var(--color-lnl-pearl);
+
+  --color-popover: rgba(30, 30, 34, 0.95);
+  --color-popover-foreground: var(--color-lnl-pearl);
+
+  --color-border: #27272a;
+  --color-input: #27272a;
+  
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: auto !important;
+    overflow-y: scroll;
+  }
+  body {
+    @apply font-sans antialiased bg-lnl-dark text-lnl-pearl transition-colors duration-300;
+    overflow-x: hidden;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-lnl-dark/70 backdrop-blur-md border border-white/10 shadow-lg;
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+  .glass-card-gradient {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid;
+    border-image: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05)) 1;
+  }
+  .tech-gradient-text {
+    @apply bg-gradient-to-r from-lnl-gold to-lnl-violet bg-clip-text text-transparent;
+  }
+  .font-serif-display {
+    font-family: 'Instrument Serif', serif;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 50%;
+  }
+  100% {
+    background-position: -200% 50%;
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 4s ease-in-out infinite;
+}

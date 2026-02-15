@@ -56,7 +56,23 @@
       "Bash(C:/tmp/parse_triggers.sh << 'BASHEOF'\n#!/bin/bash\n\nFILE=\"C:/tmp/workflows.json\"\n\necho \"WORKFLOW TRIGGER ANALYSIS \\(Full\\)\"\necho \"==================================\"\necho \"\"\necho \"Workflow Name                                      | Active | Trigger Type\"\necho \"--------------------------------------------------------------------------------\"\n\n# This is tricky because we need to match workflows to their first nodes\n# Let's do this differently - iterate through and find workflow blocks, then extract their first node\n\n# Extract each workflow JSON object \\(approximately\\)\n# Split by \"id\" at the start of workflow entries \\(not in parameters\\)\n\n# More reliable: look for \"isArchived\":false patterns which appear once per workflow\nawk '\nBEGIN { \n    name = \"\"\n    active = \"\"\n    trigger = \"\"\n    count = 0\n}\n/\"isArchived\":false/ { \n    # Extract name and active from the buffer before isArchived\n    if \\(match\\($0, /\"name\":\"\\([^\"]+\\)\"/, m\\)\\) name = m[1]\n    if \\(match\\($0, /\"active\":\\(true|false\\)/, m\\)\\) active = m[1]\n    \n    # Now look for the next node entry which should be the first node \\(trigger\\)\n    # Look ahead for \"type\":\"n8n-nodes-base...\n    getline\n    while \\($0 !~ /\"type\":\"n8n-nodes-base/\\) {\n        getline\n    }\n    \n    if \\(match\\($0, /\"type\":\"\\([^\"]+\\)\"/, m\\)\\) {\n        trigger = m[1]\n        sub\\(/^n8n-nodes-base\\\\./, \"\", trigger\\)\n        sub\\(/Trigger$/, \"\", trigger\\)\n    }\n    \n    if \\(name != \"\"\\) {\n        count++\n        printf \"%-50s | %-6s | %s\\\\n\", substr\\(name, 1, 48\\), active, trigger\n    }\n    \n    name = \"\"\n    active = \"\"\n    trigger = \"\"\n}\n' C:/tmp/workflows.json | head -20\n\nBASHEOF)",
       "Bash(__NEW_LINE_74077691ee2bc097__ chmod +x C:/tmp/parse_triggers.sh)",
       "Bash(bash:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "WebSearch",
+      "Bash(claude plugin marketplace list:*)",
+      "WebFetch(domain:docs.claude.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "mcp__claude_ai_HubSpot__search_owners",
+      "mcp__claude_ai_HubSpot__search_crm_objects",
+      "mcp__claude_ai_HubSpot__get_properties",
+      "mcp__claude_ai_HubSpot__get_user_details",
+      "mcp__claude_ai_HubSpot__search_properties",
+      "Bash(grep:*)",
+      "Bash(env:*)",
+      "Bash(sshpass -p 'BrokeBack71#' ssh -o StrictHostKeyChecking=no root@72.62.170.65 \"find /root -name ''docker-compose*'' -o -name ''traefik*'' 2>/dev/null | head -20; echo ''===''; cat /var/www/vault/index.html 2>/dev/null | head -10; echo ''===''; find /root -name ''*.yml'' -o -name ''*.yaml'' 2>/dev/null | head -20\")",
+      "Bash(scp:*)",
+      "mcp__claude_ai_Notion__notion-search",
+      "mcp__claude_ai_Notion__notion-fetch",
+      "mcp__claude_ai_Notion__notion-update-data-source"
     ]
   }
 }

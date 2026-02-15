@@ -1,0 +1,23 @@
+# LNL Group - AI Automation Architect & Local Authority Content
+# https://lnlgroup.com
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://lnlgroup.com/sitemap.xml
+
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Disallow admin/api paths
+Disallow: /api/
+Disallow: /_next/
+Disallow: /node_modules/
+
+# Allow search engines to index all public content
+Allow: /about
+Allow: /services
+Allow: /creatives
+Allow: /portfolio
+Allow: /contact
