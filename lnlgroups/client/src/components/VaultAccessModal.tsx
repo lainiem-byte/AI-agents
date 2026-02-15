@@ -16,7 +16,6 @@ interface VaultAccessModalProps {
 }
 
 export default function VaultAccessModal({ isOpen, onClose }: VaultAccessModalProps) {
-  const [clientId, setClientId] = useState("");
   const [accessKey, setAccessKey] = useState("");
   const [error, setError] = useState("");
   const [isUnlocking, setIsUnlocking] = useState(false);
@@ -30,13 +29,12 @@ export default function VaultAccessModal({ isOpen, onClose }: VaultAccessModalPr
       const response = await fetch("/api/vault/authenticate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ clientId, accessKey })
+        body: JSON.stringify({ accessKey })
       });
 
       const data = await response.json();
 
       if (data.success) {
-        // Store vault session data for the dashboard
         sessionStorage.setItem("vault_session", JSON.stringify({
           clientName: data.clientName,
           industry: data.industry,
@@ -45,11 +43,10 @@ export default function VaultAccessModal({ isOpen, onClose }: VaultAccessModalPr
         }));
 
         onClose();
-        setClientId("");
         setAccessKey("");
         setLocation("/vault");
       } else {
-        setError(data.error || "Invalid credentials. Please verify your Client ID and Access Key.");
+        setError(data.error || "Invalid vault key. Please check the key sent to your email.");
       }
     } catch (err) {
       setError("Authentication failed. Please try again.");
@@ -80,33 +77,21 @@ export default function VaultAccessModal({ isOpen, onClose }: VaultAccessModalPr
             Accessing The LNL Vault
           </DialogTitle>
           <p className="text-center text-gray-400 text-sm mt-2">
-            Enter your architectural credentials to access your mined assets and system logic.
+            Enter the Vault Key sent to your email to access your audit assets and system architecture.
           </p>
         </DialogHeader>
 
         <div className="p-6 pt-4 space-y-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Client Identifier</label>
+            <label className="text-sm font-medium text-gray-300">Vault Key</label>
             <Input
               type="text"
-              placeholder="Client Identifier"
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-[#C9A86C]/50 focus:ring-[#C9A86C]/20"
-              data-testid="input-client-id"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Secure Access Key</label>
-            <Input
-              type="password"
-              placeholder="Secure Access Key"
+              placeholder="VK-XXX-XXXXXX"
               value={accessKey}
-              onChange={(e) => setAccessKey(e.target.value)}
-              className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-[#C9A86C]/50 focus:ring-[#C9A86C]/20"
+              onChange={(e) => setAccessKey(e.target.value.toUpperCase())}
+              className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-[#C9A86C]/50 focus:ring-[#C9A86C]/20 font-mono tracking-wider text-center"
               data-testid="input-access-key"
-              onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+              onKeyDown={(e) => e.key === 'Enter' && accessKey && handleUnlock()}
             />
           </div>
 
@@ -116,7 +101,7 @@ export default function VaultAccessModal({ isOpen, onClose }: VaultAccessModalPr
 
           <Button
             onClick={handleUnlock}
-            disabled={!clientId || !accessKey || isUnlocking}
+            disabled={!accessKey || isUnlocking}
             className="w-full h-12 rounded-full bg-[#C9A86C] hover:bg-[#C9A86C]/90 text-black font-semibold text-base mt-4"
             style={{ boxShadow: '0 0 30px rgba(201, 168, 108, 0.3)' }}
             data-testid="button-unlock-vault"

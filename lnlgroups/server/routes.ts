@@ -168,25 +168,52 @@ export async function registerRoutes(
     try {
       const { clientId, accessKey } = req.body;
 
-      if (!clientId || !accessKey) {
-        return res.status(400).json({ success: false, error: "Missing credentials" });
+      if (!accessKey) {
+        return res.status(400).json({ success: false, error: "Missing access key" });
       }
 
-      const client = validateVaultAccess(clientId, accessKey);
+      // Primary: call Concierge Agent vault-auth webhook (Notion-backed)
+      const vaultWebhookUrl = process.env.N8N_VAULT_AUTH_URL || "https://n8n.srv1244684.hstgr.cloud/webhook/vault-auth";
+      try {
+        const webhookRes = await fetch(vaultWebhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            access_key: accessKey,
+            client_id: clientId || "",
+            timestamp: new Date().toISOString(),
+          }),
+        });
 
+        const data = await webhookRes.json();
+
+        if (data.auth === true) {
+          return res.json({
+            success: true,
+            clientName: data.client_name || data.clientName,
+            industry: data.industry,
+            notionUrl: data.vault_url || data.notionUrl,
+          });
+        }
+      } catch (webhookErr) {
+        console.error("[Vault] Concierge webhook failed, trying local fallback:", webhookErr);
+      }
+
+      // Fallback: hardcoded vaultClients lookup
+      const client = validateVaultAccess(clientId || "", accessKey);
       if (client) {
-        res.json({
+        return res.json({
           success: true,
           clientName: client.name,
           industry: client.industry,
           notionUrl: client.notionUrl,
         });
-      } else {
-        res.status(401).json({
-          success: false,
-          error: "Invalid credentials. Please verify your Client ID and Access Key."
-        });
       }
+
+      res.status(401).json({
+        success: false,
+        error: "Invalid credentials. Please verify your Access Key."
+      });
     } catch (error) {
       res.status(500).json({ success: false, error: "Authentication failed" });
     }
