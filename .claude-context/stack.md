@@ -20,7 +20,12 @@
 - **Notion** – Structured content vault and database
   - Source of truth for LNL Creatives brand mines, content pillars, and assets
   - Integrates with n8n for content publishing workflows
-  - Vault: https://www.notion.so/2ed2b4104a59804eb681fc0fe732d51e?v=2ed2b4104a5980959954000c6b1f181c
+  - Vault (Master/Legacy): https://www.notion.so/2ed2b4104a59804eb681fc0fe732d51e?v=2ed2b4104a5980959954000c6b1f181c
+  - **Industry Vault Databases** (created 2026-02-15):
+    - LNL Vault — Med Spa: `3f5c3ac39e9d44e1b89558c89eb299bb` (LNL Creative)
+    - LNL Vault — Real Estate: `81c5f71a1492451bb9afa5a95b1bd39f` (LNL Creative)
+    - LNL Vault — Law: `3952b5325c5345d1a972d33e2a54c74b` (LNL Automations)
+    - LNL Vault — Home Services: `ef81056d84554e1f9cbdb46a949b6535` (LNL Automations)
 
 ## CRM & Sales
 - **HubSpot** (primary CRM)

@@ -13,6 +13,8 @@ export const leads = pgTable("leads", {
   primaryMarket: text("primary_market").notNull(),
   interest: text("interest").notNull(),
   techStack: text("tech_stack").array().notNull(),
+  source: text("source").default("contact").notNull(),
+  auditData: text("audit_data"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

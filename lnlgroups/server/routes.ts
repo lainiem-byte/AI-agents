@@ -6,7 +6,7 @@ import { validateVaultAccess } from "./vaultClients";
 
 async function forwardToWebhook(leadData: any): Promise<boolean> {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
-  
+
   if (!webhookUrl) {
     console.log("[Webhook] No N8N_WEBHOOK_URL configured, skipping webhook forward");
     return false;
@@ -43,6 +43,34 @@ async function forwardToWebhook(leadData: any): Promise<boolean> {
   }
 }
 
+async function forwardAuditToWebhook(auditPayload: Record<string, any>): Promise<boolean> {
+  const webhookUrl = process.env.N8N_AUDIT_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
+
+  if (!webhookUrl) {
+    console.log("[Audit Webhook] No webhook URL configured, skipping");
+    return false;
+  }
+
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(auditPayload),
+    });
+
+    if (response.ok) {
+      console.log("[Audit Webhook] Audit data forwarded to n8n");
+      return true;
+    } else {
+      console.error("[Audit Webhook] Forward failed:", response.status);
+      return false;
+    }
+  } catch (error) {
+    console.error("[Audit Webhook] Error:", error);
+    return false;
+  }
+}
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -61,6 +89,69 @@ export async function registerRoutes(
       });
     } catch (error) {
       res.status(400).json({ error: "Invalid lead data" });
+    }
+  });
+
+  app.post("/api/audit", async (req, res) => {
+    try {
+      const {
+        name, email, businessName, primaryMarket, interest, techStack,
+        industry, competitorReason, contentHours, assetScore,
+        contentLibrary, leadNextStep, paidTraffic, cpl,
+        industrySpecific, adLink, additionalNotes,
+      } = req.body;
+
+      // Build audit diagnostic data
+      const auditData: Record<string, any> = {
+        industry, competitorReason, contentHours, assetScore,
+        contentLibrary, leadNextStep, paidTraffic, cpl,
+        industrySpecific, adLink, additionalNotes,
+      };
+
+      // Store lead with source=audit and auditData JSON
+      const leadPayload = {
+        name,
+        email,
+        businessName,
+        primaryMarket: primaryMarket || "raleigh",
+        interest: interest || "30-Minute Efficiency Audit",
+        techStack: Array.isArray(techStack) ? techStack : [],
+        source: "audit",
+        auditData: JSON.stringify(auditData),
+      };
+
+      const validatedData = insertLeadSchema.parse(leadPayload);
+      const lead = await storage.createLead(validatedData);
+
+      // Forward flat payload to n8n
+      const webhookPayload = {
+        customer_name: name,
+        customer_email: email,
+        business_name: businessName,
+        market: primaryMarket,
+        service_interest: interest,
+        tech_stack: Array.isArray(techStack) ? techStack.join(", ") : "",
+        source: "LNL Audit Page",
+        industry,
+        competitor_reason: competitorReason,
+        content_hours: contentHours,
+        asset_score: assetScore,
+        content_library: contentLibrary,
+        lead_next_step: leadNextStep,
+        paid_traffic: paidTraffic,
+        cpl: cpl || "",
+        industry_specific: industrySpecific,
+        ad_link: adLink || "",
+        additional_notes: additionalNotes || "",
+        timestamp: new Date().toISOString(),
+      };
+
+      const webhookSent = await forwardAuditToWebhook(webhookPayload);
+
+      res.json({ ...lead, webhookSent, message: "Audit submitted successfully" });
+    } catch (error) {
+      console.error("[Audit] Submission error:", error);
+      res.status(400).json({ error: "Invalid audit data" });
     }
   });
 
