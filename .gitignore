@@ -5,5 +5,7 @@ check_exec*.py
 extract_nodes.py
 vault-login*.html
 transcript.txt
+env.txt
+*.env.txt
 nul
 OUTREACH SCRIPTS ALL.docx
