@@ -1,8 +1,33 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import path from "path";
+import fs from "fs";
+import multer from "multer";
 import { storage } from "./storage";
 import { insertLeadSchema } from "@shared/schema";
 import { validateVaultAccess } from "./vaultClients";
+
+// Vault file upload storage config
+const uploadDir = path.join(process.cwd(), "uploads", "vault");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const vaultUpload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, uploadDir),
+    filename: (_req, file, cb) => {
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
+      cb(null, `${timestamp}-${safeName}`);
+    },
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB
+  fileFilter: (_req, file, cb) => {
+    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|xls|xlsx|csv|mp4|mov|zip)$/i;
+    cb(null, allowed.test(path.extname(file.originalname)));
+  },
+});
 
 async function forwardToWebhook(leadData: any): Promise<boolean> {
   const webhookUrl = process.env.N8N_WEBHOOK_URL;
@@ -216,6 +241,51 @@ export async function registerRoutes(
       });
     } catch (error) {
       res.status(500).json({ success: false, error: "Authentication failed" });
+    }
+  });
+
+  // Vault file upload → saves to disk, creates Notion page for the asset
+  app.post("/api/vault/upload", vaultUpload.single("file"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ success: false, error: "No file provided" });
+      }
+
+      const { vaultKey, industry, businessName, checklistItem } = req.body;
+
+      if (!vaultKey || !industry || !checklistItem) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+      }
+
+      // Notion database ID mapping per industry
+      const notionDbMap: Record<string, string> = {
+        medspa: "3f5c3ac39e9d44e1b89558c89eb299bb",
+        realtor: "81c5f71a1492451bb9afa5a95b1bd39f",
+        law: "3952b5325c5345d1a972d33e2a54c74b",
+        "home-services": "ef81056d84554e1f9cbdb46a949b6535",
+      };
+
+      const databaseId = notionDbMap[industry];
+      if (!databaseId) {
+        return res.status(400).json({ success: false, error: "Invalid industry" });
+      }
+
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const pageName = `${industry} - ${businessName || "Client"} - ${checklistItem} ${dateStr}`;
+
+      console.log(`[Vault Upload] ${pageName} → ${file.filename} (${file.size} bytes)`);
+
+      res.json({
+        success: true,
+        fileName: file.filename,
+        pageName,
+        fileSize: file.size,
+        message: "File uploaded successfully",
+      });
+    } catch (error) {
+      console.error("[Vault Upload] Error:", error);
+      res.status(500).json({ success: false, error: "Upload failed" });
     }
   });
 

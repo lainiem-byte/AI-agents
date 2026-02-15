@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   ShieldCheck, Upload, CheckCircle2, ExternalLink, Lock,
@@ -129,9 +129,41 @@ export default function Vault() {
   const pillarIcon = pillar === "creative" ? Image : Wrench;
   const PillarIcon = pillarIcon;
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeUpload, setActiveUpload] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
   const handleUploadClick = (itemId: string) => {
-    // Placeholder — will be wired to real file upload (LNL-hub-c9g)
-    setUploaded((prev) => new Set(prev).add(itemId));
+    setActiveUpload(itemId);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeUpload || !session) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("vaultKey", sessionStorage.getItem("vault_key") || "");
+      formData.append("industry", session.industry);
+      formData.append("businessName", session.clientName);
+      formData.append("checklistItem", activeUpload);
+
+      const res = await fetch("/api/vault/upload", { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (data.success) {
+        setUploaded((prev) => new Set(prev).add(activeUpload));
+      }
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setUploading(false);
+      setActiveUpload(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
   };
 
   const handleLogout = () => {
@@ -141,6 +173,13 @@ export default function Vault() {
 
   return (
     <div className="min-h-screen bg-[#0D0D0F] text-white">
+      <input
+        ref={fileInputRef}
+        type="file"
+        className="hidden"
+        accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.mp4,.mov,.zip"
+        onChange={handleFileChange}
+      />
       {/* Header */}
       <header className="bg-[#1A1A1D]/95 backdrop-blur-xl border-b border-[#C9A86C]/10 shadow-lg shadow-black/20">
         <div className="container mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
@@ -222,7 +261,7 @@ export default function Vault() {
 
                   <Button
                     onClick={() => handleUploadClick(item.id)}
-                    disabled={isUploaded}
+                    disabled={isUploaded || uploading}
                     variant={isUploaded ? "outline" : "default"}
                     className={`shrink-0 ${
                       isUploaded
@@ -233,6 +272,10 @@ export default function Vault() {
                     {isUploaded ? (
                       <span className="flex items-center gap-1.5">
                         <CheckCircle2 className="w-4 h-4" /> Uploaded
+                      </span>
+                    ) : uploading && activeUpload === item.id ? (
+                      <span className="flex items-center gap-1.5">
+                        <Upload className="w-4 h-4 animate-pulse" /> Uploading...
                       </span>
                     ) : (
                       <span className="flex items-center gap-1.5">
