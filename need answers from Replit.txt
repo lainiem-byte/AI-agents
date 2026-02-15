@@ -1,0 +1,71 @@
+need answers from Replit
+
+
+Hostinger wants to know how my websites run (guessing tech stack) and the details on how the domains are routed since i have a multi-site website. I believe replit is only using one of its domains for all 3 sites and when you want to visit the creatives web page it is done through a link in the menu and not an actual integration of any type. Please provide all the fine details thyere asking about... 
+
+To move forward in a way that actually works, I need just this from you:
+
+1. For each Replit project (each website), download its code as a ZIP from Replit.  
+2. Upload those three ZIP files to your VPS (you can use the Hostinger VPS Browser terminal + upload, or SFTP).  
+3. Tell me **where** you uploaded them on the VPS (e.g. `/root/lnl-sites/` or `/home/username/lnl-sites/`), and what you want to call each app, like:
+   - App 1 (lnlautomations.com + agents.lnlautomations.com) → folder name  
+   - App 2 (lnlcreatives.com + vault.lnlcreatives.com) → folder name  
+   - App 3 (lnlgroups.com) → folder name  
+
+Once you tell me the folder paths/names, I can:
+- Inspect the projects on the VPS,  
+- Detect what they are (Node, Python, static, etc.),  
+- Set up Docker/pm2 + Nginx for you with exact commands.
+
+To move forward in a way that actually works, I need just this from you:
+
+1. For each Replit project (each website), download its code as a ZIP from Replit.  
+2. Upload those three ZIP files to your VPS (you can use the Hostinger VPS Browser terminal + upload, or SFTP).  
+3. Tell me **where** you uploaded them on the VPS (e.g. `/root/lnl-sites/` or `/home/username/lnl-sites/`), and what you want to call each app, like:
+   - App 1 (lnlautomations.com + agents.lnlautomations.com) → folder name  
+   - App 2 (lnlcreatives.com + vault.lnlcreatives.com) → folder name  
+   - App 3 (lnlgroups.com) → folder name  
+
+Once you tell me the folder paths/names, I can:
+- Inspect the projects on the VPS,  
+- Detect what they are (Node, Python, static, etc.),  
+- Set up Docker/pm2 + Nginx for you with exact commands.
+
+
+
+
+**Ask Replit support for these specifics:**
+   - Is the project mainly **static HTML/CSS/JS**, or a **Node / Python / other server**?
+   - What **command** does it use to run (the “Run” command, e.g. `npm start`, `node index.js`, `python main.py`)?
+   - How are domains routed inside the project? For example:
+     - Does the code check `host` (lnlautomations.com vs lnlcreatives.com) and show different content?
+     - Or are they actually just different folders / routes (e.g. `/vault`, `/agents`)?
+2. **Once you have that info**, paste it here (even if it’s just a screenshot transcribed), and I’ll:
+   - Tell you exactly how many ports/apps we really need on the VPS.  
+   - Give you precise commands to:
+     - Pull the code from GitHub onto your VPS,
+     - Install dependencies,
+     - Start the app(s) correctly,
+     - Configure Nginx so each domain goes to the right place.
+
+If the project is truly “one app that serves different content per domain”** (very possible since Replit used one A record), then:
+   - We will run **one app** on a single port (e.g. 5000),
+   - Use Nginx to point **all your domains** to that same app,
+   - Let the app itself decide what to show per domain—exactly like Replit did.
+
+
+
+
+Hostinger needs from Replit
+tech stack + run command + routing explanation
+1 zip file for each website
+The name of the replit site hosting the LNL websites (A record)
+
+
+
+
+Pending on VPS
+
+How to **route the domains** correctly with Nginx  
+**cannot correctly run your sites on the VPS** until we know at least the **run command** and **how it distinguishes domains/content**.  
+

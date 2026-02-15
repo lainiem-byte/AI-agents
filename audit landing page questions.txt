@@ -1,0 +1,27 @@
+To align with your LNL Creative brand for Med Spas and Realtors, the audit landing page needs to move away from "basic contact info" and toward "strategic diagnostics." These questions are designed to make the lead feel like they are already being audited while they type.
+The "LNL Creative" Diagnostic Questions
+These should be placed on your /audit landing page to qualify the lead and prepare your agents for the 30-minute call.
+Section 1: The Visual Authority (Creative Gaps)
+* Current Content Hurdles: "What is the #1 reason a potential client chooses a competitor over you after visiting your Instagram or Website?"
+* Creative Velocity: "How many hours per week is your team spending trying to edit videos or design graphics rather than closing deals?"
+* Asset Performance: "On a scale of 1-10, how well does your current visual content reflect the high-end nature of your [Med Spa treatments / Luxury listings]?"
+* The 'Scroll-Stop' Factor: "Do you currently have a library of cinematic video assets, or are you relying on static photos and stock imagery?"
+Section 2: The Conversion Engine (Strategic Gaps)
+* Lead Friction: "When a lead likes your content, what is their exact next step to book with you? (e.g., DM, Link in Bio, Phone Call)"
+* Ad Spend Efficiency: "Are you currently running paid traffic to your creative assets? If so, what is your current Cost Per Lead (CPL)?"
+* Industry Specifics (Conditional Logic):
+o For Realtors: "Do you have a systemized way to turn a single property listing into 10+ pieces of short-form content?"
+o For Med Spas: "Do you have professional 'Before & After' content that complies with platform regulations while still looking high-end?"
+
+Implementation Guide for Claude Code
+When you have Claude build this page, use this "LNL Audit Logic":
+1. Progressive Disclosure: Don't show all 10 questions at once. Have Claude build it as a "Multi-Step Form" (3 questions per slide). This lowers friction and increases completion rates.
+2. The "URL Trigger": Since you have two industries, tell Claude to use URL parameters (e.g., lnlcreatives.com/audit?industry=medspa).
+o If industry=medspa, show questions about "Treatment Results."
+o If industry=realtor, show questions about "Listing Speed."
+3. The Final Hook: The last "question" shouldn't be a question. It should be: "Upload a link to your most recent ad or post so our architects can review it before the call."
+The Success State
+Once they submit this audit form, ensure it triggers the LNL Success Modal we built earlier, but update the text to say:
+"AUDIT DATA RECEIVED. Our architects are now cross-referencing your content against [Med Spa/Real Estate] industry benchmarks."
+Would you like me to write the "Industry Benchmark" data points for Med Spas and Realtors so you have facts to drop during the actual audit call?
+
