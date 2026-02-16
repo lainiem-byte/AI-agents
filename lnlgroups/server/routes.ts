@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
+import { Client } from "@notionhq/client";
+import nodemailer from "nodemailer";
 import { storage } from "./storage";
 import { insertLeadSchema } from "@shared/schema";
 import { validateVaultAccess } from "./vaultClients";
@@ -64,6 +66,58 @@ async function forwardToWebhook(leadData: any): Promise<boolean> {
     }
   } catch (error) {
     console.error("[Webhook] Error forwarding lead:", error);
+    return false;
+  }
+}
+
+// Vault upload confirmation email to customer
+async function sendVaultUploadEmail(
+  customerEmail: string,
+  clientName: string,
+  checklistItem: string,
+): Promise<boolean> {
+  const smtpHost = process.env.OUTREACH_AGENT_EMAIL_SMTP_HOST;
+  const smtpPort = parseInt(process.env.OUTREACH_AGENT_EMAIL_SMTP_PORT || "465", 10);
+  const smtpUser = process.env.OUTREACH_AGENT_EMAIL_SMTP_USER;
+  const smtpPass = process.env.OUTREACH_AGENT_EMAIL_SMTP_PASS;
+
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    console.warn("[Vault Email] SMTP not configured — skipping notification");
+    return false;
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+
+    await transporter.sendMail({
+      from: `"LNL Group" <${smtpUser}>`,
+      to: customerEmail,
+      subject: `Asset Received — ${checklistItem}`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; color: #222;">
+          <div style="background: #0D0D0F; padding: 24px 28px; border-radius: 12px 12px 0 0;">
+            <h2 style="color: #C9A86C; margin: 0; font-size: 20px;">LNL Vault</h2>
+          </div>
+          <div style="background: #1A1A1D; padding: 28px; border-radius: 0 0 12px 12px; color: #ccc;">
+            <p style="margin-top: 0;">Hi <strong style="color: #fff;">${clientName}</strong>,</p>
+            <p>We received your <strong style="color: #C9A86C;">${checklistItem}</strong> upload. Our architects will review it within <strong>48 hours</strong>.</p>
+            <p>You can continue uploading remaining checklist items from your vault portal at any time.</p>
+            <hr style="border: none; border-top: 1px solid #333; margin: 20px 0;" />
+            <p style="font-size: 13px; color: #888;">This is an automated message from LNL Group. Do not reply directly — reach us at customercare@lnlgroups.com.</p>
+          </div>
+        </div>
+      `,
+    });
+
+    console.log(`[Vault Email] Confirmation sent to ${customerEmail}`);
+    return true;
+  } catch (err) {
+    console.error("[Vault Email] Send failed:", err);
     return false;
   }
 }
@@ -218,6 +272,7 @@ export async function registerRoutes(
             clientName: data.client_name || data.clientName,
             industry: data.industry,
             notionUrl: data.vault_url || data.notionUrl,
+            email: data.email || data.client_email || null,
           });
         }
       } catch (webhookErr) {
@@ -244,7 +299,7 @@ export async function registerRoutes(
     }
   });
 
-  // Vault file upload → saves to disk, creates Notion page for the asset
+  // Vault file upload → saves to disk, updates existing Notion client page
   app.post("/api/vault/upload", vaultUpload.single("file"), async (req, res) => {
     try {
       const file = req.file;
@@ -252,7 +307,7 @@ export async function registerRoutes(
         return res.status(400).json({ success: false, error: "No file provided" });
       }
 
-      const { vaultKey, industry, businessName, checklistItem } = req.body;
+      const { vaultKey, industry, businessName, checklistItem, email } = req.body;
 
       if (!vaultKey || !industry || !checklistItem) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
@@ -272,16 +327,100 @@ export async function registerRoutes(
       }
 
       const dateStr = new Date().toISOString().slice(0, 10);
-      const pageName = `${industry} - ${businessName || "Client"} - ${checklistItem} ${dateStr}`;
 
-      console.log(`[Vault Upload] ${pageName} → ${file.filename} (${file.size} bytes)`);
+      // Build public file URL
+      const appUrl = (process.env.APP_URL || `http://localhost:${process.env.PORT || 5000}`).replace(/\/$/, "");
+      const fileUrl = `${appUrl}/uploads/vault/${file.filename}`;
+
+      console.log(`[Vault Upload] ${checklistItem} → ${file.filename} (${file.size} bytes) [key: ${vaultKey}]`);
+
+      // Find existing client page by vault key, then update it
+      let notionPageUrl: string | null = null;
+      const notionKey = process.env.NOTION_API_KEY;
+
+      if (notionKey) {
+        try {
+          const notion = new Client({ auth: notionKey });
+
+          // Query database for the client's existing page using their vault key
+          const queryRes = await notion.dataSources.query({
+            data_source_id: databaseId,
+            filter: {
+              property: "Vault Key",
+              rich_text: { equals: vaultKey },
+            },
+            page_size: 1,
+          });
+
+          if (queryRes.results.length > 0) {
+            const pageId = queryRes.results[0].id;
+            notionPageUrl = (queryRes.results[0] as any).url || null;
+
+            // Get existing Vault Files to append (not overwrite)
+            const existingPage = queryRes.results[0] as any;
+            const existingFiles = existingPage.properties?.["Vault Files"]?.files || [];
+
+            // Add new file as external URL to Vault Files property
+            const updatedFiles = [
+              ...existingFiles.map((f: any) => {
+                if (f.type === "external") return { name: f.name, type: "external" as const, external: { url: f.external.url } };
+                return { name: f.name, type: "external" as const, external: { url: f.file?.url || "" } };
+              }),
+              { name: `${checklistItem} — ${file.originalname}`, type: "external" as const, external: { url: fileUrl } },
+            ];
+
+            await notion.pages.update({
+              page_id: pageId,
+              properties: {
+                "Vault Files": { files: updatedFiles },
+              },
+            });
+
+            // Append upload log as content block on the page
+            await notion.blocks.children.append({
+              block_id: pageId,
+              children: [
+                {
+                  object: "block",
+                  type: "paragraph",
+                  paragraph: {
+                    rich_text: [
+                      { text: { content: `${checklistItem}` }, annotations: { bold: true } },
+                      { text: { content: ` — ` } },
+                      { text: { content: file.originalname, link: { url: fileUrl } } },
+                      { text: { content: ` (${(file.size / 1024).toFixed(1)} KB) — ${dateStr}` } },
+                    ],
+                  },
+                },
+              ],
+            });
+
+            console.log(`[Vault Upload] Updated Notion page ${pageId} with ${file.originalname}`);
+          } else {
+            console.warn(`[Vault Upload] No Notion page found for vault key ${vaultKey} — file saved to disk only`);
+          }
+        } catch (notionErr) {
+          console.error("[Vault Upload] Notion API error (file saved to disk):", notionErr);
+        }
+      } else {
+        console.warn("[Vault Upload] NOTION_API_KEY not set — skipping Notion update");
+      }
+
+      // Send confirmation email to customer
+      let emailSent = false;
+      if (email) {
+        emailSent = await sendVaultUploadEmail(email, businessName || "Client", checklistItem);
+      }
 
       res.json({
         success: true,
         fileName: file.filename,
-        pageName,
         fileSize: file.size,
-        message: "File uploaded successfully",
+        notionPageUrl,
+        emailSent,
+        message: notionPageUrl
+          ? "File uploaded and synced to vault"
+          : "File uploaded (Notion sync pending)",
       });
     } catch (error) {
       console.error("[Vault Upload] Error:", error);

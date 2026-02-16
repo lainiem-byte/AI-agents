@@ -13,6 +13,7 @@ interface VaultSession {
   clientName: string;
   industry: VaultIndustry;
   notionUrl: string;
+  email: string | null;
   authenticatedAt: string;
 }
 
@@ -150,6 +151,7 @@ export default function Vault() {
       formData.append("industry", session.industry);
       formData.append("businessName", session.clientName);
       formData.append("checklistItem", activeUpload);
+      if (session.email) formData.append("email", session.email);
 
       const res = await fetch("/api/vault/upload", { method: "POST", body: formData });
       const data = await res.json();

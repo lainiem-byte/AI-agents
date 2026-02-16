@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -63,6 +64,10 @@ app.use((req, res, next) => {
 (async () => {
   await setupAuth(app);
   registerAuthRoutes(app);
+  // Serve vault uploads as static files (before catch-all routes)
+  const uploadsDir = path.join(process.cwd(), "uploads", "vault");
+  app.use("/uploads/vault", express.static(uploadsDir));
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

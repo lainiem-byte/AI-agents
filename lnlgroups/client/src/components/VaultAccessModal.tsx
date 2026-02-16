@@ -39,8 +39,10 @@ export default function VaultAccessModal({ isOpen, onClose }: VaultAccessModalPr
           clientName: data.clientName,
           industry: data.industry,
           notionUrl: data.notionUrl,
+          email: data.email || null,
           authenticatedAt: new Date().toISOString(),
         }));
+        sessionStorage.setItem("vault_key", accessKey);
 
         onClose();
         setAccessKey("");
