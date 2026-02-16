@@ -69,5 +69,16 @@ Each decision entry should include:
 
 ---
 
+### 2026-02-16: Stay with Traefik for site routing (no nginx migration)
+**Decision**: Keep Traefik as the reverse proxy for all LNL domains (lnlgroups.com, lnlcreatives.com, lnlautomations.com) and the vault subdomain. Do not migrate to nginx.
+
+**Rationale**: Traefik is already configured and working. Changing to nginx introduces unnecessary risk and migration effort for zero benefit. All domains route through Traefik dynamic config at `/docker/n8n/dynamic/lnlgroup.yml`. Vault uses Docker label-based routing via `vault-static` nginx container behind Traefik.
+
+**Alternatives considered**: Nginx reverse proxy was evaluated for simplicity, but the risk of breaking working infrastructure outweighed the marginal benefit.
+
+**Impact**: All future routing changes go through Traefik dynamic config or Docker labels. No nginx installation on VPS.
+
+---
+
 ## Future Decisions
 Add new entries above this line as they're made.

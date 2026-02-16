@@ -1,7 +1,7 @@
 # LNL Vault Login - Deployment Guide
 
 ## Overview
-This guide will help you deploy the vault login page (vault.lnlgroup.com) that authenticates clients and redirects them to their Notion workspace.
+This guide will help you deploy the vault login page (vault.lnlcreatives.com) that authenticates clients and redirects them to their Notion workspace.
 
 ---
 
@@ -73,7 +73,7 @@ You have 3 main options for hosting the vault login page:
 
 1. In Vercel project settings, go to **"Domains"**
 2. Click **"Add"**
-3. Enter your domain: `vault.lnlgroup.com`
+3. Enter your domain: `vault.lnlcreatives.com`
 4. Vercel will provide DNS records to add
 5. Add these records in your domain registrar (GoDaddy, Namecheap, etc.):
 
@@ -94,7 +94,7 @@ Value: 76.76.19.19
 ```
 
 6. Wait for DNS propagation (5-60 minutes)
-7. Verify at `https://vault.lnlgroup.com`
+7. Verify at `https://vault.lnlcreatives.com`
 
 ### Step 5: Update n8n Webhook URL
 
@@ -132,7 +132,7 @@ Once deployed:
 
 1. In Netlify site settings, go to **"Domain management"**
 2. Click **"Add custom domain"**
-3. Enter `vault.lnlgroup.com`
+3. Enter `vault.lnlcreatives.com`
 4. Netlify will provide DNS records
 5. Add to your domain registrar:
 
@@ -198,7 +198,7 @@ Before your vault is live, verify:
 
 ### ✅ Post-Deployment
 
-- [ ] Site is accessible at `vault.lnlgroup.com` (or your chosen domain)
+- [ ] Site is accessible at `vault.lnlcreatives.com` (or your chosen domain)
 - [ ] HTTPS is working (green padlock in browser)
 - [ ] Form submits without errors
 - [ ] Test with valid vault key (from Notion database)
@@ -439,7 +439,7 @@ Check in n8n:
 1. ✅ **Contract signed** (manual/test trigger)
 2. ✅ **Concierge creates Notion page** with vault key
 3. ✅ **Welcome email sent** with vault key
-4. ✅ **Client visits** vault.lnlgroup.com
+4. ✅ **Client visits** vault.lnlcreatives.com
 5. ✅ **Client enters key** from email
 6. ✅ **Authentication succeeds** (n8n validates)
 7. ✅ **Login tracked** in Notion (Last Login, Total Logins)
@@ -475,7 +475,7 @@ Your LNL Vault login portal is now deployed and ready to authenticate clients!
 **What Happens Now:**
 
 1. **Clients receive** vault key via email (from Concierge Agent)
-2. **Clients visit** vault.lnlgroup.com
+2. **Clients visit** vault.lnlcreatives.com
 3. **System validates** key against Notion database
 4. **Grants access** to personalized Notion workspace
 5. **Tracks activity** (logins, asset uploads, project status)

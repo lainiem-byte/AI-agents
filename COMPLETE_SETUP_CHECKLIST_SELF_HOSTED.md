@@ -426,7 +426,7 @@ curl -X POST https://n8n.lnlgroup.com/webhook/lnl-asset-upload \
 - [ ] Build vault login page
 - [ ] Build vault dashboard with backend
 - [ ] Configure environment variables (webhook URLs)
-- [ ] Deploy to vault.lnlgroup.com
+- [ ] Deploy to vault.lnlcreatives.com
 - [ ] Test complete flow
 
 **Time:** ~2-3 hours

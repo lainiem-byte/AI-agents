@@ -495,7 +495,7 @@ As an architect, I only work with founders ready to move from 'Manual' to 'Mecha
 
 I wish you the best in your current build.
 
-The Vault will remain open to you at vault.lnlgroup.com should you choose to initialize in the future.
+The Vault will remain open to you at vault.lnlcreatives.com should you choose to initialize in the future.
 
 Best,
 LNL Group

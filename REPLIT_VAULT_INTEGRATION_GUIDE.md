@@ -13,7 +13,7 @@ You have existing websites hosted on Replit (lnlgroups.com, lnlautomations.com, 
 - **lnlcreatives.com** - Creative services
 
 ### New Vault System:
-- **vault.lnlgroup.com** - Client authentication portal
+- **vault.lnlcreatives.com** - Client authentication portal
 - **Notion** - Client workspace/vault
 - **n8n** - Backend automation (Concierge Agent)
 
@@ -28,7 +28,7 @@ You have 3 main options for integrating the vault with your Replit sites:
 ```
 lnlgroups.com (Main site on Replit)
      ↓
-vault.lnlgroup.com (Separate Vercel/Netlify deployment)
+vault.lnlcreatives.com (Separate Vercel/Netlify deployment)
      ↓
 n8n webhook → Notion workspace
 ```
@@ -71,7 +71,7 @@ n8n webhook → Notion workspace
 ```
 lnlgroups.com/vault (Replit page with iframe)
      ↓
-<iframe src="vault.lnlgroup.com">
+<iframe src="vault.lnlcreatives.com">
      ↓
 n8n webhook → Notion workspace
 ```
@@ -93,7 +93,7 @@ n8n webhook → Notion workspace
 
 ### Step 1: Deploy Vault to Subdomain
 1. Deploy `vault-login.html` to Vercel/Netlify
-2. Configure DNS: `vault.lnlgroup.com` → Vercel
+2. Configure DNS: `vault.lnlcreatives.com` → Vercel
 3. Update webhook URL in HTML
 
 ### Step 2: Add Navigation Links from Main Site
@@ -105,7 +105,7 @@ In your Replit websites, add links to the vault:
   <a href="https://lnlgroups.com">Home</a>
   <a href="https://lnlautomations.com">Automations</a>
   <a href="https://lnlcreatives.com">Creative</a>
-  <a href="https://vault.lnlgroup.com" class="vault-link">Client Vault</a>
+  <a href="https://vault.lnlcreatives.com" class="vault-link">Client Vault</a>
 </nav>
 ```
 
@@ -114,7 +114,7 @@ In your Replit websites, add links to the vault:
 <div class="client-access-section">
   <h2>Existing Clients</h2>
   <p>Access your Growth Architecture workspace</p>
-  <a href="https://vault.lnlgroup.com" class="vault-button">
+  <a href="https://vault.lnlcreatives.com" class="vault-button">
     🏛️ Enter Your Vault
   </a>
 </div>
@@ -284,7 +284,7 @@ When Concierge sends welcome emails with vault keys, include link to your site:
 ```html
 <p>Your next step: Initialize your extraction at the secure vault portal.</p>
 
-<a href="https://vault.lnlgroup.com" class="cta-button">
+<a href="https://vault.lnlcreatives.com" class="cta-button">
   ENTER THE VAULT →
 </a>
 
@@ -313,7 +313,7 @@ Here's how everything connects:
          ↓
 6. Clicks "Client Vault" button
          ↓
-7. Redirected to vault.lnlgroup.com (OR /vault if in Replit)
+7. Redirected to vault.lnlcreatives.com (OR /vault if in Replit)
          ↓
 8. Enters vault key
          ↓
@@ -355,7 +355,7 @@ Here's how everything connects:
 
 ### Issue 1: CORS Errors (Separate Domains)
 
-**Problem:** Vault on `vault.lnlgroup.com` can't call n8n webhook
+**Problem:** Vault on `vault.lnlcreatives.com` can't call n8n webhook
 
 **Solution:** n8n webhooks allow all origins by default, but verify:
 - Check browser console for CORS errors
@@ -422,7 +422,7 @@ your-replit-project/
 
 ### Separate Vault Deployment:
 - [ ] vault-login.html deployed to Vercel/Netlify
-- [ ] DNS configured for vault.lnlgroup.com
+- [ ] DNS configured for vault.lnlcreatives.com
 - [ ] Webhook URL updated in HTML
 - [ ] Main site has links to vault subdomain
 - [ ] HTTPS working
@@ -434,7 +434,7 @@ your-replit-project/
 
 **For production, I recommend:**
 
-1. **Keep vault separate** (vault.lnlgroup.com on Vercel)
+1. **Keep vault separate** (vault.lnlcreatives.com on Vercel)
    - Faster, more reliable
    - Easier to maintain
    - Professional appearance

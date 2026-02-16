@@ -142,7 +142,7 @@ Add an **Email** node to notify the client:
         </p>
       </div>
       
-      <p><a href="https://vault.lnlgroup.com" style="color: #d4af37;">→ Return to Your Vault</a></p>
+      <p><a href="https://vault.lnlcreatives.com" style="color: #d4af37;">→ Return to Your Vault</a></p>
       
       <p style="margin-top: 40px; font-size: 12px; color: #888;">
         The LNL Concierge<br>

@@ -5,7 +5,7 @@ Your vault system needs TWO connected components built in Replit to match your "
 
 ---
 
-## 🎯 PHASE 1: THE VAULT LOGIN (vault.lnlgroup.com)
+## 🎯 PHASE 1: THE VAULT LOGIN (vault.lnlcreatives.com)
 
 ### Replit Agent Prompt 1.1: Login Terminal Interface
 
@@ -355,7 +355,7 @@ app.post('/api/vault-login', async (req, res) => {
 ```
 1. Client receives email with vault key: LNL-RAL-8K4T2
          ↓
-2. Client visits vault.lnlgroup.com (or lnlgroups.com/vault)
+2. Client visits vault.lnlcreatives.com (or lnlgroups.com/vault)
          ↓
 3. Enters key → Replit validates with n8n webhook
          ↓

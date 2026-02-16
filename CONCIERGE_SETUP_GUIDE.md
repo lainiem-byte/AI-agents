@@ -5,7 +5,7 @@
 The Concierge Agent is the "System Warden" that bridges contract signing to the Mechanical Heart build. It manages:
 
 1. **Vault Access Keys** - Generation, validation, revocation
-2. **Client Authentication** - Login at vault.lnlgroup.com
+2. **Client Authentication** - Login at vault.lnlcreatives.com
 3. **Asset Monitoring** - Checks for Pillar 1 uploads
 4. **Logic Stall Detection** - Alerts when builds are blocked
 5. **Status Updates** - Keeps Notion and clients in sync
@@ -16,7 +16,7 @@ The Concierge Agent is the "System Warden" that bridges contract signing to the 
 
 ```
 ┌─────────────────────────────────────┐
-│  vault.lnlgroup.com                 │
+│  vault.lnlcreatives.com                 │
 │  (Login Frontend)                   │
 └──────────────┬──────────────────────┘
                │ POST /vault-auth
@@ -135,7 +135,7 @@ Add a new tab to your existing Google Sheet called **"VAULT_LOGS"** with these c
 1. Create account at [vercel.com](https://vercel.com)
 2. Create new project
 3. Upload `vault-login.html` as `index.html`
-4. Set custom domain: `vault.lnlgroup.com`
+4. Set custom domain: `vault.lnlcreatives.com`
 
 ### Option B: Deploy to Replit
 
@@ -149,7 +149,7 @@ Add a new tab to your existing Google Sheet called **"VAULT_LOGS"** with these c
 
 1. Create account at [netlify.com](https://netlify.com)
 2. Drag and drop `vault-login.html` (renamed to `index.html`)
-3. Set custom domain: `vault.lnlgroup.com`
+3. Set custom domain: `vault.lnlcreatives.com`
 
 ### Update Webhook URL
 
@@ -266,12 +266,12 @@ Examples:
 ## Part 8: Testing Checklist
 
 ### Test 1: Invalid Key (Should Reject)
-1. Go to vault.lnlgroup.com
+1. Go to vault.lnlcreatives.com
 2. Enter: `LNL-XXX-AAAAA`
 3. ✅ Should see "Access denied. Invalid key."
 
 ### Test 2: Invalid Format (Should Reject)
-1. Go to vault.lnlgroup.com
+1. Go to vault.lnlcreatives.com
 2. Enter: `BADKEY123`
 3. ✅ Should see "Invalid key format."
 
@@ -293,7 +293,7 @@ Examples:
 
 ### Test 4: Valid Login
 1. Use key from Test 3
-2. Enter at vault.lnlgroup.com
+2. Enter at vault.lnlcreatives.com
 3. ✅ Should see initialization animation
 4. ✅ Should redirect to Notion page
 5. ✅ Notion "Last Login" should update
