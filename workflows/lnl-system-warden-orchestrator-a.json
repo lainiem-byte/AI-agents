@@ -96,8 +96,8 @@
       "position": [1400, 100],
       "parameters": {
         "operation": "send",
-        "fromEmail": "={{$env.SMTP_FROM || 'LNL System Warden <noreply@lnlautomations.com>'}}",
-        "toEmail": "={{$env.ALERT_EMAIL || 'lnlscreatives71@gmail.com'}}",
+        "fromEmail": "={{$env.SMTP_FROM || 'LNL System Warden <hello@lnlautomations.com>'}}",
+        "toEmail": "={{$env.ALERT_EMAIL || 'lainiem@lnlcreatives.com'}}",
         "subject": "={{ $json.subject }}",
         "emailFormat": "text",
         "text": "={{ $json.body }}",
@@ -222,8 +222,8 @@
       "position": [560, 600],
       "parameters": {
         "operation": "send",
-        "fromEmail": "={{$env.SMTP_FROM || 'LNL System Warden <noreply@lnlautomations.com>'}}",
-        "toEmail": "={{$env.ALERT_EMAIL || 'lnlscreatives71@gmail.com'}}",
+        "fromEmail": "={{$env.SMTP_FROM || 'LNL System Warden <hello@lnlautomations.com>'}}",
+        "toEmail": "={{$env.ALERT_EMAIL || 'lainiem@lnlcreatives.com'}}",
         "subject": "={{ $json.subject }}",
         "emailFormat": "text",
         "text": "={{ $json.body }}",
