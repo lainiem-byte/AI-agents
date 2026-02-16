@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoIcon from "@/assets/logo-icon.png";
+import Navbar from "@/components/Navbar";
 
 type VaultIndustry = "medspa" | "realtor" | "law" | "home-services";
 
@@ -182,29 +183,7 @@ export default function Vault() {
         accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.mp4,.mov,.zip"
         onChange={handleFileChange}
       />
-      {/* Header */}
-      <header className="bg-[#1A1A1D]/95 backdrop-blur-xl border-b border-[#C9A86C]/10 shadow-lg shadow-black/20">
-        <div className="container mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <img src={logoIcon} alt="LNL Group" className="h-10 md:h-12 w-auto" />
-            <span className="text-lg md:text-xl font-bold tracking-tight text-white">
-              LNL Group
-            </span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-gray-400">
-              <ShieldCheck className="w-4 h-4 text-[#C9A86C]" />
-              <span className="hidden sm:inline">Vault Active</span>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              Exit Vault
-            </button>
-          </div>
-        </div>
-      </header>
+      <Navbar />
 
       <main className="container mx-auto px-4 md:px-6 py-12 max-w-3xl">
         {/* Welcome Section */}
