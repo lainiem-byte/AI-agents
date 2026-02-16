@@ -62,24 +62,26 @@ export default function Navbar() {
         ? 'bg-[#1A1A1D]/95 backdrop-blur-xl border-b border-lnl-gold/10 shadow-lg shadow-black/20' 
         : 'bg-transparent'
     }`}>
-      <div className="container mx-auto px-4 md:px-6 h-20 flex items-center justify-between">
+      <div className="w-full px-4 md:px-6 h-20 flex items-center justify-center">
+        {/* Centered logo + nav group */}
+        <div className="hidden md:flex items-center gap-6">
         {location === '/creatives' || location === '/raleigh' || location === '/columbus' || location === '/moscow' ? (
-          <Link href="/creatives" className="flex items-center group -ml-4">
-            <img src={logoCreatives} alt="LNL Creatives" className="h-14 md:h-[72px] w-auto" />
+          <Link href="/creatives" className="flex items-center group shrink-0">
+            <img src={logoCreatives} alt="LNL Creatives" className="h-16 md:h-[88px] w-auto" />
           </Link>
         ) : location === '/automations' || location.startsWith('/automations') ? (
-          <Link href="/automations" className="flex items-center group -ml-1">
-            <img src={logoAutomations} alt="LNL Automations" className="h-14 md:h-[72px] w-auto" />
+          <Link href="/automations" className="flex items-center group shrink-0">
+            <img src={logoAutomations} alt="LNL Automations" className="h-16 md:h-[88px] w-auto" />
           </Link>
         ) : (
-          <Link href="/" className="flex items-center gap-3 group -ml-1">
+          <Link href="/" className="flex items-center gap-3 group shrink-0">
             <img src={logoIcon} alt="LNL Group" className="h-10 md:h-12 w-auto" />
             <span className="text-lg md:text-xl font-bold tracking-tight text-white">LNL Group</span>
           </Link>
         )}
-        
+
         {/* Desktop Nav */}
-        <div className="hidden md:flex items-center gap-6">
+        <div className="flex items-center gap-5">
           <NavLink href="/">Home</NavLink>
           <NavLink href="/about">About</NavLink>
           
@@ -247,9 +249,25 @@ export default function Navbar() {
           </Button>
 
                   </div>
+        </div>
 
-        {/* Mobile Nav */}
-        <div className="md:hidden flex items-center gap-4">
+        {/* Mobile Nav - logo + hamburger */}
+        <div className="md:hidden flex items-center justify-between w-full">
+          {location === '/creatives' || location === '/raleigh' || location === '/columbus' || location === '/moscow' ? (
+            <Link href="/creatives" className="flex items-center group">
+              <img src={logoCreatives} alt="LNL Creatives" className="h-14 w-auto" />
+            </Link>
+          ) : location === '/automations' || location.startsWith('/automations') ? (
+            <Link href="/automations" className="flex items-center group">
+              <img src={logoAutomations} alt="LNL Automations" className="h-14 w-auto" />
+            </Link>
+          ) : (
+            <Link href="/" className="flex items-center gap-3 group">
+              <img src={logoIcon} alt="LNL Group" className="h-10 w-auto" />
+              <span className="text-lg font-bold tracking-tight text-white">LNL Group</span>
+            </Link>
+          )}
+          <div className="flex items-center gap-4">
           <Button 
             variant="ghost" 
             size="icon" 
@@ -379,6 +397,7 @@ export default function Navbar() {
                               </div>
             </SheetContent>
           </Sheet>
+          </div>
         </div>
       </div>
 

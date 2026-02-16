@@ -104,15 +104,18 @@ export default function LNLPulse() {
                 data-testid={`pulse-node-${phase.id}`}
               >
                 <motion.div
-                  className={`w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer ${
-                    activePhase === phase.id 
-                      ? 'border-transparent' 
-                      : 'border-white/20 bg-white/5 hover:border-white/40'
-                  }`}
-                  style={activePhase === phase.id ? { 
+                  className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center border-2 transition-all duration-300 cursor-pointer"
+                  style={activePhase === phase.id ? {
                     backgroundColor: `${phase.color}20`,
                     borderColor: phase.color,
                     boxShadow: `0 0 30px ${phase.color}40, 0 0 60px ${phase.color}20`
+                  } : {
+                    backgroundColor: `${phase.color}10`,
+                    borderColor: `${phase.color}40`,
+                  }}
+                  whileHover={activePhase !== phase.id ? {
+                    borderColor: phase.color,
+                    backgroundColor: `${phase.color}20`,
                   } : {}}
                   animate={activePhase === phase.id ? {
                     boxShadow: [
@@ -123,17 +126,16 @@ export default function LNLPulse() {
                   } : {}}
                   transition={{ duration: 2, repeat: Infinity }}
                 >
-                  <phase.icon 
-                    className={`w-6 h-6 md:w-8 md:h-8 transition-colors ${
-                      activePhase === phase.id ? 'text-white' : 'text-gray-400'
-                    }`}
-                    style={activePhase === phase.id ? { color: phase.color } : {}}
+                  <phase.icon
+                    className="w-6 h-6 md:w-8 md:h-8 transition-colors"
+                    style={{ color: activePhase === phase.id ? phase.color : `${phase.color}AA` }}
                   />
                 </motion.div>
                 
-                <span className={`absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs md:text-sm font-medium whitespace-nowrap transition-colors ${
-                  activePhase === phase.id ? 'text-white' : 'text-gray-500'
-                }`}>
+                <span
+                  className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs md:text-sm font-medium whitespace-nowrap transition-colors"
+                  style={{ color: activePhase === phase.id ? '#ffffff' : `${phase.color}CC` }}
+                >
                   {phase.name}
                 </span>
               </motion.button>
