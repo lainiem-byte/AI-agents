@@ -177,8 +177,8 @@
       "position": [1520, 100],
       "parameters": {
         "operation": "send",
-        "fromEmail": "={{$env.SMTP_FROM || 'LNL Data Guardian <hello@lnlautomations.com>'}}",
-        "toEmail": "={{$env.ALERT_EMAIL || 'lainiem@lnlcreatives.com'}}",
+        "fromEmail": "LNL Data Guardian <hello@lnlautomations.com>",
+        "toEmail": "lainiem@lnlcreatives.com",
         "subject": "={{ $json.subject }}",
         "emailFormat": "text",
         "text": "={{ $json.body }}",
