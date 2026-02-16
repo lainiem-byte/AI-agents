@@ -313,18 +313,8 @@ export async function registerRoutes(
         return res.status(400).json({ success: false, error: "Missing required fields" });
       }
 
-      // Notion database ID mapping per industry
-      const notionDbMap: Record<string, string> = {
-        medspa: "3f5c3ac39e9d44e1b89558c89eb299bb",
-        realtor: "81c5f71a1492451bb9afa5a95b1bd39f",
-        law: "3952b5325c5345d1a972d33e2a54c74b",
-        "home-services": "ef81056d84554e1f9cbdb46a949b6535",
-      };
-
-      const databaseId = notionDbMap[industry];
-      if (!databaseId) {
-        return res.status(400).json({ success: false, error: "Invalid industry" });
-      }
+      // Master Notion DB where all client pages live (created by Concierge Agent)
+      const masterDbId = "2ed2b4104a59804eb681fc0fe732d51e";
 
       const dateStr = new Date().toISOString().slice(0, 10);
 
@@ -342,9 +332,9 @@ export async function registerRoutes(
         try {
           const notion = new Client({ auth: notionKey });
 
-          // Query database for the client's existing page using their vault key
+          // Query master DB for the client's existing page using their vault key
           const queryRes = await notion.dataSources.query({
-            data_source_id: databaseId,
+            data_source_id: masterDbId,
             filter: {
               property: "Vault Key",
               rich_text: { equals: vaultKey },
