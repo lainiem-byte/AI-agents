@@ -1,11 +1,14 @@
 import { motion } from "framer-motion";
 import { Brain, Building2, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
+import Navbar from "@/components/Navbar";
 import portraitImage from "@assets/My_Headshot_AI_background_1767937187821.jpg";
 
 export default function About() {
   return (
     <div className="min-h-screen bg-background">
+      <Navbar />
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 overflow-hidden">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-lnl-violet/10 rounded-full blur-[120px] pointer-events-none" />
@@ -277,12 +280,16 @@ export default function About() {
               Whether you're scaling in Raleigh, establishing authority in Columbus, or becoming a pillar in Moscow—let's architect your growth.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button className="bg-lnl-violet hover:bg-lnl-violet/90 text-white px-8 py-6 text-lg rounded-full">
-                Schedule a Strategy Call
-              </Button>
-              <Button variant="outline" className="border-lnl-cyan/30 hover:bg-lnl-cyan/10 text-lnl-cyan px-8 py-6 text-lg rounded-full">
-                View Case Studies
-              </Button>
+              <Link href="/contact">
+                <Button className="bg-lnl-violet hover:bg-lnl-violet/90 text-white px-8 py-6 text-lg rounded-full">
+                  Schedule a Strategy Call
+                </Button>
+              </Link>
+              <Link href="/portfolio/creatives">
+                <Button variant="outline" className="border-lnl-cyan/30 hover:bg-lnl-cyan/10 text-lnl-cyan px-8 py-6 text-lg rounded-full">
+                  View Case Studies
+                </Button>
+              </Link>
             </div>
           </motion.div>
         </div>
