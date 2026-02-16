@@ -220,16 +220,18 @@ export default function Navbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <button 
+          <button
             onClick={() => document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth' })}
             className="text-sm font-medium transition-colors hover:text-lnl-gold text-foreground/80"
           >
             Contact
           </button>
-          
-          <Button 
-            variant="ghost" 
-            size="icon" 
+
+          <NavLink href="/faq">FAQ</NavLink>
+
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="rounded-full hover:bg-lnl-gold/10"
           >
@@ -376,12 +378,15 @@ export default function Navbar() {
                     <Zap className="w-5 h-5 text-[#2E5BFF]" />
                     Automation Work
                   </Link>
-                  <button 
+                  <button
                     onClick={() => document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth' })}
                     className="text-lg font-medium text-foreground/80 hover:text-lnl-gold transition-colors block text-left"
                   >
                     Contact
                   </button>
+                  <Link href="/faq" className="text-lg font-medium text-foreground/80 hover:text-lnl-gold transition-colors">
+                    FAQ
+                  </Link>
                 </div>
 
                 <Button 

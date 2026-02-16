@@ -12,6 +12,7 @@ import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Audit from "@/pages/Audit";
 import Vault from "@/pages/Vault";
+import FAQ from "@/pages/FAQ";
 import NotFound from "@/pages/not-found";
 import { ThemeProvider } from "next-themes";
 import { LocationProvider } from "@/context/LocationContext";
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/moscow">{() => <Creatives initialLocation="moscow" />}</Route>
       <Route path="/audit" component={Audit} />
       <Route path="/vault" component={Vault} />
+      <Route path="/faq" component={FAQ} />
       <Route component={NotFound} />
     </Switch>
   );
