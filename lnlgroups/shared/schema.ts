@@ -18,7 +18,9 @@ export const leads = pgTable("leads", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const insertLeadSchema = createInsertSchema(leads).omit({
+export const insertLeadSchema = createInsertSchema(leads, {
+  source: z.string().default("contact"),
+}).omit({
   id: true,
   createdAt: true,
 });

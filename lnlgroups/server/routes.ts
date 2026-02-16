@@ -8,6 +8,7 @@ import nodemailer from "nodemailer";
 import { storage } from "./storage";
 import { insertLeadSchema } from "@shared/schema";
 import { validateVaultAccess } from "./vaultClients";
+import { ZodError } from "zod";
 
 // Vault file upload storage config
 const uploadDir = path.join(process.cwd(), "uploads", "vault");
@@ -158,16 +159,22 @@ export async function registerRoutes(
     try {
       const validatedData = insertLeadSchema.parse(req.body);
       const lead = await storage.createLead(validatedData);
-      
+
       const webhookSent = await forwardToWebhook(validatedData);
-      
+
       res.json({
         ...lead,
         webhookSent,
         message: "Lead submitted successfully"
       });
     } catch (error) {
-      res.status(400).json({ error: "Invalid lead data" });
+      if (error instanceof ZodError) {
+        console.error("[Leads] Validation error:", JSON.stringify(error.errors));
+        res.status(400).json({ error: "Invalid lead data", details: error.errors });
+      } else {
+        console.error("[Leads] Database/server error:", error);
+        res.status(500).json({ error: "Failed to save lead. Please try again." });
+      }
     }
   });
 
@@ -258,6 +265,7 @@ export async function registerRoutes(
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            vault_key: accessKey,
             access_key: accessKey,
             client_id: clientId || "",
             timestamp: new Date().toISOString(),
@@ -313,8 +321,8 @@ export async function registerRoutes(
         return res.status(400).json({ success: false, error: "Missing required fields" });
       }
 
-      // Master Notion DB where all client pages live (created by Concierge Agent)
-      const masterDbId = "2ed2b4104a59804eb681fc0fe732d51e";
+      // Master Notion data source ID (collection ID for SDK v5.x dataSources.query)
+      const masterDbId = "2ed2b410-4a59-80e2-9ace-000b6ebf2697";
 
       const dateStr = new Date().toISOString().slice(0, 10);
 

@@ -84,7 +84,7 @@
       "position": [1120, 200],
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Format health alert for email + sheet logging\nconst d = $json;\nconst issues = d.issues || [];\n\nlet subject = '';\nif (d.overallStatus === 'CRITICAL') subject = '[CRITICAL] LNL System Warden Alert';\nelse if (d.overallStatus === 'WARNING') subject = '[WARNING] LNL System Warden Alert';\nelse subject = '[OK] LNL System Warden - All Clear';\n\nlet body = 'LNL SYSTEM WARDEN REPORT\\n========================\\n';\nbody += 'Time: ' + d.timestamp + '\\nStatus: ' + d.overallStatus + '\\nIssues: ' + d.issueCount + '\\n\\n';\n\nif (issues.length > 0) {\n  body += '--- ISSUES ---\\n\\n';\n  for (const i of issues) {\n    body += '[' + i.severity + '] ' + i.workflow + '\\n  Type: ' + i.type + '\\n  ' + i.detail + '\\n\\n';\n  }\n}\n\nbody += '--- WORKFLOW STATUS ---\\n\\n';\nfor (const r of (d.report || [])) {\n  const icon = r.status === 'ERROR' ? 'X' : 'OK';\n  body += '[' + icon + '] ' + r.name + ' | Errors: ' + r.errors + ' | Successes: ' + r.successes + ' | Last: ' + r.lastExec + '\\n';\n}\n\nbody += '\\n---\\nLNL System Warden (Orchestrator A)';\n\nconst issueSummary = issues.map(i => '[' + i.severity + '] ' + i.workflow + ': ' + i.type).join('; ');\n\nreturn {\n  json: {\n    subject, body,\n    'Date': d.timestamp,\n    'Action': 'System Warden Alert - ' + d.overallStatus,\n    'Records Affected': d.issueCount,\n    'Details': issueSummary || 'No issues',\n    'System Status': d.overallStatus\n  }\n};"
+        "jsCode": "// Format health alert for email + sheet logging\n// v3: Use $input.item.json (not $json) for Code node v2 compatibility\nconst d = $input.item.json;\nconst issues = d.issues || [];\n\nlet subject = '';\nif (d.overallStatus === 'CRITICAL') subject = '[CRITICAL] LNL System Warden Alert';\nelse if (d.overallStatus === 'WARNING') subject = '[WARNING] LNL System Warden Alert';\nelse subject = '[OK] LNL System Warden - All Clear';\n\nconst statusColor = d.overallStatus === 'CRITICAL' ? '#dc3545' : d.overallStatus === 'WARNING' ? '#ffc107' : '#28a745';\n\nlet html = '<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\">';\nhtml += '<h2 style=\"color:' + statusColor + '\">LNL System Warden Report</h2>';\nhtml += '<p><strong>Time:</strong> ' + d.timestamp + '<br>';\nhtml += '<strong>Status:</strong> <span style=\"color:' + statusColor + '\">' + d.overallStatus + '</span><br>';\nhtml += '<strong>Issues:</strong> ' + d.issueCount + '</p>';\n\nif (issues.length > 0) {\n  html += '<h3>Issues Detected</h3><table style=\"border-collapse:collapse;width:100%\">';\n  html += '<tr style=\"background:#f8f9fa\"><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Severity</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Workflow</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Type</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Detail</th></tr>';\n  for (const i of issues) {\n    const sevColor = i.severity === 'HIGH' ? '#dc3545' : i.severity === 'MEDIUM' ? '#ffc107' : '#6c757d';\n    html += '<tr><td style=\"border:1px solid #dee2e6;padding:8px;color:' + sevColor + '\">' + i.severity + '</td>';\n    html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + i.workflow + '</td>';\n    html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + i.type + '</td>';\n    html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + i.detail + '</td></tr>';\n  }\n  html += '</table>';\n}\n\nhtml += '<h3>Workflow Status</h3><table style=\"border-collapse:collapse;width:100%\">';\nhtml += '<tr style=\"background:#f8f9fa\"><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Status</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Workflow</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Errors</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Successes</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Last Exec</th></tr>';\nfor (const r of (d.report || [])) {\n  const rowColor = r.status === 'ERROR' ? '#fff3f3' : '#f3fff3';\n  const icon = r.status === 'ERROR' ? 'X' : 'OK';\n  html += '<tr style=\"background:' + rowColor + '\"><td style=\"border:1px solid #dee2e6;padding:8px\">' + icon + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + r.name + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + r.errors + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + r.successes + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + r.lastExec + '</td></tr>';\n}\nhtml += '</table>';\nhtml += '<hr style=\"margin-top:20px\"><p style=\"color:#6c757d;font-size:12px\">LNL System Warden (Orchestrator A)</p></div>';\n\nconst issueSummary = issues.map(i => '[' + i.severity + '] ' + i.workflow + ': ' + i.type).join('; ');\n\nreturn {\n  json: {\n    subject, htmlBody: html,\n    'Date': d.timestamp,\n    'Action': 'System Warden Alert - ' + d.overallStatus,\n    'Records Affected': d.issueCount,\n    'Details': issueSummary || 'No issues',\n    'System Status': d.overallStatus\n  }\n};"
       },
       "notes": "Formats email subject/body and Sheet Hygiene Log fields for health alerts"
     },
@@ -98,9 +98,9 @@
         "operation": "send",
         "fromEmail": "LNL System Warden <hello@lnlautomations.com>",
         "toEmail": "lainiem@lnlcreatives.com",
-        "subject": "={{ $json.subject }}",
-        "emailFormat": "text",
-        "text": "={{ $json.body }}",
+        "subject": "={{ $json.subject || '[ALERT] LNL System Warden' }}",
+        "emailFormat": "html",
+        "html": "={{ $json.htmlBody || '<p>System Warden alert triggered but report body was empty. Check n8n execution logs.</p>' }}",
         "options": {
           "appendAttribution": false
         }
@@ -111,7 +111,7 @@
           "name": "SMTP"
         }
       },
-      "notes": "Sends health alert email via SMTP. Configure ALERT_EMAIL env var or edit toEmail directly."
+      "notes": "Sends health alert email via SMTP as HTML. Uses htmlBody from Format Health Alert node."
     },
     {
       "id": "warden-007",
@@ -155,7 +155,7 @@
       "position": [1120, 500],
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Prepare all-clear log entry\nconst d = $json;\nconst now = new Date().toISOString();\n\nreturn {\n  json: {\n    'Date': d.timestamp || now,\n    'Action': 'System Warden Health Check',\n    'Records Affected': 0,\n    'Details': 'All ' + (d.report || []).length + ' monitored workflows healthy',\n    'System Status': 'HEALTHY'\n  }\n};"
+        "jsCode": "// Prepare all-clear log entry\n// v3: Use $input.item.json (not $json) for Code node v2 compatibility\nconst d = $input.item.json;\nconst now = new Date().toISOString();\n\nreturn {\n  json: {\n    'Date': d.timestamp || now,\n    'Action': 'System Warden Health Check',\n    'Records Affected': 0,\n    'Details': 'All ' + (d.report || []).length + ' monitored workflows healthy',\n    'System Status': 'HEALTHY'\n  }\n};"
       },
       "notes": "Formats all-clear log entry when no issues detected"
     },
@@ -210,7 +210,7 @@
       "position": [280, 700],
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Format error details for email + sheet logging\nconst err = $json;\nconst now = new Date().toISOString();\n\nconst wfName = (err.workflow && err.workflow.name) || 'Unknown Workflow';\nconst wfId = (err.workflow && err.workflow.id) || 'unknown';\nconst errMsg = (err.execution && err.execution.error && err.execution.error.message) || 'No error message';\nconst execId = (err.execution && err.execution.id) || 'unknown';\nconst failedNode = (err.execution && err.execution.lastNodeExecuted) || 'Unknown Node';\n\nconst subject = '[ERROR] ' + wfName + ' - LNL System Warden';\n\nlet body = 'LNL SYSTEM WARDEN - ERROR ALERT\\n================================\\n\\n';\nbody += 'Time: ' + now + '\\n';\nbody += 'Workflow: ' + wfName + ' (' + wfId + ')\\n';\nbody += 'Execution ID: ' + execId + '\\n';\nbody += 'Failed Node: ' + failedNode + '\\n';\nbody += 'Error: ' + errMsg + '\\n\\n';\nbody += 'Review: https://n8n.srv1244684.hstgr.cloud/workflow/' + wfId + '/executions/' + execId + '\\n\\n';\nbody += '---\\nLNL System Warden (Orchestrator A)\\nAutomated error detection';\n\nreturn {\n  json: {\n    subject, body,\n    'Date': now,\n    'Action': 'Workflow Error Caught',\n    'Records Affected': 1,\n    'Details': wfName + ': ' + errMsg + ' (Node: ' + failedNode + ')',\n    'System Status': 'ERROR - ' + wfName\n  }\n};"
+        "jsCode": "// Format error details for email + sheet logging\n// v3: Use $input.item.json (not $json) for Code node v2 compatibility\nconst err = $input.item.json;\nconst now = new Date().toISOString();\n\nconst wfName = (err.workflow && err.workflow.name) || 'Unknown Workflow';\nconst wfId = (err.workflow && err.workflow.id) || 'unknown';\nconst errMsg = (err.execution && err.execution.error && err.execution.error.message) || 'No error message';\nconst execId = (err.execution && err.execution.id) || 'unknown';\nconst failedNode = (err.execution && err.execution.lastNodeExecuted) || 'Unknown Node';\nconst reviewUrl = 'https://n8n.srv1244684.hstgr.cloud/workflow/' + wfId + '/executions/' + execId;\n\nconst subject = '[ERROR] ' + wfName + ' - LNL System Warden';\n\nlet html = '<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\">';\nhtml += '<h2 style=\"color:#dc3545\">LNL System Warden - Error Alert</h2>';\nhtml += '<table style=\"border-collapse:collapse;width:100%\">';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Time</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + now + '</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Workflow</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + wfName + ' (' + wfId + ')</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Execution ID</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + execId + '</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Failed Node</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + failedNode + '</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Error</strong></td><td style=\"padding:8px;border:1px solid #dee2e6;color:#dc3545\">' + errMsg + '</td></tr>';\nhtml += '</table>';\nhtml += '<p style=\"margin-top:16px\"><a href=\"' + reviewUrl + '\" style=\"color:#007bff\">Review Execution in n8n</a></p>';\nhtml += '<hr style=\"margin-top:20px\"><p style=\"color:#6c757d;font-size:12px\">LNL System Warden (Orchestrator A) - Automated error detection</p></div>';\n\nreturn {\n  json: {\n    subject, htmlBody: html,\n    'Date': now,\n    'Action': 'Workflow Error Caught',\n    'Records Affected': 1,\n    'Details': wfName + ': ' + errMsg + ' (Node: ' + failedNode + ')',\n    'System Status': 'ERROR - ' + wfName\n  }\n};"
       },
       "notes": "Formats real-time error data for email alert and Sheet Hygiene Log"
     },
@@ -224,9 +224,9 @@
         "operation": "send",
         "fromEmail": "LNL System Warden <hello@lnlautomations.com>",
         "toEmail": "lainiem@lnlcreatives.com",
-        "subject": "={{ $json.subject }}",
-        "emailFormat": "text",
-        "text": "={{ $json.body }}",
+        "subject": "={{ $json.subject || '[ERROR] LNL System Warden' }}",
+        "emailFormat": "html",
+        "html": "={{ $json.htmlBody || '<p>System Warden error alert triggered but report body was empty. Check n8n execution logs.</p>' }}",
         "options": {
           "appendAttribution": false
         }
@@ -237,7 +237,7 @@
           "name": "SMTP"
         }
       },
-      "notes": "Sends immediate error alert email"
+      "notes": "Sends immediate error alert email as HTML. Uses htmlBody from Format Error Details node."
     },
     {
       "id": "warden-013",
