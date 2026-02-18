@@ -1,0 +1,452 @@
+{
+  "name": "LNL Audit Intake & Vault Router",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "audit-intake",
+        "method": "POST",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "audit-001",
+      "name": "Webhook: Audit Intake",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "notesInFlow": true,
+      "notes": "Receives POST from /api/audit on the LNL website. Payload shape defined in PRD Section 1.7."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Route audit submission to the correct industry Notion vault database\n// and prepare all data for page creation, template population, and notifications.\n\nconst data = $input.item.json;\nconst industry = data.industry || 'home-services';\nconst businessName = data.business_name || 'Unknown Business';\nconst customerName = data.customer_name || 'Valued Client';\nconst customerEmail = data.customer_email || '';\nconst market = data.market || 'raleigh';\nconst timestamp = data.timestamp || new Date().toISOString();\nconst auditDate = timestamp.split('T')[0];\n\n// Industry -> Notion Database ID routing (PRD Section 2.5)\nconst databaseMap = {\n  'medspa':        '3f5c3ac39e9d44e1b89558c89eb299bb',\n  'realtor':       '81c5f71a1492451bb9afa5a95b1bd39f',\n  'law':           '3952b5325c5345d1a972d33e2a54c74b',\n  'home-services': 'ef81056d84554e1f9cbdb46a949b6535'\n};\n\nconst industryLabels = {\n  'medspa': 'Med Spa',\n  'realtor': 'Real Estate',\n  'law': 'Law',\n  'home-services': 'Home Services'\n};\n\nconst marketLabels = {\n  'raleigh': 'Raleigh',\n  'columbus': 'Columbus',\n  'moscow': 'Moscow'\n};\n\nconst divisionMap = {\n  'medspa': 'Creative',\n  'realtor': 'Creative',\n  'law': 'Automations',\n  'home-services': 'Automations'\n};\n\nconst targetDb = databaseMap[industry] || databaseMap['home-services'];\nconst industryLabel = industryLabels[industry] || 'Home Services';\nconst marketLabel = marketLabels[market] || 'Raleigh';\nconst division = divisionMap[industry] || 'Automations';\nconst pageTitle = `${industryLabel} - ${businessName} - Audit ${auditDate}`;\nconst assetScore = parseInt(data.asset_score) || 0;\nconst paidTraffic = (data.paid_traffic || '').toLowerCase() === 'yes';\n\n// Pre-Audit Report: Industry-specific findings (conditional on division)\nlet findingsHeading, finding1, finding2, finding3;\nif (division === 'Creative') {\n  findingsHeading = `For LNL Creative (${industryLabel})`;\n  finding1 = 'Visual Friction: Identify where high-end clients are being turned off by low-quality assets or inconsistent branding.';\n  finding2 = 'Conversion Gaps: Pinpoint the exact moment a lead stops clicking in the current funnel.';\n  finding3 = 'Cinematic Potential: Highlight 1-2 raw clips the client uploaded and explain the LNL Refresh to apply.';\n} else {\n  findingsHeading = `For LNL Automations (${industryLabel})`;\n  finding1 = 'Manual Bottlenecks: List the specific tasks (Intake, Invoicing, Dispatch) currently consuming human time.';\n  finding2 = 'Tech Overlap: Identify Ghost Apps they are paying for that duplicate functionality in their stack.';\n  finding3 = 'Speed-to-Lead Audit: Show exactly how many minutes/hours pass before a lead gets a response vs. the industry standard (under 5 mins).';\n}\n\n// Division-specific vault client checklist\nlet checklist1, checklist2, checklist3;\nif (division === 'Creative') {\n  checklist1 = 'Logo & Brand Kit: High-resolution files for visual alignment audit.';\n  checklist2 = 'Active Ad Creative: Screenshots or files of currently running Meta/Google ads.';\n  checklist3 = 'Top 3 Social Posts: Best-performing content for hooks/engagement analysis.';\n} else {\n  checklist1 = 'Software Inventory: A list or screenshot of all monthly tech subscriptions.';\n  checklist2 = 'Intake/Lead Logs: An export of last 10 leads to audit Speed to Lead.';\n  checklist3 = 'Sample Service Agreement: A blank contract or invoice for document-automation review.';\n}\n\n// Pre-formatted diagnostic snapshot for the Notion page body\nconst diagnosticSnapshot = [\n  'DIAGNOSTIC SNAPSHOT',\n  `- Competitor Insight: ${data.competitor_reason || 'Not provided'}`,\n  `- Content Effort: ${data.content_hours || 'Not specified'} hrs/week`,\n  `- Self-Assessed Visual Score: ${assetScore}/10`,\n  `- Content Library: ${data.content_library || 'Not specified'}`,\n  `- Lead Journey: ${data.lead_next_step || 'Not specified'}`,\n  `- Paid Traffic: ${data.paid_traffic || 'No'} | CPL: ${data.cpl || 'N/A'}`,\n  `- Tech Stack: ${data.tech_stack || 'Not specified'}`\n].join('\\n');\n\nreturn {\n  ...data,\n  target_db: targetDb,\n  industry_label: industryLabel,\n  market_label: marketLabel,\n  division: division,\n  page_title: pageTitle,\n  audit_date: auditDate,\n  asset_score_num: assetScore,\n  paid_traffic_bool: paidTraffic,\n  findings_heading: findingsHeading,\n  finding_1: finding1,\n  finding_2: finding2,\n  finding_3: finding3,\n  checklist_1: checklist1,\n  checklist_2: checklist2,\n  checklist_3: checklist3,\n  diagnostic_snapshot: diagnosticSnapshot\n};"
+      },
+      "id": "audit-002",
+      "name": "Route & Prepare Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "notesInFlow": true,
+      "notes": "Maps industry to Notion vault DB ID. Prepares page title, division-specific template content, and diagnostic snapshot."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, message: 'Audit received. Vault page creation in progress.', industry: $json.industry_label, database: $json.target_db }) }}"
+      },
+      "id": "audit-003",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [750, 150]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "create",
+        "databaseId": "={{ $json.target_db }}",
+        "title": "={{ $json.page_title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Contact Name",
+              "textValue": "={{ $json.customer_name }}"
+            },
+            {
+              "key": "Email",
+              "emailValue": "={{ $json.customer_email }}"
+            },
+            {
+              "key": "Business Name",
+              "textValue": "={{ $json.business_name }}"
+            },
+            {
+              "key": "Industry",
+              "selectValue": "={{ $json.industry_label }}"
+            },
+            {
+              "key": "Market",
+              "selectValue": "={{ $json.market_label }}"
+            },
+            {
+              "key": "Audit Date",
+              "dateValue": "={{ $json.audit_date }}"
+            },
+            {
+              "key": "Service Interest",
+              "selectValue": "={{ $json.service_interest }}"
+            },
+            {
+              "key": "Asset Score",
+              "numberValue": "={{ $json.asset_score_num }}"
+            },
+            {
+              "key": "Content Hours",
+              "selectValue": "={{ $json.content_hours }}"
+            },
+            {
+              "key": "Content Library",
+              "selectValue": "={{ $json.content_library }}"
+            },
+            {
+              "key": "Lead Next Step",
+              "selectValue": "={{ $json.lead_next_step }}"
+            },
+            {
+              "key": "Paid Traffic",
+              "checkboxValue": "={{ $json.paid_traffic_bool }}"
+            },
+            {
+              "key": "CPL",
+              "textValue": "={{ $json.cpl || '' }}"
+            },
+            {
+              "key": "Industry Diagnostic",
+              "selectValue": "={{ $json.industry_specific }}"
+            },
+            {
+              "key": "Tech Stack",
+              "multiSelectValue": "={{ $json.tech_stack }}"
+            },
+            {
+              "key": "Competitor Reason",
+              "textValue": "={{ $json.competitor_reason }}"
+            },
+            {
+              "key": "Ad Link",
+              "urlValue": "={{ $json.ad_link || '' }}"
+            },
+            {
+              "key": "Additional Notes",
+              "textValue": "={{ $json.additional_notes || '' }}"
+            },
+            {
+              "key": "Status",
+              "selectValue": "New"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "audit-004",
+      "name": "Create Vault Page",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [750, 300],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Creates page in the industry-specific vault DB. Database ID is dynamically set from the routing code node."
+    },
+    {
+      "parameters": {
+        "resource": "block",
+        "operation": "append",
+        "blockId": "={{ $json.id }}",
+        "blockUi": {
+          "blockValues": [
+            {
+              "type": "heading_1",
+              "textContent": "PRE-AUDIT REPORT"
+            },
+            {
+              "type": "quote",
+              "textContent": "This Pre-Audit Report is the centerpiece of the 30-minute call. It transitions the prospect from sharing files to seeing the solution."
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "Diagnostic Snapshot"
+            },
+            {
+              "type": "callout",
+              "textContent": "={{ $('Route & Prepare Data').item.json.diagnostic_snapshot }}"
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "1. Executive Summary: The Leakage Score"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "Creative Authority Score: ={{ $('Route & Prepare Data').item.json.asset_score_num }} /10 (self-assessed visual consistency and scroll-stop ability)"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "Operational Efficiency Score: ___ /10 (tech stack integration and manual touchpoints - assess during call)"
+            },
+            {
+              "type": "paragraph",
+              "textContent": "The North Star Objective: [To be determined during the 30-minute call]"
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "2. Industry-Specific Findings"
+            },
+            {
+              "type": "heading_3",
+              "textContent": "={{ $('Route & Prepare Data').item.json.findings_heading }}"
+            },
+            {
+              "type": "bulleted_list_item",
+              "textContent": "={{ $('Route & Prepare Data').item.json.finding_1 }}"
+            },
+            {
+              "type": "bulleted_list_item",
+              "textContent": "={{ $('Route & Prepare Data').item.json.finding_2 }}"
+            },
+            {
+              "type": "bulleted_list_item",
+              "textContent": "={{ $('Route & Prepare Data').item.json.finding_3 }}"
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "3. The Future State Map"
+            },
+            {
+              "type": "bulleted_list_item",
+              "textContent": "Phase 1 (Quick Win): The one automation or creative fix that pays for itself in 30 days."
+            },
+            {
+              "type": "bulleted_list_item",
+              "textContent": "Phase 2 (Scaling): The long-term system build-out (e.g., Full CRM Automation or Cinematic Ad Campaigns)."
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "Vault Client Checklist"
+            },
+            {
+              "type": "to_do",
+              "textContent": "={{ $('Route & Prepare Data').item.json.checklist_1 }}",
+              "checked": false
+            },
+            {
+              "type": "to_do",
+              "textContent": "={{ $('Route & Prepare Data').item.json.checklist_2 }}",
+              "checked": false
+            },
+            {
+              "type": "to_do",
+              "textContent": "={{ $('Route & Prepare Data').item.json.checklist_3 }}",
+              "checked": false
+            },
+            {
+              "type": "divider"
+            },
+            {
+              "type": "heading_2",
+              "textContent": "ARCHITECT NOTES"
+            },
+            {
+              "type": "quote",
+              "textContent": "Audit intake received. Review diagnostic data in page properties above. Prepare personalized insights for the 30-minute call."
+            }
+          ]
+        }
+      },
+      "id": "audit-005",
+      "name": "Populate Pre-Audit Template",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2,
+      "position": [1000, 300],
+      "credentials": {
+        "notionApi": {
+          "id": "YOUR_NOTION_CREDENTIAL_ID",
+          "name": "Notion API"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Appends the Pre-Audit Report template body to the created page. Industry-specific findings and checklists are set by the routing code node."
+    },
+    {
+      "parameters": {
+        "fromEmail": "LNL Group <hello@lnlgroups.com>",
+        "toEmail": "={{ $('Route & Prepare Data').item.json.customer_email }}",
+        "subject": "Your LNL Audit Has Been Received",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: 'Georgia', serif; background: #1a1a1a; color: #e8e8e8; }\n    .container { max-width: 600px; margin: 40px auto; background: #2a2a2a; border: 1px solid #d4af37; }\n    .header { background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%); padding: 40px; text-align: center; border-bottom: 2px solid #d4af37; }\n    .logo { font-size: 28px; font-weight: bold; color: #d4af37; letter-spacing: 2px; }\n    .content { padding: 40px; }\n    .footer { padding: 30px; text-align: center; font-size: 12px; color: #888; border-top: 1px solid #444; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <div class=\"logo\">THE LNL GROUP</div>\n      <p style=\"color: #888; margin-top: 10px;\">LOGIC + LUXURY</p>\n    </div>\n    <div class=\"content\">\n      <h1 style=\"color: #d4af37; font-size: 24px;\">AUDIT DATA RECEIVED</h1>\n      <p>{{ $('Route & Prepare Data').item.json.customer_name }},</p>\n      <p>Our architects are now cross-referencing your content against <strong>{{ $('Route & Prepare Data').item.json.industry_label }}</strong> industry benchmarks.</p>\n      <h2 style=\"color: #d4af37; margin-top: 30px;\">What Happens Next</h2>\n      <ol style=\"line-height: 1.8;\">\n        <li><strong>Intake Analysis</strong> -- Your diagnostic data is being processed</li>\n        <li><strong>Auditor Assignment</strong> -- A Growth Architect will be assigned to your case</li>\n        <li><strong>Priority Connection</strong> -- Expect outreach within 24 hours to schedule your 30-minute audit call</li>\n      </ol>\n      <div style=\"background: #1a1a1a; padding: 20px; margin: 30px 0; border-left: 3px solid #d4af37;\">\n        <p style=\"margin: 0; font-style: italic; color: #d4af37;\">\"Every audit begins with data. Every transformation begins with a conversation.\"</p>\n        <p style=\"margin: 10px 0 0 0; font-size: 12px; color: #888;\">-- The LNL Method</p>\n      </div>\n      <p style=\"margin-top: 40px;\">The LNL Growth Architecture Team</p>\n    </div>\n    <div class=\"footer\">\n      <p>THE LNL GROUP<br>Logic + Luxury Growth Architecture</p>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "audit-006",
+      "name": "Send Audit Confirmation",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1300, 200],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fromEmail": "LNL Group <hello@lnlgroups.com>",
+        "toEmail": "lainie@lnlgroup.com",
+        "subject": "=[AUDIT RECEIVED] {{ $('Route & Prepare Data').item.json.industry_label }} - {{ $('Route & Prepare Data').item.json.business_name }}",
+        "emailFormat": "html",
+        "html": "<!DOCTYPE html>\n<html>\n<head>\n  <style>\n    body { font-family: Arial, sans-serif; background: #f4f4f4; color: #333; }\n    .container { max-width: 600px; margin: 20px auto; background: #fff; border: 1px solid #ddd; }\n    .header { background: #1a1a1a; padding: 20px; text-align: center; color: #d4af37; }\n    .content { padding: 30px; }\n    .data-row { padding: 8px 0; border-bottom: 1px solid #eee; }\n    .label { font-weight: bold; color: #555; display: inline-block; width: 160px; }\n    .value { color: #1a1a1a; }\n    .section { margin-top: 20px; padding-top: 15px; border-top: 2px solid #d4af37; }\n    .cta { display: inline-block; background: #d4af37; color: #1a1a1a; padding: 12px 30px; text-decoration: none; font-weight: bold; margin-top: 20px; border-radius: 4px; }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <div class=\"header\">\n      <h2 style=\"margin: 0;\">NEW AUDIT SUBMISSION</h2>\n    </div>\n    <div class=\"content\">\n      <div class=\"data-row\"><span class=\"label\">Business:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.business_name }}</span></div>\n      <div class=\"data-row\"><span class=\"label\">Contact:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.customer_name }}</span></div>\n      <div class=\"data-row\"><span class=\"label\">Email:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.customer_email }}</span></div>\n      <div class=\"data-row\"><span class=\"label\">Industry:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.industry_label }}</span></div>\n      <div class=\"data-row\"><span class=\"label\">Market:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.market_label }}</span></div>\n      <div class=\"data-row\"><span class=\"label\">Division:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.division }}</span></div>\n      <div class=\"data-row\"><span class=\"label\">Service Interest:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.service_interest }}</span></div>\n      <div class=\"section\">\n        <h3 style=\"color: #d4af37; margin-top: 0;\">Diagnostic Scores</h3>\n        <div class=\"data-row\"><span class=\"label\">Asset Score:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.asset_score_num }}/10</span></div>\n        <div class=\"data-row\"><span class=\"label\">Content Hours:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.content_hours }} hrs/week</span></div>\n        <div class=\"data-row\"><span class=\"label\">Content Library:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.content_library }}</span></div>\n        <div class=\"data-row\"><span class=\"label\">Paid Traffic:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.paid_traffic }} | CPL: {{ $('Route & Prepare Data').item.json.cpl || 'N/A' }}</span></div>\n      </div>\n      <div class=\"section\">\n        <h3 style=\"color: #d4af37; margin-top: 0;\">Key Insights</h3>\n        <div class=\"data-row\"><span class=\"label\">Competitor Edge:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.competitor_reason }}</span></div>\n        <div class=\"data-row\"><span class=\"label\">Lead Journey:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.lead_next_step }}</span></div>\n        <div class=\"data-row\"><span class=\"label\">Industry Q:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.industry_specific }}</span></div>\n        <div class=\"data-row\"><span class=\"label\">Tech Stack:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.tech_stack }}</span></div>\n        <div class=\"data-row\"><span class=\"label\">Ad Link:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.ad_link || 'None' }}</span></div>\n        <div class=\"data-row\"><span class=\"label\">Notes:</span> <span class=\"value\">{{ $('Route & Prepare Data').item.json.additional_notes || 'None' }}</span></div>\n      </div>\n      <a href=\"https://www.notion.so/{{ $('Create Vault Page').item.json.id.replaceAll('-', '') }}\" class=\"cta\">OPEN VAULT PAGE</a>\n    </div>\n  </div>\n</body>\n</html>",
+        "options": {}
+      },
+      "id": "audit-007",
+      "name": "Notify LNL Team",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2,
+      "position": [1300, 400],
+      "credentials": {
+        "smtp": {
+          "id": "YOUR_SMTP_CREDENTIAL_ID",
+          "name": "LNL Email"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": "YOUR_GOOGLE_SHEET_ID",
+        "sheetName": "AUDIT_LOG",
+        "columns": {
+          "mappings": [
+            {
+              "columnName": "Timestamp",
+              "value": "={{ $('Route & Prepare Data').item.json.timestamp }}"
+            },
+            {
+              "columnName": "Business Name",
+              "value": "={{ $('Route & Prepare Data').item.json.business_name }}"
+            },
+            {
+              "columnName": "Contact Name",
+              "value": "={{ $('Route & Prepare Data').item.json.customer_name }}"
+            },
+            {
+              "columnName": "Email",
+              "value": "={{ $('Route & Prepare Data').item.json.customer_email }}"
+            },
+            {
+              "columnName": "Industry",
+              "value": "={{ $('Route & Prepare Data').item.json.industry_label }}"
+            },
+            {
+              "columnName": "Market",
+              "value": "={{ $('Route & Prepare Data').item.json.market_label }}"
+            },
+            {
+              "columnName": "Division",
+              "value": "={{ $('Route & Prepare Data').item.json.division }}"
+            },
+            {
+              "columnName": "Service Interest",
+              "value": "={{ $('Route & Prepare Data').item.json.service_interest }}"
+            },
+            {
+              "columnName": "Asset Score",
+              "value": "={{ $('Route & Prepare Data').item.json.asset_score_num }}"
+            },
+            {
+              "columnName": "Notion Page ID",
+              "value": "={{ $('Create Vault Page').item.json.id }}"
+            },
+            {
+              "columnName": "Status",
+              "value": "New"
+            }
+          ]
+        }
+      },
+      "id": "audit-008",
+      "name": "Log to Audit Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [1300, 550],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "YOUR_GOOGLE_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: Audit Intake": {
+      "main": [
+        [
+          {
+            "node": "Route & Prepare Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route & Prepare Data": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create Vault Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Vault Page": {
+      "main": [
+        [
+          {
+            "node": "Populate Pre-Audit Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Populate Pre-Audit Template": {
+      "main": [
+        [
+          {
+            "node": "Send Audit Confirmation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Notify LNL Team",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log to Audit Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": []
+}
