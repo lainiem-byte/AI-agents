@@ -213,7 +213,7 @@
       "typeVersion": 2.1,
       "position": [1750, 100],
       "parameters": {
-        "fromEmail": "hello@lnlgroups.com",
+        "fromEmail": "LNL Group <hello@lnlgroups.com>",
         "toEmail": "lainiem@lnlcreatives.com",
         "subject": "=VIP LEAD ALERT: {{ $json.customer_name }} - Score {{ $json.audit_score }}/10",
         "emailFormat": "html",
@@ -237,7 +237,7 @@
       "typeVersion": 2.1,
       "position": [1500, 500],
       "parameters": {
-        "fromEmail": "hello@lnlgroups.com",
+        "fromEmail": "LNL Group <hello@lnlgroups.com>",
         "toEmail": "={{ $json.customer_email }}",
         "subject": "LNL Group - We received your inquiry",
         "emailFormat": "html",
@@ -261,7 +261,7 @@
       "typeVersion": 2.1,
       "position": [1750, 500],
       "parameters": {
-        "fromEmail": "hello@lnlgroups.com",
+        "fromEmail": "LNL Group <hello@lnlgroups.com>",
         "toEmail": "lainiem@lnlcreatives.com",
         "subject": "=New Website Lead: {{ $json.customer_name }} - Score {{ $json.audit_score }}/10",
         "emailFormat": "html",

@@ -882,9 +882,9 @@
     },
     {
       "parameters": {
-        "fromEmail": "hello@lnlgroups.com",
+        "fromEmail": "LNL Group <hello@lnlgroups.com>",
         "toEmail": "lainiem@lnlcreatives.com",
-        "subject": "={{ '\u00c3\u0192\u00c2\u00b0\u00c3\u2026\u00c2\u00b8\u00c3\u00a2\u00e2\u201a\u00ac\udc9d\u00c3\u201a\u00c2\u00a5 HOT LEAD: ' + $json.business_name + ' (' + $json.industry + ')' }}",
+        "subject": "={{ 'HOT LEAD: ' + $json.business_name + ' (' + $json.industry + ')' }}",
         "options": {}
       },
       "id": "2657c41b-b832-4b6b-9764-de0192c79eaf",
@@ -2518,9 +2518,9 @@
       },
       {
         "parameters": {
-          "fromEmail": "hello@lnlgroups.com",
+          "fromEmail": "LNL Group <hello@lnlgroups.com>",
           "toEmail": "lainiem@lnlcreatives.com",
-          "subject": "={{ '\u00c3\u0192\u00c2\u00b0\u00c3\u2026\u00c2\u00b8\u00c3\u00a2\u00e2\u201a\u00ac\udc9d\u00c3\u201a\u00c2\u00a5 HOT LEAD: ' + $json.business_name + ' (' + $json.industry + ')' }}",
+          "subject": "={{ 'HOT LEAD: ' + $json.business_name + ' (' + $json.industry + ')' }}",
           "options": {}
         },
         "id": "2657c41b-b832-4b6b-9764-de0192c79eaf",

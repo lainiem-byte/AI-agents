@@ -3,7 +3,7 @@
   "nodes": [
     {
       "id": "warden-001",
-      "name": "Every 15 Minutes",
+      "name": "Every 4 Hours",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [0, 300],
@@ -11,13 +11,13 @@
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 60
+              "field": "hours",
+              "hoursInterval": 4
             }
           ]
         }
       },
-      "notes": "System Warden health check: runs every 60 minutes to monitor all LNL workflows"
+      "notes": "System Warden health check: runs every 4 hours to monitor all LNL workflows"
     },
     {
       "id": "warden-002",
@@ -84,7 +84,7 @@
       "position": [1120, 200],
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Format health alert for email + sheet logging\n// v3: Use $input.item.json (not $json) for Code node v2 compatibility\nconst d = $input.item.json;\nconst issues = d.issues || [];\n\nlet subject = '';\nif (d.overallStatus === 'CRITICAL') subject = '[CRITICAL] LNL System Warden Alert';\nelse if (d.overallStatus === 'WARNING') subject = '[WARNING] LNL System Warden Alert';\nelse subject = '[OK] LNL System Warden - All Clear';\n\nconst statusColor = d.overallStatus === 'CRITICAL' ? '#dc3545' : d.overallStatus === 'WARNING' ? '#ffc107' : '#28a745';\n\nlet html = '<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\">';\nhtml += '<h2 style=\"color:' + statusColor + '\">LNL System Warden Report</h2>';\nhtml += '<p><strong>Time:</strong> ' + d.timestamp + '<br>';\nhtml += '<strong>Status:</strong> <span style=\"color:' + statusColor + '\">' + d.overallStatus + '</span><br>';\nhtml += '<strong>Issues:</strong> ' + d.issueCount + '</p>';\n\nif (issues.length > 0) {\n  html += '<h3>Issues Detected</h3><table style=\"border-collapse:collapse;width:100%\">';\n  html += '<tr style=\"background:#f8f9fa\"><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Severity</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Workflow</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Type</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Detail</th></tr>';\n  for (const i of issues) {\n    const sevColor = i.severity === 'HIGH' ? '#dc3545' : i.severity === 'MEDIUM' ? '#ffc107' : '#6c757d';\n    html += '<tr><td style=\"border:1px solid #dee2e6;padding:8px;color:' + sevColor + '\">' + i.severity + '</td>';\n    html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + i.workflow + '</td>';\n    html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + i.type + '</td>';\n    html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + i.detail + '</td></tr>';\n  }\n  html += '</table>';\n}\n\nhtml += '<h3>Workflow Status</h3><table style=\"border-collapse:collapse;width:100%\">';\nhtml += '<tr style=\"background:#f8f9fa\"><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Status</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Workflow</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Errors</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Successes</th><th style=\"border:1px solid #dee2e6;padding:8px;text-align:left\">Last Exec</th></tr>';\nfor (const r of (d.report || [])) {\n  const rowColor = r.status === 'ERROR' ? '#fff3f3' : '#f3fff3';\n  const icon = r.status === 'ERROR' ? 'X' : 'OK';\n  html += '<tr style=\"background:' + rowColor + '\"><td style=\"border:1px solid #dee2e6;padding:8px\">' + icon + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + r.name + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + r.errors + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + r.successes + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:8px\">' + r.lastExec + '</td></tr>';\n}\nhtml += '</table>';\nhtml += '<hr style=\"margin-top:20px\"><p style=\"color:#6c757d;font-size:12px\">LNL System Warden (Orchestrator A)</p></div>';\n\nconst issueSummary = issues.map(i => '[' + i.severity + '] ' + i.workflow + ': ' + i.type).join('; ');\n\nreturn {\n  json: {\n    subject, htmlBody: html,\n    'Date': d.timestamp,\n    'Action': 'System Warden Alert - ' + d.overallStatus,\n    'Records Affected': d.issueCount,\n    'Details': issueSummary || 'No issues',\n    'System Status': d.overallStatus\n  }\n};"
+        "jsCode": "// Format health alert for email + sheet logging\n// v4: Actionable subjects and direct n8n links per failing workflow\nconst d = $input.item.json;\nconst issues = d.issues || [];\n\n// Build actionable subject with failing workflow names\nconst failingNames = issues.filter(i => i.severity === 'HIGH').map(i => i.workflow);\nlet subject = '';\nif (failingNames.length > 0) subject = failingNames.join(', ') + ' failing - action needed';\nelse if (issues.length > 0) subject = issues.length + ' warning(s) - System Warden check';\nelse subject = 'All systems healthy - System Warden check';\n\nconst statusColor = d.overallStatus === 'CRITICAL' ? '#dc3545' : d.overallStatus === 'WARNING' ? '#ffc107' : '#28a745';\n\nlet html = '<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\">';\nhtml += '<h2 style=\"color:' + statusColor + '\">' + d.overallStatus + '</h2>';\n\nif (issues.length > 0) {\n  html += '<h3>What needs attention</h3>';\n  for (const i of issues) {\n    const sevColor = i.severity === 'HIGH' ? '#dc3545' : i.severity === 'MEDIUM' ? '#ffc107' : '#6c757d';\n    const link = 'https://n8n.srv1244684.hstgr.cloud/workflow/' + i.id;\n    html += '<div style=\"border-left:4px solid ' + sevColor + ';padding:10px 15px;margin:10px 0;background:#f8f9fa\">';\n    html += '<strong>' + i.workflow + '</strong> - ' + i.type + '<br>';\n    html += '<span style=\"color:#555\">' + i.detail + '</span><br>';\n    if (i.executionId) {\n      html += '<a href=\"' + link + '/executions/' + i.executionId + '\" style=\"color:#007bff\">View failed execution</a>';\n    } else {\n      html += '<a href=\"' + link + '\" style=\"color:#007bff\">Open workflow</a>';\n    }\n    html += '</div>';\n  }\n}\n\nhtml += '<h3>All Workflows</h3><table style=\"border-collapse:collapse;width:100%\">';\nhtml += '<tr style=\"background:#f8f9fa\"><th style=\"border:1px solid #dee2e6;padding:6px;text-align:left\">Workflow</th><th style=\"border:1px solid #dee2e6;padding:6px;text-align:left\">Status</th><th style=\"border:1px solid #dee2e6;padding:6px;text-align:left\">Errors</th></tr>';\nfor (const r of (d.report || [])) {\n  const rowColor = r.status === 'ERROR' ? '#fff3f3' : '#f3fff3';\n  html += '<tr style=\"background:' + rowColor + '\">';\n  html += '<td style=\"border:1px solid #dee2e6;padding:6px\">' + r.name + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:6px\">' + r.status + '</td>';\n  html += '<td style=\"border:1px solid #dee2e6;padding:6px\">' + r.errors + '</td></tr>';\n}\nhtml += '</table>';\nif (d.suppressedCount > 0) {\n  html += '<p style=\"color:#6c757d;font-size:12px\">' + d.suppressedCount + ' repeat alert(s) suppressed by 6-hour cooldown.</p>';\n}\nhtml += '</div>';\n\nconst issueSummary = issues.map(i => '[' + i.severity + '] ' + i.workflow + ': ' + i.type).join('; ');\n\nreturn {\n  json: {\n    subject, htmlBody: html,\n    'Date': d.timestamp,\n    'Action': 'System Warden Alert - ' + d.overallStatus,\n    'Records Affected': d.issueCount,\n    'Details': issueSummary || 'No issues',\n    'System Status': d.overallStatus\n  }\n};"
       },
       "notes": "Formats email subject/body and Sheet Hygiene Log fields for health alerts"
     },
@@ -210,7 +210,7 @@
       "position": [280, 700],
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "// Format error details for email + sheet logging\n// v3: Use $input.item.json (not $json) for Code node v2 compatibility\nconst err = $input.item.json;\nconst now = new Date().toISOString();\n\nconst wfName = (err.workflow && err.workflow.name) || 'Unknown Workflow';\nconst wfId = (err.workflow && err.workflow.id) || 'unknown';\nconst errMsg = (err.execution && err.execution.error && err.execution.error.message) || 'No error message';\nconst execId = (err.execution && err.execution.id) || 'unknown';\nconst failedNode = (err.execution && err.execution.lastNodeExecuted) || 'Unknown Node';\nconst reviewUrl = 'https://n8n.srv1244684.hstgr.cloud/workflow/' + wfId + '/executions/' + execId;\n\nconst subject = '[ERROR] ' + wfName + ' - LNL System Warden';\n\nlet html = '<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\">';\nhtml += '<h2 style=\"color:#dc3545\">LNL System Warden - Error Alert</h2>';\nhtml += '<table style=\"border-collapse:collapse;width:100%\">';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Time</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + now + '</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Workflow</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + wfName + ' (' + wfId + ')</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Execution ID</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + execId + '</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Failed Node</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + failedNode + '</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Error</strong></td><td style=\"padding:8px;border:1px solid #dee2e6;color:#dc3545\">' + errMsg + '</td></tr>';\nhtml += '</table>';\nhtml += '<p style=\"margin-top:16px\"><a href=\"' + reviewUrl + '\" style=\"color:#007bff\">Review Execution in n8n</a></p>';\nhtml += '<hr style=\"margin-top:20px\"><p style=\"color:#6c757d;font-size:12px\">LNL System Warden (Orchestrator A) - Automated error detection</p></div>';\n\nreturn {\n  json: {\n    subject, htmlBody: html,\n    'Date': now,\n    'Action': 'Workflow Error Caught',\n    'Records Affected': 1,\n    'Details': wfName + ': ' + errMsg + ' (Node: ' + failedNode + ')',\n    'System Status': 'ERROR - ' + wfName\n  }\n};"
+        "jsCode": "// Format error details for email + sheet logging\n// v4: Added 6-hour cooldown per workflow to prevent email spam\nconst err = $input.item.json;\nconst now = new Date();\nconst nowISO = now.toISOString();\n\nconst wfName = (err.workflow && err.workflow.name) || 'Unknown Workflow';\nconst wfId = (err.workflow && err.workflow.id) || 'unknown';\nconst errMsg = (err.execution && err.execution.error && err.execution.error.message) || 'No error message';\nconst execId = (err.execution && err.execution.id) || 'unknown';\nconst failedNode = (err.execution && err.execution.lastNodeExecuted) || 'Unknown Node';\nconst reviewUrl = 'https://n8n.srv1244684.hstgr.cloud/workflow/' + wfId + '/executions/' + execId;\n\n// 6-hour cooldown per workflow to prevent spam\nconst COOLDOWN_HOURS = 6;\nlet lastAlerted = {};\ntry {\n  const stored = $getWorkflowStaticData('global');\n  if (stored.errorLastAlerted) lastAlerted = JSON.parse(stored.errorLastAlerted);\n} catch(e) {}\n\nconst lastTime = lastAlerted[wfId];\nconst hoursSince = lastTime ? (now - new Date(lastTime)) / 3600000 : 999;\n\nif (hoursSince < COOLDOWN_HOURS) {\n  // Suppressed: still log to sheet but skip email\n  return {\n    json: {\n      subject: null, htmlBody: null, _suppressed: true,\n      'Date': nowISO,\n      'Action': 'Workflow Error (suppressed - cooldown)',\n      'Records Affected': 1,\n      'Details': wfName + ': ' + errMsg + ' (Node: ' + failedNode + ')',\n      'System Status': 'ERROR - ' + wfName + ' (suppressed)'\n    }\n  };\n}\n\n// Mark alerted\nlastAlerted[wfId] = nowISO;\ntry {\n  const stored = $getWorkflowStaticData('global');\n  stored.errorLastAlerted = JSON.stringify(lastAlerted);\n} catch(e) {}\n\nconst subject = '[ERROR] ' + wfName + ' failed at ' + failedNode;\n\nlet html = '<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\">';\nhtml += '<h2 style=\"color:#dc3545\">' + wfName + ' Error</h2>';\nhtml += '<table style=\"border-collapse:collapse;width:100%\">';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>What Failed</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + failedNode + '</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Error</strong></td><td style=\"padding:8px;border:1px solid #dee2e6;color:#dc3545\">' + errMsg + '</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Workflow</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + wfName + '</td></tr>';\nhtml += '<tr><td style=\"padding:8px;border:1px solid #dee2e6;background:#f8f9fa\"><strong>Time</strong></td><td style=\"padding:8px;border:1px solid #dee2e6\">' + nowISO + '</td></tr>';\nhtml += '</table>';\nhtml += '<p style=\"margin-top:16px\"><a href=\"' + reviewUrl + '\" style=\"background:#007bff;color:white;padding:10px 20px;text-decoration:none;display:inline-block\">Review in n8n</a></p>';\nhtml += '<p style=\"color:#6c757d;font-size:12px;margin-top:20px\">Next alert for this workflow suppressed for 6 hours.</p>';\nhtml += '</div>';\n\nreturn {\n  json: {\n    subject, htmlBody: html, _suppressed: false,\n    'Date': nowISO,\n    'Action': 'Workflow Error Caught',\n    'Records Affected': 1,\n    'Details': wfName + ': ' + errMsg + ' (Node: ' + failedNode + ')',\n    'System Status': 'ERROR - ' + wfName\n  }\n};"
       },
       "notes": "Formats real-time error data for email alert and Sheet Hygiene Log"
     },
@@ -272,10 +272,41 @@
         }
       },
       "notes": "Logs error details to Sheet Hygiene Log"
+    },
+    {
+      "id": "warden-014",
+      "name": "IF Not Suppressed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [420, 600],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "not-suppressed",
+              "leftValue": "={{ $json._suppressed }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "notTrue"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Gates error email: only sends if not suppressed by 6-hour cooldown. Suppressed errors still log to sheet."
     }
   ],
   "connections": {
-    "Every 15 Minutes": {
+    "Every 4 Hours": {
       "main": [
         [
           { "node": "Get Recent Executions", "type": "main", "index": 0 }
@@ -331,9 +362,17 @@
     "Format Error Details": {
       "main": [
         [
-          { "node": "Send Error Alert", "type": "main", "index": 0 },
+          { "node": "IF Not Suppressed", "type": "main", "index": 0 },
           { "node": "Log Error", "type": "main", "index": 0 }
         ]
+      ]
+    },
+    "IF Not Suppressed": {
+      "main": [
+        [
+          { "node": "Send Error Alert", "type": "main", "index": 0 }
+        ],
+        []
       ]
     }
   },
