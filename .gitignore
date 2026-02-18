@@ -9,3 +9,4 @@ env.txt
 *.env.txt
 nul
 OUTREACH SCRIPTS ALL.docx
+.claude/settings.local.json

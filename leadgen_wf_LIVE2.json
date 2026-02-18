@@ -100,7 +100,7 @@
             },
             {
               "name": "key",
-              "value": "=AIzaSyD83mTqfuzfUECnHm54H9iAbuc039qxbtg"
+              "value": "={{ $env.GOOGLE_MAPS_API_KEY }}"
             }
           ]
         },
@@ -156,7 +156,7 @@
             },
             {
               "name": "key",
-              "value": "=AIzaSyD83mTqfuzfUECnHm54H9iAbuc039qxbtg"
+              "value": "={{ $env.GOOGLE_MAPS_API_KEY }}"
             }
           ]
         },
@@ -1049,7 +1049,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCgoqCQQJJwNsn-ULFE5itEH4udJU-JZ1w",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"You are an email extraction specialist. Given a business name and website URL, determine the most likely business contact email address. Return ONLY the email address, nothing else. If you cannot determine one with confidence, return exactly: NONE\\n\\nBusiness: \" + $json.business_name + \"\\nWebsite: \" + ($json.website || \"\") + \"\\nDomain: \" + (($json.website || \"\").match(/https?:\\/\\/([^\\/]+)/)?.[1] || \"\") }] }] }) }}",
@@ -1088,7 +1088,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCgoqCQQJJwNsn-ULFE5itEH4udJU-JZ1w",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: \"You are a business lead researcher for LNL Group, a growth architecture studio. Search for \" + $json.keyword + \" businesses in \" + $json.location + \".\n\nReturn a JSON array of up to 15 businesses. Each object must have these exact keys:\n- business_name (string)\n- address (string)\n- phone (string or empty)\n- website (string URL or empty)\n- rating (number 1-5 or null)\n- review_count (number or 0)\n\nOnly include real, currently operating businesses. Prefer businesses with websites. Return ONLY the JSON array, no markdown, no explanation.\"\n    }]\n  }],\n  tools: [{\n    google_search: {}\n  }],\n  generationConfig: {\n    maxOutputTokens: 4000,\n    temperature: 0.3\n  }\n}) }}",
@@ -1736,7 +1736,7 @@
               },
               {
                 "name": "key",
-                "value": "=AIzaSyD83mTqfuzfUECnHm54H9iAbuc039qxbtg"
+                "value": "={{ $env.GOOGLE_MAPS_API_KEY }}"
               }
             ]
           },
@@ -1792,7 +1792,7 @@
               },
               {
                 "name": "key",
-                "value": "=AIzaSyD83mTqfuzfUECnHm54H9iAbuc039qxbtg"
+                "value": "={{ $env.GOOGLE_MAPS_API_KEY }}"
               }
             ]
           },
@@ -2685,7 +2685,7 @@
       {
         "parameters": {
           "method": "POST",
-          "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCgoqCQQJJwNsn-ULFE5itEH4udJU-JZ1w",
+          "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
           "sendBody": true,
           "specifyBody": "json",
           "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"You are an email extraction specialist. Given a business name and website URL, determine the most likely business contact email address. Return ONLY the email address, nothing else. If you cannot determine one with confidence, return exactly: NONE\\n\\nBusiness: \" + $json.business_name + \"\\nWebsite: \" + ($json.website || \"\") + \"\\nDomain: \" + (($json.website || \"\").match(/https?:\\/\\/([^\\/]+)/)?.[1] || \"\") }] }] }) }}",
@@ -2724,7 +2724,7 @@
       {
         "parameters": {
           "method": "POST",
-          "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyCgoqCQQJJwNsn-ULFE5itEH4udJU-JZ1w",
+          "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={{ $env.GEMINI_API_KEY }}",
           "sendBody": true,
           "specifyBody": "json",
           "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: \"You are a business lead researcher for LNL Group, a growth architecture studio. Search for \" + $json.keyword + \" businesses in \" + $json.location + \".\n\nReturn a JSON array of up to 15 businesses. Each object must have these exact keys:\n- business_name (string)\n- address (string)\n- phone (string or empty)\n- website (string URL or empty)\n- rating (number 1-5 or null)\n- review_count (number or 0)\n\nOnly include real, currently operating businesses. Prefer businesses with websites. Return ONLY the JSON array, no markdown, no explanation.\"\n    }]\n  }],\n  tools: [{\n    google_search: {}\n  }],\n  generationConfig: {\n    maxOutputTokens: 4000,\n    temperature: 0.3\n  }\n}) }}",
