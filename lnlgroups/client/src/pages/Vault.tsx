@@ -7,6 +7,8 @@ import {
 import { Button } from "@/components/ui/button";
 import logoIcon from "@/assets/logo-icon.png";
 import Navbar from "@/components/Navbar";
+import vaultBgVideo from "@assets/vault-bg.mp4";
+import vaultFallback from "@assets/vault-fallback.png";
 
 type VaultIndustry = "medspa" | "realtor" | "law" | "home-services";
 
@@ -132,8 +134,15 @@ export default function Vault() {
   const PillarIcon = pillarIcon;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [activeUpload, setActiveUpload] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.5;
+    }
+  }, []);
 
   const handleUploadClick = (itemId: string) => {
     setActiveUpload(itemId);
@@ -175,7 +184,23 @@ export default function Vault() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D0D0F] text-white">
+    <div className="min-h-screen text-white relative">
+      {/* Full-page video background */}
+      <div className="fixed inset-0 z-0" style={{ backgroundColor: '#0D0D0F' }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="w-full h-full object-cover"
+          poster={vaultFallback}
+        >
+          <source src={vaultBgVideo} type="video/mp4" />
+        </video>
+        <div className="absolute inset-0 bg-black/70" />
+      </div>
+
       <input
         ref={fileInputRef}
         type="file"
@@ -183,6 +208,7 @@ export default function Vault() {
         accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.csv,.mp4,.mov,.zip"
         onChange={handleFileChange}
       />
+      <div className="relative z-10">
       <Navbar />
 
       <main className="container mx-auto px-4 md:px-6 py-12 max-w-3xl">
@@ -310,6 +336,7 @@ export default function Vault() {
           </div>
         </div>
       </main>
+      </div>
     </div>
   );
 }

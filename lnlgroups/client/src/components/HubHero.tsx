@@ -2,12 +2,15 @@ import { motion } from "framer-motion";
 import { ArrowRight, Palette, Cpu, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import architectureBg from "@assets/stock_images/modern_architecture__69f67dc4.webp";
+import groupsHeroFallback from "@assets/groups-hero-fallback.png";
+import heroBgVideo from "@assets/hero-bg.mp4";
 
 export default function HubHero() {
   const [isMobile, setIsMobile] = useState(false);
-  
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
@@ -15,26 +18,33 @@ export default function HubHero() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.5;
+    }
+  }, [isMobile]);
+
   return (
     <section className="relative w-full min-h-screen pt-20 overflow-hidden" style={{ backgroundColor: '#1A1A1D' }}>
       {/* Video/Image Background - Mobile gets static image for performance */}
       <div className="absolute inset-0 z-0" style={{ backgroundColor: '#0D0D0F' }}>
         {isMobile ? (
           <img 
-            src={architectureBg}
+            src={groupsHeroFallback}
             alt=""
             className="w-full h-full object-cover"
           />
         ) : (
-          <video 
-            autoPlay 
-            muted 
-            loop 
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            loop
             playsInline
             className="w-full h-full object-cover"
-            poster={architectureBg}
+            poster={groupsHeroFallback}
           >
-            <source src="https://videos.pexels.com/video-files/3648257/3648257-uhd_2560_1440_30fps.mp4" type="video/mp4" />
+            <source src={heroBgVideo} type="video/mp4" />
           </video>
         )}
         {/* Semi-transparent dark overlay (70% opacity) for text legibility */}

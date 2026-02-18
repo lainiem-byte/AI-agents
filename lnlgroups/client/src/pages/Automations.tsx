@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Bot, Workflow, Brain, Zap, ArrowRight, Check, Sparkles, X, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,8 @@ import Navbar from "@/components/Navbar";
 import Contact from "@/components/Contact";
 import LNLPulse from "@/components/LNLPulse";
 import techBg from "@assets/stock_images/digital_technology_a_805d8588.webp";
+import automationsHeroFallback from "@assets/automations-hero-fallback.jpg";
+import automationsHeroVideo from "@assets/automations-hero-bg.mp4";
 
 const demos = [
   {
@@ -127,13 +129,20 @@ const pricingTiers = [
 export default function Automations() {
   const [selectedDemo, setSelectedDemo] = useState<typeof demos[0] | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.5;
+    }
+  }, [isMobile]);
   
   return (
     <div className="min-h-screen text-white" style={{ backgroundColor: '#1A1A1D' }}>
@@ -145,20 +154,21 @@ export default function Automations() {
           <div className="absolute inset-0 z-0" style={{ backgroundColor: '#0D0D0F' }}>
             {isMobile ? (
               <img 
-                src={techBg}
+                src={automationsHeroFallback}
                 alt=""
                 className="w-full h-full object-cover"
               />
             ) : (
-              <video 
-                autoPlay 
-                muted 
-                loop 
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                loop
                 playsInline
                 className="w-full h-full object-cover"
-                poster={techBg}
+                poster={automationsHeroFallback}
               >
-                <source src="https://videos.pexels.com/video-files/3129957/3129957-uhd_2560_1440_25fps.mp4" type="video/mp4" />
+                <source src={automationsHeroVideo} type="video/mp4" />
               </video>
             )}
             {/* Semi-transparent dark overlay (45% opacity) for text legibility */}

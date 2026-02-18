@@ -1,7 +1,7 @@
 import { MapPin, Camera } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Contact from "@/components/Contact";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import locationsData from "@/data/locations.json";
 import LocationShowcase from "@/components/LocationShowcase";
 import MoscowToolbox from "@/components/MoscowToolbox";
@@ -16,6 +16,8 @@ import columbusImage from "@assets/generated_images/columbus_oh_short_north_arts
 import germanVillageImage from "@assets/generated_images/german_village_columbus_ohio_historic_brick_lined_streets.png";
 import moscowImage from "@assets/generated_images/moscow_idaho_downtown_main_street_with_palouse_hills_background.png";
 import diamondBg from "@assets/stock_images/diamond_crystal_gem__20eff5b2.jpg";
+import creativesHeroFallback from "@assets/creatives-hero-fallback.jpg";
+import creativesHeroVideo from "@assets/creatives-hero-bg.mp4";
 
 const imageMap: Record<string, string> = {
   glenwood: glenwoodImage,
@@ -33,13 +35,20 @@ export default function Creatives({ initialLocation = "raleigh" }: CreativesProp
   const [filter, setFilter] = useState("All");
   const { activeLocation, setActiveLocation } = useActiveLocation();
   const [isMobile, setIsMobile] = useState(false);
-  
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.5;
+    }
+  }, [isMobile]);
   
   useEffect(() => {
     if (initialLocation && ["raleigh", "columbus", "moscow"].includes(initialLocation)) {
@@ -123,21 +132,22 @@ export default function Creatives({ initialLocation = "raleigh" }: CreativesProp
           {/* Video/Image Background - Mobile gets static image for performance */}
           <div className="absolute inset-0 z-0" style={{ backgroundColor: '#0D0D0F' }}>
             {isMobile ? (
-              <img 
-                src={diamondBg}
+              <img
+                src={creativesHeroFallback}
                 alt=""
                 className="w-full h-full object-cover"
               />
             ) : (
-              <video 
-                autoPlay 
-                muted 
-                loop 
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                loop
                 playsInline
                 className="w-full h-full object-cover"
-                poster={diamondBg}
+                poster={creativesHeroFallback}
               >
-                <source src="https://cdn.pixabay.com/video/2016/05/12/3122-166335826_large.mp4" type="video/mp4" />
+                <source src={creativesHeroVideo} type="video/mp4" />
               </video>
             )}
             {/* Semi-transparent dark overlay (60% opacity) for text legibility */}
