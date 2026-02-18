@@ -169,14 +169,37 @@ New decisions should include:
 
 ## Security & Access – Defaults
 
-Assume security is non-negotiable: 
+Assume security is non-negotiable:
 
-- **Least privilege** – Only needed access for tools and keys.  
-- **Env separation** – Prefer sandbox vs production; avoid testing risky flows on live data.  
-- **Central secrets** – Use a vault/password manager; do not spread credentials into random docs or code.  
-- **Auditability** – Favor designs that leave a trace (logs, events) instead of black-box behavior.  
+- **Least privilege** – Only needed access for tools and keys.
+- **Env separation** – Prefer sandbox vs production; avoid testing risky flows on live data.
+- **Central secrets** – Use a vault/password manager; do not spread credentials into random docs or code.
+- **Auditability** – Favor designs that leave a trace (logs, events) instead of black-box behavior.
 
-If a “simple” idea weakens security, explicitly warn and offer a safer alternative.
+If a "simple" idea weakens security, explicitly warn and offer a safer alternative.
+
+### Secrets in Workflow JSON Files
+
+**NEVER commit n8n workflow JSON files that contain hardcoded API keys, tokens, or passwords.**
+
+When saving or exporting workflow JSON to this repo:
+1. Scan for hardcoded secrets (API keys, tokens, passwords) before committing.
+2. Replace any found secrets with n8n environment variable syntax: `{{ $env.VAR_NAME }}`.
+3. Common patterns to catch: `AIza*`, `sk-*`, `Bearer *`, `api_key`, `key=`, passwords in URLs.
+
+### n8n Workflow Modification Rules
+
+**Do NOT change Google Sheets `mappingMode` without explicit user approval.**
+
+- `defineBelow` (explicit column mapping) is the default and correct mode for production.
+- `autoMapInputData` will silently fail when JSON keys don't match sheet column headers.
+- If a Sheets node is broken, fix the column expressions — do not switch the mapping mode.
+
+### Files That Must Never Be Tracked
+
+These files are gitignored for security reasons. **Never remove them from `.gitignore` or re-add them:**
+- `.claude/settings.local.json` – Contains approved command history which may include secrets.
+- `.env`, `env.txt`, `*.credentials.json` – Secret stores.
 
 ***
 

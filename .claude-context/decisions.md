@@ -80,5 +80,29 @@ Each decision entry should include:
 
 ---
 
+### 2026-02-17: Never commit workflow JSON with hardcoded secrets
+
+**Decision**: All n8n workflow JSON files saved to this repo must use `{{ $env.VAR_NAME }}` references instead of hardcoded API keys. A pre-commit hook scans for common key patterns and blocks the commit if found.
+
+**Rationale**: Two Google API keys (Maps + Gemini) were exposed on GitHub via committed workflow exports. The `.claude/settings.local.json` file also leaked n8n JWT tokens, a Gemini key, and the VPS root SSH password because Claude Code's auto-generated permission entries recorded full commands including inline secrets.
+
+**Alternatives considered**: Manual review (too error-prone), private repo only (doesn't fix the root cause), BFG repo cleaner (addresses history but not prevention).
+
+**Impact**: All workflow JSON must be scrubbed before commit. `.claude/settings.local.json` is now gitignored and untracked. Keys in git history must be rotated.
+
+---
+
+### 2026-02-17: Google Sheets mappingMode must stay as defineBelow
+
+**Decision**: The Lead Gen workflow's Google Sheets node must use `mappingMode: defineBelow` with explicit column expressions. Never switch to `autoMapInputData`.
+
+**Rationale**: A previous Claude session switched to autoMapInputData as a "fix," which silently broke lead saving because JSON snake_case field names (`business_name`) don't match the sheet's Title Case headers (`Business Name`).
+
+**Alternatives considered**: Renaming sheet columns to match JSON keys (fragile, breaks existing data and dashboards).
+
+**Impact**: CLAUDE.md now includes explicit rules against changing Sheets mapping modes without user approval.
+
+---
+
 ## Future Decisions
 Add new entries above this line as they're made.
