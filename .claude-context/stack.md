@@ -66,7 +66,7 @@
 ## Key System URLs
 
 ### LNL Group Sites & Properties
-- **LNL Group (main holding site)**: https://lnlgroup.com
+- **LNL Group (main holding site)**: https://lnlgroups.com
 - **LNL Automations**: https://lnlautomations.com
 - **Shadow Operator**: https://sharedsuccessstudios.com
 - **LNL Creatives**: https://lnlcreatives.com
