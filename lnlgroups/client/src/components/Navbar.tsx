@@ -14,7 +14,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useActiveLocation } from "@/context/LocationContext";
-import VaultAccessModal from "./VaultAccessModal";
 
 const localHubs = [
   { id: "raleigh" as const, name: "Raleigh-Durham", tagline: "Innovation Hub" },
@@ -27,7 +26,7 @@ export default function Navbar() {
   const [location, setLocation] = useLocation();
   const { theme, setTheme } = useTheme();
   const { activeLocation, setActiveLocation } = useActiveLocation();
-  const [isVaultOpen, setIsVaultOpen] = useState(false);
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -240,15 +239,15 @@ export default function Navbar() {
             <span className="sr-only">Toggle theme</span>
           </Button>
 
-          <Button 
-            variant="outline"
-            onClick={() => setIsVaultOpen(true)}
-            className="rounded-full px-5 border border-white/20 bg-transparent text-white hover:bg-lnl-gold hover:text-black hover:border-lnl-gold font-medium transition-all duration-300"
-            data-testid="button-vault-access"
+          <a
+            href="https://vault.lnlcreatives.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center rounded-full px-5 h-10 border border-white/20 bg-transparent text-white hover:bg-lnl-gold hover:text-black hover:border-lnl-gold font-medium transition-all duration-300 text-sm"
           >
             <ShieldCheck className="w-4 h-4 mr-2" />
             Vault Access
-          </Button>
+          </a>
 
                   </div>
         </div>
@@ -389,15 +388,15 @@ export default function Navbar() {
                   </Link>
                 </div>
 
-                <Button 
-                  variant="outline"
-                  onClick={() => setIsVaultOpen(true)}
-                  className="w-full rounded-full border border-white/20 bg-transparent text-white hover:bg-lnl-gold hover:text-black hover:border-lnl-gold font-medium transition-all duration-300"
-                  data-testid="button-vault-access-mobile"
+                <a
+                  href="https://vault.lnlcreatives.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center rounded-full h-12 border border-white/20 bg-transparent text-white hover:bg-lnl-gold hover:text-black hover:border-lnl-gold font-medium transition-all duration-300"
                 >
                   <ShieldCheck className="w-4 h-4 mr-2" />
                   Vault Access
-                </Button>
+                </a>
 
                               </div>
             </SheetContent>
@@ -406,7 +405,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      <VaultAccessModal isOpen={isVaultOpen} onClose={() => setIsVaultOpen(false)} />
     </nav>
   );
 }

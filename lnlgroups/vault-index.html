@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LNL Vault - Access Portal</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e8e8e8;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .video-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      background: #0D0D0F;
+    }
+
+    .video-bg video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .video-bg .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.70);
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 500px;
+      background: rgba(42, 42, 42, 0.25);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 2px solid #d4af37;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.6s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .header {
+      background: linear-gradient(135deg, rgba(42, 42, 42, 0.3) 0%, rgba(26, 26, 26, 0.3) 100%);
+      padding: 50px 30px;
+      text-align: center;
+      border-bottom: 2px solid #d4af37;
+    }
+
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #d4af37;
+      letter-spacing: 4px;
+      margin-bottom: 10px;
+    }
+
+    .tagline {
+      color: #888;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .content {
+      padding: 50px 40px;
+    }
+
+    .title {
+      font-size: 24px;
+      color: #d4af37;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .subtitle {
+      color: #888;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 14px;
+    }
+
+    .form-group {
+      margin-bottom: 30px;
+    }
+
+    .form-label {
+      display: block;
+      color: #888;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 15px;
+      background: rgba(26, 26, 26, 0.8);
+      border: 1px solid #444;
+      color: #e8e8e8;
+      font-size: 18px;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: #d4af37;
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
+    }
+
+    .form-input::placeholder {
+      color: #555;
+      text-transform: none;
+      letter-spacing: normal;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 18px;
+      background: #d4af37;
+      border: none;
+      color: #1a1a1a;
+      font-size: 16px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: 'Georgia', serif;
+    }
+
+    .btn:hover {
+      background: #c9a532;
+      box-shadow: 0 5px 15px rgba(212, 175, 55, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(2px);
+    }
+
+    .btn:disabled {
+      background: #555;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .error-message {
+      background: rgba(51, 0, 0, 0.8);
+      border-left: 4px solid #cc3300;
+      padding: 15px;
+      margin-top: 20px;
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .error-message p {
+      margin: 0;
+      color: #ffcccc;
+      font-size: 14px;
+    }
+
+    .success-message {
+      background: rgba(0, 51, 0, 0.8);
+      border-left: 4px solid #00cc00;
+      padding: 15px;
+      margin-top: 20px;
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    .success-message p {
+      margin: 0;
+      color: #ccffcc;
+      font-size: 14px;
+    }
+
+    .loading {
+      text-align: center;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .loading.show {
+      display: block;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(212, 175, 55, 0.1);
+      border-radius: 50%;
+      border-top-color: #d4af37;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 15px;
+      color: #888;
+      font-size: 14px;
+    }
+
+    .footer {
+      padding: 30px;
+      text-align: center;
+      font-size: 11px;
+      color: #666;
+      border-top: 1px solid #333;
+    }
+
+    .footer a {
+      color: #d4af37;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    .key-format-hint {
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+      font-family: 'Courier New', monospace;
+    }
+
+    @keyframes initialize {
+      0% { opacity: 0; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .initializing {
+      animation: initialize 0.6s ease-out;
+    }
+  </style>
+</head>
+<body>
+  <div class="video-bg">
+    <video autoplay muted loop playsinline poster="vault-fallback.png" id="bgVideo">
+      <source src="vault-bg.mp4" type="video/mp4">
+    </video>
+    <div class="overlay"></div>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <div class="logo">THE LNL GROUP</div>
+      <div class="tagline">Logic + Luxury</div>
+    </div>
+
+    <div class="content">
+      <h1 class="title">Vault Access</h1>
+      <p class="subtitle">Enter your unique access key to initialize your workspace</p>
+
+      <form id="vaultForm">
+        <div class="form-group">
+          <label class="form-label" for="vaultKey">Access Key</label>
+          <input
+            type="text"
+            id="vaultKey"
+            class="form-input"
+            placeholder="LNL-XXX-XXXXX"
+            maxlength="14"
+            required
+            autocomplete="off"
+          >
+          <div class="key-format-hint">Format: LNL-XXX-XXXXX</div>
+        </div>
+
+        <button type="submit" class="btn" id="submitBtn">
+          Initialize Vault
+        </button>
+      </form>
+
+      <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Authenticating...</div>
+      </div>
+
+      <div class="error-message" id="errorMessage">
+        <p id="errorText"></p>
+      </div>
+
+      <div class="success-message" id="successMessage">
+        <p id="successText"></p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Your vault is secured by The Mechanical Heart<br>
+      <a href="https://lnlgroups.com">LNL Group</a> | Growth Architecture</p>
+    </div>
+  </div>
+
+  <script>
+    // Slow video playback
+    var bgVideo = document.getElementById('bgVideo');
+    if (bgVideo) bgVideo.playbackRate = 0.5;
+
+    // Auto-format vault key as user types
+    var vaultKeyInput = document.getElementById('vaultKey');
+
+    vaultKeyInput.addEventListener('input', function(e) {
+      var value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+
+      if (value.length > 3 && value.substring(0, 3) !== 'LNL') {
+        value = 'LNL' + value.substring(3);
+      }
+
+      var formatted = '';
+      if (value.length > 0) formatted += value.substring(0, 3);
+      if (value.length > 3) formatted += '-' + value.substring(3, 6);
+      if (value.length > 6) formatted += '-' + value.substring(6, 11);
+
+      e.target.value = formatted;
+    });
+
+    // Handle form submission
+    document.getElementById('vaultForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      var vaultKey = vaultKeyInput.value.trim();
+      var submitBtn = document.getElementById('submitBtn');
+      var loading = document.getElementById('loading');
+      var errorMessage = document.getElementById('errorMessage');
+      var successMessage = document.getElementById('successMessage');
+      var errorText = document.getElementById('errorText');
+      var successText = document.getElementById('successText');
+
+      errorMessage.classList.remove('show');
+      successMessage.classList.remove('show');
+
+      var keyPattern = /^LNL-[A-Z0-9]{3}-[A-Z0-9]{5}$/;
+      if (!keyPattern.test(vaultKey)) {
+        errorText.textContent = 'Invalid key format. Please enter a valid vault key (LNL-XXX-XXXXX).';
+        errorMessage.classList.add('show');
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Authenticating...';
+      loading.classList.add('show');
+
+      try {
+        var response = await fetch('https://n8n.srv1244684.hstgr.cloud/webhook/vault-auth', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            vault_key: vaultKey
+          })
+        });
+
+        var data = await response.json();
+
+        loading.classList.remove('show');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Initialize Vault';
+
+        if (data.auth === true) {
+          successText.innerHTML = '<strong>Access Granted: ' + data.client_name + '</strong><br>Initializing your workspace...';
+          successMessage.classList.add('show');
+          document.querySelector('.container').classList.add('initializing');
+
+          setTimeout(function() {
+            if (data.notion_url) {
+              window.location.href = data.notion_url;
+            } else {
+              successText.innerHTML += '<br><br>Your vault is ready. Please check your email for the direct link.';
+            }
+          }, 2000);
+
+        } else {
+          errorText.textContent = 'Invalid or expired vault key. Please check your key and try again.';
+          errorMessage.classList.add('show');
+        }
+
+      } catch (error) {
+        console.error('Vault authentication error:', error);
+
+        loading.classList.remove('show');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Initialize Vault';
+
+        errorText.textContent = 'Unable to connect to the vault server. Please try again in a moment.';
+        errorMessage.classList.add('show');
+      }
+    });
+
+    vaultKeyInput.addEventListener('focus', function() {
+      document.getElementById('errorMessage').classList.remove('show');
+      document.getElementById('successMessage').classList.remove('show');
+    });
+  </script>
+</body>
+</html>
