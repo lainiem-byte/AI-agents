@@ -1,0 +1,474 @@
+{
+  "name": "LNL Email Reply Detector",
+  "nodes": [
+    {
+      "id": "reply-001",
+      "name": "Check Inbox (Every 5 Min)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "parameters": {
+        "mailbox": "INBOX",
+        "postProcessAction": "nothing",
+        "options": {
+          "customEmailConfig": [],
+          "allowUnauthorizedCerts": false
+        }
+      },
+      "credentials": {
+        "imap": {
+          "id": "IMAP_CREDENTIAL_ID",
+          "name": "IMAP - hello@lnlautomations.com"
+        }
+      },
+      "notes": "Polls the reply-to inbox every 5 minutes for new emails. REQUIRES: IMAP credentials for the REPLY_TO_EMAIL mailbox (hello@lnlautomations.com). Create IMAP credentials in n8n: Settings > Credentials > IMAP with your mail server details."
+    },
+    {
+      "id": "reply-002",
+      "name": "Extract Sender & Match Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [280, 300],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Extract sender email and normalize for lead matching\nconst email = $input.item.json;\n\n// Parse sender — IMAP returns 'from' as address string or object\nlet senderEmail = '';\nlet senderName = '';\n\nif (email.from) {\n  // Handle both 'Name <email>' format and plain email\n  const fromStr = typeof email.from === 'string' ? email.from : (email.from.text || email.from.value?.[0]?.address || '');\n  const match = fromStr.match(/<([^>]+)>/);\n  senderEmail = match ? match[1].toLowerCase().trim() : fromStr.toLowerCase().trim();\n  const nameMatch = fromStr.match(/^([^<]+)</);\n  senderName = nameMatch ? nameMatch[1].trim() : '';\n}\n\n// Skip system emails, bounces, noreply\nconst skipPatterns = ['noreply', 'no-reply', 'mailer-daemon', 'postmaster', 'lnlautomations.com', 'lnlcreatives.com'];\nconst isSystemEmail = skipPatterns.some(p => senderEmail.includes(p));\n\nreturn {\n  json: {\n    senderEmail,\n    senderName,\n    subject: email.subject || '(no subject)',\n    date: email.date || new Date().toISOString(),\n    textBody: (email.text || '').substring(0, 2000),\n    htmlBody: (email.html || '').substring(0, 5000),\n    isSystemEmail,\n    messageId: email.messageId || '',\n    inReplyTo: email.inReplyTo || ''\n  }\n};"
+      },
+      "notes": "Extracts sender email, subject, and body. Flags system/bounce emails for filtering."
+    },
+    {
+      "id": "reply-003",
+      "name": "Filter System Emails",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2,
+      "position": [500, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "not-system",
+              "leftValue": "={{ $json.isSystemEmail }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "notTrue"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Drops bounce notifications, noreply senders, and internal LNL emails"
+    },
+    {
+      "id": "reply-004",
+      "name": "Lookup Lead in Pipeline",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [720, 300],
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "=Lead Pipeline",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Fetches all leads from Lead Pipeline to match sender email against Email column"
+    },
+    {
+      "id": "reply-005",
+      "name": "Match Sender to Lead",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [940, 300],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Match inbound sender email to a lead in the pipeline\nconst items = $input.all();\nif (items.length < 2) {\n  return [{ json: { matched: false, reason: 'No sheet data returned' } }];\n}\n\n// First item is the email data passed through, rest are sheet rows\n// Actually: the Lookup node replaces $json with sheet data.\n// We need the previous node's data. Use $('Extract Sender & Match Lead') to get it.\n// In n8n code nodes after a Sheets read, $input contains sheet rows.\n\n// The sender info was passed through the filter node.\n// We need to access it via $('Filter System Emails').first().json\nlet senderEmail, senderName, subject, textBody, htmlBody, date;\ntry {\n  const emailData = $('Filter System Emails').first().json;\n  senderEmail = emailData.senderEmail;\n  senderName = emailData.senderName;\n  subject = emailData.subject;\n  textBody = emailData.textBody;\n  htmlBody = emailData.htmlBody;\n  date = emailData.date;\n} catch(e) {\n  return [{ json: { matched: false, reason: 'Could not read email data: ' + e.message } }];\n}\n\n// Sheet rows are in $input\nconst rows = items.map(i => i.json);\n\n// Find matching lead by email (case-insensitive)\nconst matchedLead = rows.find(row => {\n  const leadEmail = (row['Email'] || '').toLowerCase().trim();\n  return leadEmail === senderEmail;\n});\n\nif (!matchedLead) {\n  return [{ json: {\n    matched: false,\n    senderEmail,\n    senderName,\n    subject,\n    textBody,\n    htmlBody,\n    date,\n    reason: 'No matching lead found in pipeline'\n  }}];\n}\n\nreturn [{ json: {\n  matched: true,\n  senderEmail,\n  senderName,\n  subject,\n  textBody,\n  htmlBody,\n  date,\n  leadId: matchedLead['Lead ID'] || '',\n  leadName: matchedLead['Full Name'] || matchedLead['Business Name'] || '',\n  businessName: matchedLead['Business Name'] || '',\n  currentStatus: matchedLead['Status'] || '',\n  outreachStatus: matchedLead['Outreach Status'] || '',\n  industry: matchedLead['Industry'] || '',\n  rowNumber: matchedLead['row_number'] || matchedLead['__row'] || ''\n}}];"
+      },
+      "notes": "Cross-references sender email against Lead Pipeline Email column. Returns matched lead data or flags as unmatched."
+    },
+    {
+      "id": "reply-006",
+      "name": "IF Lead Matched",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1160, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "is-matched",
+              "leftValue": "={{ $json.matched }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Routes matched leads to status update + forward path. Unmatched emails get forwarded anyway (could be a new prospect)."
+    },
+    {
+      "id": "reply-007",
+      "name": "Update Lead Status → REPLIED",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1400, 200],
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "=Lead Pipeline",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Status": "REPLIED",
+            "Next Action": "Owner: respond to lead reply",
+            "Next Action Date": "={{ new Date().toISOString().split('T')[0] }}",
+            "Last Contact Date": "={{ new Date().toISOString().split('T')[0] }}",
+            "Notes": "={{ 'REPLY RECEIVED ' + new Date().toISOString().split('T')[0] + ': ' + $json.subject + ' | ' + ($json.currentStatus ? 'Previous status: ' + $json.currentStatus : '') }}"
+          },
+          "matchingColumns": ["Email"],
+          "schema": [
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Next Action",
+              "displayName": "Next Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Next Action Date",
+              "displayName": "Next Action Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Last Contact Date",
+              "displayName": "Last Contact Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Notes",
+              "displayName": "Notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Updates lead status to REPLIED. Matches on Email column. This status is checked by the Cold Outreach Agent Logic Gate to halt future touches."
+    },
+    {
+      "id": "reply-008",
+      "name": "Format Forward Email (Matched)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1650, 200],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Format the forwarded email with lead context\nconst d = $input.item.json;\n\nconst subject = '[LEAD REPLY] ' + (d.businessName || d.senderName || d.senderEmail) + ' — ' + d.subject;\n\nlet html = '<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\">';\nhtml += '<div style=\"background:#28a745;color:white;padding:12px 20px;border-radius:6px 6px 0 0\">';\nhtml += '<h2 style=\"margin:0\">Lead Reply Received</h2>';\nhtml += '</div>';\nhtml += '<div style=\"border:1px solid #dee2e6;border-top:none;padding:20px\">';\n\n// Lead context card\nhtml += '<table style=\"border-collapse:collapse;width:100%;margin-bottom:16px\">';\nhtml += '<tr><td style=\"padding:6px 12px;background:#f8f9fa;border:1px solid #dee2e6;font-weight:bold;width:140px\">Lead</td>';\nhtml += '<td style=\"padding:6px 12px;border:1px solid #dee2e6\">' + (d.leadName || 'Unknown') + '</td></tr>';\nhtml += '<tr><td style=\"padding:6px 12px;background:#f8f9fa;border:1px solid #dee2e6;font-weight:bold\">Business</td>';\nhtml += '<td style=\"padding:6px 12px;border:1px solid #dee2e6\">' + (d.businessName || 'N/A') + '</td></tr>';\nhtml += '<tr><td style=\"padding:6px 12px;background:#f8f9fa;border:1px solid #dee2e6;font-weight:bold\">Email</td>';\nhtml += '<td style=\"padding:6px 12px;border:1px solid #dee2e6\"><a href=\"mailto:' + d.senderEmail + '\">' + d.senderEmail + '</a></td></tr>';\nhtml += '<tr><td style=\"padding:6px 12px;background:#f8f9fa;border:1px solid #dee2e6;font-weight:bold\">Industry</td>';\nhtml += '<td style=\"padding:6px 12px;border:1px solid #dee2e6\">' + (d.industry || 'N/A') + '</td></tr>';\nhtml += '<tr><td style=\"padding:6px 12px;background:#f8f9fa;border:1px solid #dee2e6;font-weight:bold\">Lead ID</td>';\nhtml += '<td style=\"padding:6px 12px;border:1px solid #dee2e6\">' + (d.leadId || 'N/A') + '</td></tr>';\nhtml += '<tr><td style=\"padding:6px 12px;background:#f8f9fa;border:1px solid #dee2e6;font-weight:bold\">Previous Status</td>';\nhtml += '<td style=\"padding:6px 12px;border:1px solid #dee2e6\">' + (d.currentStatus || 'Unknown') + ' → <strong style=\"color:#28a745\">REPLIED</strong></td></tr>';\nhtml += '</table>';\n\n// The actual email\nhtml += '<h3 style=\"border-bottom:2px solid #dee2e6;padding-bottom:8px\">Their Message</h3>';\nhtml += '<div style=\"background:#f8f9fa;padding:16px;border-radius:4px;border-left:4px solid #007bff\">';\nif (d.htmlBody && d.htmlBody.length > 20) {\n  html += d.htmlBody;\n} else {\n  html += '<pre style=\"white-space:pre-wrap;font-family:inherit\">' + (d.textBody || '(empty body)') + '</pre>';\n}\nhtml += '</div>';\n\nhtml += '<p style=\"margin-top:16px;color:#6c757d;font-size:12px\">Outreach agent has been paused for this lead. Reply directly to ' + d.senderEmail + ' to continue the conversation.</p>';\nhtml += '</div></div>';\n\nreturn { json: { subject, htmlBody: html, senderEmail: d.senderEmail } };"
+      },
+      "notes": "Formats a rich forwarded email with lead context card so you can reply with full context"
+    },
+    {
+      "id": "reply-009",
+      "name": "Forward to Owner",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1900, 200],
+      "parameters": {
+        "operation": "send",
+        "fromEmail": "LNL Reply Detector <hello@lnlautomations.com>",
+        "toEmail": "lainiem@lnlcreatives.com",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $json.htmlBody }}",
+        "options": {
+          "replyTo": "={{ $json.senderEmail }}",
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "bdxKTxBstG9tYJkB",
+          "name": "SMTP"
+        }
+      },
+      "notes": "Forwards the lead's reply to you with reply-to set to the lead's email so you can respond directly from your inbox"
+    },
+    {
+      "id": "reply-010",
+      "name": "Format Forward Email (Unmatched)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, 450],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Format forward for unmatched sender (not in pipeline — could be new prospect)\nconst d = $input.item.json;\n\nconst subject = '[INBOUND EMAIL] ' + (d.senderName || d.senderEmail) + ' — ' + d.subject;\n\nlet html = '<div style=\"font-family:Arial,sans-serif;max-width:600px;margin:0 auto\">';\nhtml += '<div style=\"background:#ffc107;color:#333;padding:12px 20px;border-radius:6px 6px 0 0\">';\nhtml += '<h2 style=\"margin:0\">Inbound Email — Not in Pipeline</h2>';\nhtml += '</div>';\nhtml += '<div style=\"border:1px solid #dee2e6;border-top:none;padding:20px\">';\n\nhtml += '<table style=\"border-collapse:collapse;width:100%;margin-bottom:16px\">';\nhtml += '<tr><td style=\"padding:6px 12px;background:#f8f9fa;border:1px solid #dee2e6;font-weight:bold;width:140px\">From</td>';\nhtml += '<td style=\"padding:6px 12px;border:1px solid #dee2e6\">' + (d.senderName || 'Unknown') + ' &lt;' + d.senderEmail + '&gt;</td></tr>';\nhtml += '<tr><td style=\"padding:6px 12px;background:#f8f9fa;border:1px solid #dee2e6;font-weight:bold\">Subject</td>';\nhtml += '<td style=\"padding:6px 12px;border:1px solid #dee2e6\">' + d.subject + '</td></tr>';\nhtml += '<tr><td style=\"padding:6px 12px;background:#f8f9fa;border:1px solid #dee2e6;font-weight:bold\">Date</td>';\nhtml += '<td style=\"padding:6px 12px;border:1px solid #dee2e6\">' + d.date + '</td></tr>';\nhtml += '</table>';\n\nhtml += '<h3 style=\"border-bottom:2px solid #dee2e6;padding-bottom:8px\">Their Message</h3>';\nhtml += '<div style=\"background:#f8f9fa;padding:16px;border-radius:4px;border-left:4px solid #ffc107\">';\nif (d.htmlBody && d.htmlBody.length > 20) {\n  html += d.htmlBody;\n} else {\n  html += '<pre style=\"white-space:pre-wrap;font-family:inherit\">' + (d.textBody || '(empty body)') + '</pre>';\n}\nhtml += '</div>';\n\nhtml += '<p style=\"margin-top:16px;color:#6c757d;font-size:12px\">This sender was not found in the Lead Pipeline. Could be a new prospect, vendor, or unrelated email.</p>';\nhtml += '</div></div>';\n\nreturn { json: { subject, htmlBody: html, senderEmail: d.senderEmail } };"
+      },
+      "notes": "Formats forward for emails from senders not found in the pipeline — still forwarded for visibility"
+    },
+    {
+      "id": "reply-011",
+      "name": "Forward Unmatched to Owner",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [1650, 450],
+      "parameters": {
+        "operation": "send",
+        "fromEmail": "LNL Reply Detector <hello@lnlautomations.com>",
+        "toEmail": "lainiem@lnlcreatives.com",
+        "subject": "={{ $json.subject }}",
+        "emailFormat": "html",
+        "html": "={{ $json.htmlBody }}",
+        "options": {
+          "replyTo": "={{ $json.senderEmail }}",
+          "appendAttribution": false
+        }
+      },
+      "credentials": {
+        "smtp": {
+          "id": "bdxKTxBstG9tYJkB",
+          "name": "SMTP"
+        }
+      },
+      "notes": "Forwards unmatched inbound email. Reply-to set to sender so you can respond directly."
+    },
+    {
+      "id": "reply-012",
+      "name": "Log Reply Event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1900, 350],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet Hygiene Log",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ new Date().toISOString() }}",
+            "Action": "={{ $json.matched ? 'Lead Reply Detected — Status → REPLIED' : 'Inbound Email — No Pipeline Match' }}",
+            "Records Affected": "1",
+            "Details": "={{ 'From: ' + ($json.senderEmail || 'unknown') + ' | Subject: ' + ($json.subject || 'none') + ($json.leadId ? ' | Lead: ' + $json.leadId : '') }}",
+            "System Status": "={{ $json.matched ? 'REPLY_PROCESSED' : 'UNMATCHED_INBOUND' }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Action",
+              "displayName": "Action",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Records Affected",
+              "displayName": "Records Affected",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "Details",
+              "displayName": "Details",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            },
+            {
+              "id": "System Status",
+              "displayName": "System Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": false
+            }
+          ]
+        },
+        "options": {
+          "cellFormat": "USER_ENTERED"
+        }
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "dAt1aRW9I46sGj9X",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Logs every reply detection event (matched and unmatched) to the Sheet Hygiene Log for auditability"
+    }
+  ],
+  "connections": {
+    "Check Inbox (Every 5 Min)": {
+      "main": [
+        [
+          { "node": "Extract Sender & Match Lead", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Extract Sender & Match Lead": {
+      "main": [
+        [
+          { "node": "Filter System Emails", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Filter System Emails": {
+      "main": [
+        [
+          { "node": "Lookup Lead in Pipeline", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Lookup Lead in Pipeline": {
+      "main": [
+        [
+          { "node": "Match Sender to Lead", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Match Sender to Lead": {
+      "main": [
+        [
+          { "node": "IF Lead Matched", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "IF Lead Matched": {
+      "main": [
+        [
+          { "node": "Update Lead Status → REPLIED", "type": "main", "index": 0 },
+          { "node": "Log Reply Event", "type": "main", "index": 0 }
+        ],
+        [
+          { "node": "Format Forward Email (Unmatched)", "type": "main", "index": 0 },
+          { "node": "Log Reply Event", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Update Lead Status → REPLIED": {
+      "main": [
+        [
+          { "node": "Format Forward Email (Matched)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Format Forward Email (Matched)": {
+      "main": [
+        [
+          { "node": "Forward to Owner", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Format Forward Email (Unmatched)": {
+      "main": [
+        [
+          { "node": "Forward Unmatched to Owner", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

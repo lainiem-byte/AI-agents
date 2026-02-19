@@ -547,6 +547,7 @@
             "Labor Leakage Score": "={{ (!$json.website_has_chatbot ? 3 : 0) + (!$json.website_has_booking ? 3 : 0) + (!$json.website_has_email_capture ? 2 : 0) + ($json.website_is_outdated ? 2 : 0) }}",
             "Status": "NEW",
             "Next Action": "Review and qualify",
+            "Next Action Date": "={{ new Date(Date.now() + 86400000).toISOString().split('T')[0] }}",
             "Notes": "={{ $json.product_recommendations + ' | ' + $json.scoring_breakdown }}"
           },
           "matchingColumns": [],
