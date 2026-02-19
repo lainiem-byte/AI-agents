@@ -1,0 +1,201 @@
+{
+  "name": "LNL Radar – Vault Access Alert",
+  "nodes": [
+    {
+      "id": "wh-radar",
+      "name": "Radar Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [0, 300],
+      "webhookId": "lnl-radar-ping",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lnl-radar-ping",
+        "responseMode": "onReceived"
+      },
+      "notes": "INGESTION LAYER: Receives POST from LNL site tracking script. Payload: { event: 'RADAR_PING', lead_identity: string, timestamp: ISO string, page_path: string }. Fires when any visitor lands with ?ref= param."
+    },
+    {
+      "id": "if-identity",
+      "name": "Has Lead Identity?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [300, 300],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-lead-exists",
+              "leftValue": "={{ $json.body.lead_identity }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "notes": "INTELLIGENCE LAYER: Guards against empty or missing lead_identity. Only proceeds to notification if a real ref value was captured from the URL."
+    },
+    {
+      "id": "fmt-alert",
+      "name": "Format Alert Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [550, 200],
+      "parameters": {
+        "mode": "manual",
+        "fields": {
+          "values": [
+            {
+              "name": "lead_identity",
+              "stringValue": "={{ $json.body.lead_identity }}"
+            },
+            {
+              "name": "page_path",
+              "stringValue": "={{ $json.body.page_path }}"
+            },
+            {
+              "name": "timestamp",
+              "stringValue": "={{ $json.body.timestamp }}"
+            },
+            {
+              "name": "formatted_name",
+              "stringValue": "={{ $json.body.lead_identity.replace(/_/g, ' ') }}"
+            },
+            {
+              "name": "subject_line",
+              "stringValue": "=🔔 RADAR: {{ $json.body.lead_identity.replace(/_/g, ' ') }} just entered the Vault"
+            },
+            {
+              "name": "email_body",
+              "stringValue": "=Lainie,\n\nThe system just detected {{ $json.body.lead_identity.replace(/_/g, ' ') }} inside the Vault environment.\n\nThey are currently viewing: {{ $json.body.page_path }}\nDetected at: {{ $json.body.timestamp }}\nRef code: {{ $json.body.lead_identity }}\n\nInitiate psychic preparation.\n\n— LNL Radar System"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "notes": "INTELLIGENCE LAYER: Formats the raw webhook data into human-readable alert content. Converts underscore ref codes (e.g., John_Doe_MedSpa) into display names (John Doe MedSpa). Builds subject line and email body."
+    },
+    {
+      "id": "gmail-alert",
+      "name": "Send Radar Alert",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [800, 200],
+      "parameters": {
+        "sendTo": "={{ $env.LNL_RADAR_ALERT_EMAIL }}",
+        "subject": "={{ $json.subject_line }}",
+        "emailType": "text",
+        "message": "={{ $json.email_body }}",
+        "options": {}
+      },
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "REPLACE_WITH_YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "EXECUTION LAYER: Sends the Radar alert email to Lainie via Gmail. Uses env var LNL_RADAR_ALERT_EMAIL for the recipient address. Replace credential ID with your actual Gmail OAuth2 credential from n8n."
+    },
+    {
+      "id": "log-access",
+      "name": "Log Access Event",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [800, 400],
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "url",
+          "value": "https://docs.google.com/spreadsheets/d/1yMIDGuFLh8UYyXplE6_Z0pVHbE8dusP5-eQkaLjh7jQ/edit"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "list",
+          "value": "Radar Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $('Format Alert Data').item.json.timestamp }}",
+            "Lead Identity": "={{ $('Format Alert Data').item.json.lead_identity }}",
+            "Display Name": "={{ $('Format Alert Data').item.json.formatted_name }}",
+            "Page Viewed": "={{ $('Format Alert Data').item.json.page_path }}",
+            "Alert Sent": "Yes"
+          }
+        },
+        "options": {}
+      },
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "REPLACE_WITH_YOUR_SHEETS_CREDENTIAL_ID",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "EXECUTION LAYER: Logs every Vault access event to a Google Sheet for historical tracking. Creates an audit trail of who visited, when, and what page. Sheet columns: Timestamp, Lead Identity, Display Name, Page Viewed, Alert Sent."
+    }
+  ],
+  "connections": {
+    "Radar Webhook": {
+      "main": [
+        [
+          {
+            "node": "Has Lead Identity?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Lead Identity?": {
+      "main": [
+        [
+          {
+            "node": "Format Alert Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Alert Data": {
+      "main": [
+        [
+          {
+            "node": "Send Radar Alert",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log Access Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "radar"
+    },
+    {
+      "name": "tracking"
+    },
+    {
+      "name": "vault"
+    }
+  ]
+}

@@ -235,6 +235,24 @@ Tracks vault clients and asset status.
 
 ---
 
+### TAB 10: **Radar Log**
+Tracks every outreach link click from DM campaigns. Populated by the LNL Radar n8n workflow when a visitor lands with a `?ref=` parameter.
+
+| Column | Type | Purpose | Example |
+|--------|------|---------|---------|
+| **Timestamp** | DateTime | When they hit the page | 2026-02-19 14:30:00 |
+| **Lead Identity** | Text | Raw ref code from URL | Vadim_Luxury_REA |
+| **Display Name** | Text | Cleaned-up name (underscores → spaces) | Vadim Luxury REA |
+| **Page Viewed** | Text | Which page they landed on | /audit |
+| **Alert Sent** | Text | Confirmation that email alert fired | Yes |
+
+**How it's used:**
+- Every `?ref=` visit appends one row automatically via n8n
+- Cross-reference with Lead Pipeline to see who browsed but never filled out the audit (Psychic Nudge candidates)
+- Historical record for outreach campaign performance
+
+---
+
 ## 🎨 FORMATTING RECOMMENDATIONS
 
 ### Conditional Formatting Rules
@@ -304,7 +322,7 @@ Tracks vault clients and asset status.
 ## 📥 SETUP INSTRUCTIONS
 
 1. **Create New Google Sheet** named "LNL Master Brain"
-2. **Create 9 tabs** in this exact order:
+2. **Create 10 tabs** in this exact order:
    - Lead Pipeline
    - Pre-Call Intelligence
    - Daily Dashboard
@@ -314,6 +332,7 @@ Tracks vault clients and asset status.
    - Weekly Scorecard Data
    - Legacy Slots
    - Concierge Agent Status
+   - Radar Log
 
 3. **Add column headers** from tables above to each tab
 
@@ -356,6 +375,9 @@ Reads: `Lead Pipeline` + `Weekly Scorecard Data` → Sends KPI report
 
 ### Asset Verification Nudge
 Reads: `Concierge Agent Status` → Alerts when LOGIC STALL = TRUE
+
+### Radar Ping (Real-Time)
+Writes to: `Radar Log` tab when outreach link clicked → Sends Gmail alert to Lainie
 
 ---
 

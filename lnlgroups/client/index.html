@@ -19,6 +19,57 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- 1. RB2B: Visitor Identity Resolution -->
+    <script>!function(key) {
+      if (window.reb2b) return;
+      window.reb2b = {loaded: true};
+      var s = document.createElement("script");
+      s.async = true;
+      s.src = "https://ddwl4m2hdecbv.cloudfront.net/b/" + key + "/" + key + ".js.gz";
+      document.getElementsByTagName("script")[0].parentNode.insertBefore(s, document.getElementsByTagName("script")[0]);
+    }("961Y0HDQ2ZNG");</script>
+
+    <!-- 2. LinkedIn Insight Tag: Company-Level Tracking -->
+    <script type="text/javascript">
+      _linkedin_partner_id = "8835564";
+      window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
+      window._linkedin_data_partner_ids.push(_linkedin_partner_id);
+    </script>
+    <script type="text/javascript">
+      (function(l) {
+      if (!l){window.lintrk = function(a,b){window.lintrk.q.push([a,b])};
+      window.lintrk.q=[]}
+      var s = document.getElementsByTagName("script")[0];
+      var b = document.createElement("script");
+      b.type = "text/javascript";b.async = true;
+      b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
+      s.parentNode.insertBefore(b, s);})(window.lintrk);
+    </script>
+    <noscript>
+      <img height="1" width="1" style="display:none;" alt="" src="https://px.ads.linkedin.com/collect/?pid=8835564&fmt=gif" />
+    </noscript>
+
+    <!-- 3. LNL Radar: Custom Outreach Tracking (?ref= param → n8n webhook) -->
+    <script>
+      window.addEventListener('DOMContentLoaded', (event) => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const leadRef = urlParams.get('ref');
+        if (leadRef) {
+          console.log('LNL Radar: Initializing ping for ' + leadRef);
+          fetch('https://n8n.srv1244684.hstgr.cloud/webhook/lnl-radar-ping', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'RADAR_PING',
+              lead_identity: leadRef,
+              page_path: window.location.pathname,
+              timestamp: new Date().toISOString()
+            })
+          }).catch(err => console.error('Radar Logic Leak:', err));
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
