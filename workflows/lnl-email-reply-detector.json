@@ -17,8 +17,8 @@
       },
       "credentials": {
         "imap": {
-          "id": "IMAP_CREDENTIAL_ID",
-          "name": "IMAP - hello@lnlautomations.com"
+          "id": "bdxKTxBstG9tYJkB",
+          "name": "SMTP"
         }
       },
       "notes": "Polls the reply-to inbox every 5 minutes for new emails. REQUIRES: IMAP credentials for the REPLY_TO_EMAIL mailbox (hello@lnlautomations.com). Create IMAP credentials in n8n: Settings > Credentials > IMAP with your mail server details."
