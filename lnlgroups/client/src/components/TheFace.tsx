@@ -7,12 +7,12 @@ const industries = [
   {
     icon: <Gem className="w-8 h-8" />,
     title: "Med Spas",
-    description: "Luxury aesthetics demand luxury presence. We craft visual ecosystems that command premium pricing."
+    description: "Luxury aesthetics demand luxury presence. We architect med spa aesthetic scaling systems and high-conversion creative that commands premium pricing."
   },
   {
     icon: <Home className="w-8 h-8" />,
     title: "Real Estate",
-    description: "In a market where perception is everything, your brand should close before you even show up."
+    description: "Cinematic real estate marketing that closes before you show up. Visual authority engineered for luxury property markets and aesthetic clinic patient acquisition."
   }
 ];
 
@@ -37,8 +37,8 @@ export default function TheFace() {
             </div>
             
             <h2 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight text-white font-serif-display" style={{ fontFamily: "'Instrument Serif', serif" }}>
-              Brand-Mining for<br />
-              <span className="text-[#008080]">Premium Industries</span>
+              High-Conversion Med Spa Creative &<br />
+              <span className="text-[#008080]">Cinematic Real Estate Marketing</span>
             </h2>
             
             <p className="text-gray-400 text-lg leading-relaxed mb-8 font-light">

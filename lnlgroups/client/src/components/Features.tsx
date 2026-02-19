@@ -39,7 +39,7 @@ export default function Features() {
     <section className="py-24 bg-white">
       <div className="container mx-auto px-6">
         <div className="mb-16">
-          <h2 className="text-5xl md:text-7xl font-bold mb-6">OUR SERVICES</h2>
+          <h2 className="text-5xl md:text-7xl font-bold mb-6">Growth Architecture &amp; Invisible Associate Automation</h2>
           <div className="h-2 w-32 bg-secondary"></div>
         </div>
         

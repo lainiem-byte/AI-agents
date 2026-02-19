@@ -23,8 +23,8 @@ export default function TheEcosystem() {
           </div>
           
           <h2 className="text-4xl md:text-6xl font-extrabold mb-6 leading-tight text-white">
-            Where Brand Meets<br />
-            <span className="bg-gradient-to-r from-[#008080] via-lnl-gold to-[#2E5BFF] bg-clip-text text-transparent">Autonomous Scale</span>
+            Where Aesthetic Scaling Meets<br />
+            <span className="bg-gradient-to-r from-[#008080] via-lnl-gold to-[#2E5BFF] bg-clip-text text-transparent">Invisible Associate Automation</span>
           </h2>
           
           <p className="text-gray-400 text-xl max-w-3xl mx-auto leading-relaxed font-light">

@@ -31,7 +31,7 @@ export default function HubHero() {
         {isMobile ? (
           <img 
             src={groupsHeroFallback}
-            alt=""
+            alt="The LNL Group headquarters — growth architecture studio delivering Invisible Associate automation, cinematic real estate marketing, and med spa aesthetic scaling"
             className="w-full h-full object-cover"
           />
         ) : (
@@ -113,7 +113,7 @@ export default function HubHero() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[#008080] uppercase tracking-wider">LNL Creative</p>
-                    <h2 className="text-3xl font-extrabold text-white">Creative Authority</h2>
+                    <h2 className="text-3xl font-extrabold text-white">High-Conversion Med Spa &amp; Real Estate Creative</h2>
                   </div>
                 </div>
                 
@@ -144,7 +144,7 @@ export default function HubHero() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[#2E5BFF] uppercase tracking-wider">LNL Automations</p>
-                    <h2 className="text-3xl font-extrabold text-white">Workflow Intelligence</h2>
+                    <h2 className="text-3xl font-extrabold text-white">Invisible Associate &amp; Speed-to-Lead Automation</h2>
                   </div>
                 </div>
                 

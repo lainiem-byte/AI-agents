@@ -222,11 +222,11 @@ export default function Vault() {
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold mb-3">
-            Welcome, <span className="text-[#D4AF37]">{session.clientName}</span>
+            Secure Your Revenue Leakage Audit Results, <span className="text-[#D4AF37]">{session.clientName}</span>
           </h1>
           <p className="text-gray-400 max-w-lg mx-auto">
-            Upload your assets below so our architects can prepare your custom audit.
-            Each item helps us identify system leakage and creative opportunities.
+            Upload your assets below so our architects can prepare your custom revenue leakage audit.
+            Each item helps us identify system leakage, billable hour recovery opportunities, and creative gaps.
           </p>
         </div>
 

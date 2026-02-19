@@ -134,7 +134,7 @@ export default function Creatives({ initialLocation = "raleigh" }: CreativesProp
             {isMobile ? (
               <img
                 src={creativesHeroFallback}
-                alt=""
+                alt="A cinematic brand identity showcase by The LNL Group featuring high-conversion med spa creative and aesthetic clinic patient acquisition design"
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -162,10 +162,10 @@ export default function Creatives({ initialLocation = "raleigh" }: CreativesProp
                 LNL CREATIVE
               </div>
               <h1 className="text-3xl md:text-5xl font-display font-medium mb-5 tracking-tight text-white leading-tight">
-                The Digital Facelift: <span 
+                Med Spa Aesthetic Scaling &amp; <span
                   className="bg-gradient-to-r from-[#006666] via-[#20B2AA] via-[#008080] to-[#006666] bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]"
                   style={{ WebkitBackgroundClip: 'text' }}
-                >Architecting Unrivaled Market Prestige</span>
+                >Cinematic Real Estate Marketing</span>
               </h1>
               <p className="text-base md:text-lg text-gray-300 leading-relaxed max-w-2xl mx-auto">
                 Your brand must justify your pricing before you ever speak to a lead. We use proprietary Brand-Mining to extract your hidden authority and build a visual presence that commands respect in luxury markets.
@@ -217,7 +217,7 @@ export default function Creatives({ initialLocation = "raleigh" }: CreativesProp
         <section className="py-24" style={{ backgroundColor: '#1A1A1D' }}>
           <div className="container mx-auto px-6">
             <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 text-white">Strategic Feedback</h2>
+              <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 text-white">What Med Spas &amp; Realtors Say About Our Creative</h2>
               <p className="text-gray-400">What our partners say about the LNL Creative approach.</p>
             </div>
             
@@ -309,7 +309,7 @@ export default function Creatives({ initialLocation = "raleigh" }: CreativesProp
         <section className="py-24 bg-secondary/10">
           <div className="container mx-auto px-6">
              <div className="text-center mb-12">
-               <h2 className="text-3xl font-bold mb-4">Featured Work</h2>
+               <h2 className="text-3xl font-bold mb-4">High-Conversion Creative &amp; Aesthetic Scaling Portfolio</h2>
                <p className="text-muted-foreground">Select a location above to see specific pricing.</p>
              </div>
              

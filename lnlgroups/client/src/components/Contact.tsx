@@ -9,7 +9,7 @@ export default function Contact() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16 relative z-10">
             <div>
-              <h2 className="text-3xl md:text-4xl font-display font-medium mb-6 tracking-tight">Let's architect your growth.</h2>
+              <h2 className="text-3xl md:text-4xl font-display font-medium mb-6 tracking-tight">Book Your Revenue Leakage Audit</h2>
               <p className="text-muted-foreground mb-10 leading-relaxed">
                 Ready to build a resilient digital ecosystem? Initiate a strategic consultation with our team.
               </p>

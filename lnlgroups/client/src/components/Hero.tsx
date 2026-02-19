@@ -8,7 +8,7 @@ export default function Hero() {
     <section className="relative w-full min-h-screen flex items-center pt-20 overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
-        <img src={heroBg} alt="LNL Group Corporate Headquarters - AI Automation Architecture and Strategic Digital Infrastructure" className="w-full h-full object-cover" />
+        <img src={heroBg} alt="LNL Group - Growth architecture for law firms, med spas, HVAC and realtors with Invisible Associate automation" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-background/90 dark:bg-background/95 backdrop-blur-[2px] bg-gradient-to-r from-background via-background/95 to-transparent"></div>
       </div>
 

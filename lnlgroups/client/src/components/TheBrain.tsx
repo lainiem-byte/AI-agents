@@ -69,12 +69,12 @@ export default function TheBrain() {
             </div>
             
             <h2 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight text-white">
-              AI Agents &<br />
-              <span className="text-[#2E5BFF]" style={{ textShadow: '0 0 40px rgba(46, 91, 255, 0.3)' }}>Intelligent Systems</span>
+              Law Firm Intake Automation &<br />
+              <span className="text-[#2E5BFF]" style={{ textShadow: '0 0 40px rgba(46, 91, 255, 0.3)' }}>HVAC Speed-to-Lead Systems</span>
             </h2>
             
             <p className="text-gray-400 text-lg leading-relaxed mb-8 font-light">
-              In high-stakes industries like Law and Home Services, 'slow' is the most expensive word in your vocabulary. We replace manual bottlenecks with 24/7 intelligent systems.
+              In high-stakes industries like Law and Home Services, 'slow' is the most expensive word in your vocabulary. Our Invisible Associate automation replaces manual bottlenecks with billable hour recovery systems that run 24/7.
             </p>
             
             <Link href="/automations">

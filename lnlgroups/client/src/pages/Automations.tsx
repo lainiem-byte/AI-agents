@@ -155,7 +155,7 @@ export default function Automations() {
             {isMobile ? (
               <img 
                 src={automationsHeroFallback}
-                alt=""
+                alt="The LNL Group Invisible Associate automation dashboard showing law firm intake and HVAC speed-to-lead workflow systems"
                 className="w-full h-full object-cover"
               />
             ) : (
@@ -194,10 +194,10 @@ export default function Automations() {
               </div>
               
               <h1 className="text-5xl md:text-7xl font-bold mb-8 leading-tight tracking-tight">
-                The Mechanical Heart: <span 
+                Invisible Associate Automation: <span
                   className="bg-gradient-to-r from-[#1E3A8A] via-[#60A5FA] via-[#2E5BFF] to-[#1E3A8A] bg-clip-text text-transparent animate-shimmer bg-[length:200%_100%]"
                   style={{ WebkitBackgroundClip: 'text' }}
-                >Systems Architected for Scale</span>
+                >Billable Hour Recovery Systems</span>
               </h1>
               
               <p className="text-xl md:text-2xl text-gray-400 mb-12 leading-relaxed max-w-3xl mx-auto">
@@ -220,9 +220,9 @@ export default function Automations() {
         <section className="py-24 relative" style={{ backgroundColor: '#121213' }}>
           <div className="container mx-auto px-6">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">Core Services</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">Law Firm Intake &amp; HVAC Speed-to-Lead Automation</h2>
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-                Three pillars of automation excellence, tailored for your business.
+                Three pillars of automation excellence — from law firm intake automation to HVAC speed-to-lead systems, tailored for your industry.
               </p>
             </div>
             
@@ -430,9 +430,9 @@ export default function Automations() {
           <div className="container mx-auto px-6">
             <div className="max-w-3xl mx-auto text-center">
               <Sparkles className="w-12 h-12 text-[#2E5BFF] mx-auto mb-6" style={{ filter: 'drop-shadow(0 0 20px rgba(46, 91, 255, 0.5))' }} />
-              <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready to Automate?</h2>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6">Ready for Your Revenue Leakage Audit?</h2>
               <p className="text-gray-400 text-xl mb-10 leading-relaxed">
-                Join forward-thinking business owners who've reclaimed their time with intelligent automation.
+                Join forward-thinking law firms, med spas, and HVAC companies who've reclaimed billable hours with Invisible Associate automation.
               </p>
               <Button 
                 size="lg" 
