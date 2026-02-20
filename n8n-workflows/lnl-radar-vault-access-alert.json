@@ -31,7 +31,7 @@
           "conditions": [
             {
               "id": "cond-lead-exists",
-              "leftValue": "={{ $json.lead_identity }}",
+              "leftValue": "={{ $json.body.lead_identity }}",
               "rightValue": "",
               "operator": {
                 "type": "string",
@@ -56,27 +56,27 @@
           "values": [
             {
               "name": "lead_identity",
-              "stringValue": "={{ $json.lead_identity }}"
+              "stringValue": "={{ $json.body.lead_identity }}"
             },
             {
               "name": "page_path",
-              "stringValue": "={{ $json.page_path }}"
+              "stringValue": "={{ $json.body.page_path }}"
             },
             {
               "name": "timestamp",
-              "stringValue": "={{ $json.timestamp }}"
+              "stringValue": "={{ $json.body.timestamp }}"
             },
             {
               "name": "formatted_name",
-              "stringValue": "={{ $json.lead_identity.replace(/_/g, ' ') }}"
+              "stringValue": "={{ $json.body.lead_identity.replace(/_/g, ' ') }}"
             },
             {
               "name": "subject_line",
-              "stringValue": "=🔔 RADAR: {{ $json.lead_identity.replace(/_/g, ' ') }} just entered the Vault"
+              "stringValue": "=🔔 RADAR: {{ $json.body.lead_identity.replace(/_/g, ' ') }} just entered the Vault"
             },
             {
               "name": "email_body",
-              "stringValue": "=Lainie,\n\nThe system just detected {{ $json.lead_identity.replace(/_/g, ' ') }} inside the Vault environment.\n\nThey are currently viewing: {{ $json.page_path }}\nDetected at: {{ $json.timestamp }}\nRef code: {{ $json.lead_identity }}\n\nInitiate psychic preparation.\n\n— LNL Radar System"
+              "stringValue": "=Lainie,\n\nThe system just detected {{ $json.body.lead_identity.replace(/_/g, ' ') }} inside the Vault environment.\n\nThey are currently viewing: {{ $json.body.page_path }}\nDetected at: {{ $json.body.timestamp }}\nRef code: {{ $json.body.lead_identity }}\n\nInitiate psychic preparation.\n\n— LNL Radar System"
             }
           ]
         },
