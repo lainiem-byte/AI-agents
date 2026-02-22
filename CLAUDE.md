@@ -189,6 +189,18 @@ When saving or exporting workflow JSON to this repo:
 
 ### n8n Workflow Modification Rules
 
+**All workflow changes MUST go through the live n8n API. Never edit repo JSON files as a substitute.**
+
+- The **live n8n Postgres database** is the source of truth for workflow state — not JSON files in this repo.
+- To fix a workflow: GET from the API, modify in memory, PUT back via API, then verify with another GET.
+- Repo JSON files are **snapshots for version control only**. They do not auto-deploy to n8n.
+- After fixing a workflow via API, export the updated version and overwrite the **single canonical JSON file** in the repo. Never create a new file with a suffix like `-UPDATED`, `-LIVE2`, `-v2`, etc.
+- If a workflow JSON already exists in the repo under multiple names, identify which is newest, keep that one, and delete the rest.
+- API key: read from `C:\LNL-hub\.env` (`N8N_CLAUDE_ORCHESTRATOR_INSTANCE_API_KEY`). Pass as env var via SSH — never hardcode in scripts or write to server disk.
+- SSH to VPS: `ssh root@72.62.170.65`. Use `C:\Windows\System32\OpenSSH\ssh.exe` on Windows.
+- n8n API base: `http://127.0.0.1:5678/api/v1/workflows` (accessed via SSH on the VPS).
+- PUT payload format: `{name, nodes, connections, settings: {executionOrder: "v1"}}` — omit all other fields.
+
 **Do NOT change Google Sheets `mappingMode` without explicit user approval.**
 
 - `defineBelow` (explicit column mapping) is the default and correct mode for production.

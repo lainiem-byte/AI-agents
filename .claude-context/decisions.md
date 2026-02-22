@@ -104,5 +104,17 @@ Each decision entry should include:
 
 ---
 
+### 2026-02-22: n8n live API is source of truth — repo JSON files are snapshots only
+
+**Decision**: All workflow fixes must go through the n8n REST API (GET → modify → PUT → verify). Repo JSON files are version-control snapshots, not the live source. One canonical JSON file per workflow — never create duplicates with suffixes like `-UPDATED`, `-LIVE2`, `-v2`.
+
+**Rationale**: The same email bugs (garbled emoji subjects, empty email bodies) were "fixed" across three separate sessions (Feb 17, Feb 21, Feb 22) but kept reappearing. Root cause investigation revealed: previous sessions edited repo JSON files that were never synced to the live n8n Postgres database, and each session created new file copies instead of updating the original, so subsequent sessions picked the wrong file. The live n8n instance was never actually updated.
+
+**Alternatives considered**: Bidirectional sync (complex, fragile), n8n git integration plugin (not available in current setup), repo-as-source with import scripts (adds deployment step that can drift).
+
+**Impact**: CLAUDE.md updated with explicit rules. Future sessions must: (1) fix via API, (2) verify via API read-back, (3) export and overwrite the single canonical JSON. Duplicate JSON files to be consolidated under LNL-hub-lis.
+
+---
+
 ## Future Decisions
 Add new entries above this line as they're made.
