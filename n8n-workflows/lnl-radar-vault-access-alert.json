@@ -72,7 +72,7 @@
             },
             {
               "name": "subject_line",
-              "stringValue": "=🔔 RADAR: {{ $json.body.lead_identity.replace(/_/g, ' ') }} just entered the Vault"
+              "stringValue": "=RADAR ALERT: {{ $json.body.lead_identity.replace(/_/g, ' ') }} just entered the Vault"
             },
             {
               "name": "email_body",

@@ -637,7 +637,7 @@
     {
       "parameters": {
         "sendTo": "={{ $env.NOTIFICATION_EMAIL }}",
-        "subject": "🔥 HOT LEAD: {{ $json.business_name }} ({{ $json.industry }})",
+        "subject": "HOT LEAD: {{ $json.business_name }} ({{ $json.industry }})",
         "message": "A new high-scoring lead has been captured!\n\n**Business:** {{ $json.business_name }}\n**Industry:** {{ $json.industry }}\n**Location:** {{ $json.city }}, {{ $json.state }}\n**Score:** {{ $json.lead_score }} ({{ $json.lead_tier }})\n\n**Contact:**\n- Email: {{ $json.email }}\n- Phone: {{ $json.phone }}\n- Owner: {{ $json.owner_name }}\n\n**Website:** {{ $json.website }}\n\n**Product Recommendations:**\n{{ $json.product_recommendations }}\n\n**Scoring Breakdown:**\n{{ $json.scoring_breakdown }}\n\n---\nThis lead is ready for outreach!",
         "options": {}
       },
