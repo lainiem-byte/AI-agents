@@ -2,21 +2,21 @@
  * LNL Tracking Suite
  * Loaded as a static asset so Vite cannot strip it during build.
  * Contains: RB2B, LinkedIn Insight Tag, LNL Radar (?ref= webhook).
+ * Gated by cookie consent — scripts only fire after user accepts.
  */
 
-// --- 1. RB2B: Visitor Identity Resolution ---
-(function(key) {
+function __lnlInitRB2B() {
   if (window.reb2b) return;
   window.reb2b = { loaded: true };
   var s = document.createElement("script");
   s.async = true;
-  s.src = "https://ddwl4m2hdecbv.cloudfront.net/b/" + key + "/" + key + ".js.gz";
+  s.src = "https://ddwl4m2hdecbv.cloudfront.net/b/961Y0HDQ2ZNG/961Y0HDQ2ZNG.js.gz";
   var first = document.getElementsByTagName("script")[0];
   first.parentNode.insertBefore(s, first);
-})("961Y0HDQ2ZNG");
+}
 
-// --- 2. LinkedIn Insight Tag: Company-Level Tracking ---
-(function() {
+function __lnlInitLinkedIn() {
+  if (window._linkedin_partner_id) return;
   window._linkedin_partner_id = "8835564";
   window._linkedin_data_partner_ids = window._linkedin_data_partner_ids || [];
   window._linkedin_data_partner_ids.push(window._linkedin_partner_id);
@@ -32,17 +32,15 @@
   b.src = "https://snap.licdn.com/li.lms-analytics/insight.min.js";
   s.parentNode.insertBefore(b, s);
 
-  // noscript pixel fallback
   var img = document.createElement("img");
   img.height = 1; img.width = 1;
   img.style.display = "none";
   img.alt = "";
   img.src = "https://px.ads.linkedin.com/collect/?pid=8835564&fmt=gif";
   document.body.appendChild(img);
-})();
+}
 
-// --- 3. LNL Radar: Custom Outreach Tracking (?ref= → n8n webhook) ---
-window.addEventListener("DOMContentLoaded", function() {
+function __lnlInitRadar() {
   var urlParams = new URLSearchParams(window.location.search);
   var leadRef = urlParams.get("ref");
   if (leadRef) {
@@ -58,4 +56,21 @@ window.addEventListener("DOMContentLoaded", function() {
       })
     }).catch(function(err) { console.error("Radar Logic Leak:", err); });
   }
-});
+}
+
+// Exposed globally so the React consent banner can trigger after accept
+window.__lnlLoadTracking = function() {
+  __lnlInitRB2B();
+  __lnlInitLinkedIn();
+  __lnlInitRadar();
+};
+
+// Auto-fire only if user already consented in a previous session
+(function() {
+  try {
+    var consent = localStorage.getItem("lnl-cookie-consent");
+    if (consent === "accepted") {
+      window.__lnlLoadTracking();
+    }
+  } catch(e) { /* localStorage unavailable — do nothing */ }
+})();

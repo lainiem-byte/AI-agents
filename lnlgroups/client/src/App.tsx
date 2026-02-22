@@ -16,6 +16,7 @@ import FAQ from "@/pages/FAQ";
 import NotFound from "@/pages/not-found";
 import { ThemeProvider } from "next-themes";
 import { LocationProvider } from "@/context/LocationContext";
+import CookieConsentBanner from "@/components/CookieConsentBanner";
 
 function DomainRouter() {
   const hostname = window.location.hostname.toLowerCase();
@@ -63,6 +64,7 @@ function App() {
         <LocationProvider>
           <Toaster />
           <Router />
+          <CookieConsentBanner />
         </LocationProvider>
       </ThemeProvider>
     </QueryClientProvider>
