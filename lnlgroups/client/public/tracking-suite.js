@@ -1,7 +1,7 @@
 /**
  * LNL Tracking Suite
  * Loaded as a static asset so Vite cannot strip it during build.
- * Contains: RB2B, LinkedIn Insight Tag, LNL Radar (?ref= webhook).
+ * Contains: RB2B, LinkedIn Insight Tag, HubSpot, LNL Radar (?ref= webhook).
  * Gated by cookie consent — scripts only fire after user accepts.
  */
 
@@ -40,6 +40,17 @@ function __lnlInitLinkedIn() {
   document.body.appendChild(img);
 }
 
+function __lnlInitHubSpot() {
+  if (document.getElementById("hs-script-loader")) return;
+  var s = document.createElement("script");
+  s.type = "text/javascript";
+  s.id = "hs-script-loader";
+  s.async = true;
+  s.defer = true;
+  s.src = "//js-na1.hs-scripts.com/50796003.js";
+  document.head.appendChild(s);
+}
+
 function __lnlInitRadar() {
   var urlParams = new URLSearchParams(window.location.search);
   var leadRef = urlParams.get("ref");
@@ -62,6 +73,7 @@ function __lnlInitRadar() {
 window.__lnlLoadTracking = function() {
   __lnlInitRB2B();
   __lnlInitLinkedIn();
+  __lnlInitHubSpot();
   __lnlInitRadar();
 };
 
