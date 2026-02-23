@@ -116,5 +116,29 @@ Each decision entry should include:
 
 ---
 
+### 2026-02-22: File-based API payloads mandatory for n8n workflow updates
+
+**Decision**: All n8n workflow API PUT requests must use file-based payloads (`curl -d @file`), never inline JSON in shell commands. Python builds the JSON, writes to file, SCP to VPS, curl reads from file.
+
+**Rationale**: The Warden email body mismatch was "fixed" 4 times across sessions but kept reverting. Root cause: `$` characters in n8n JavaScript (`$input.all()`, `$getWorkflowStaticData()`) were being destroyed by bash shell interpolation when JSON was passed inline through SSH commands. `$json` gets interpreted as an empty bash variable, corrupting the workflow code.
+
+**Alternatives considered**: Escaping `$` manually (error-prone, easy to miss), using single quotes everywhere (doesn't work with nested quoting in SSH).
+
+**Impact**: All future API updates must follow: Python writes JSON to temp file → SCP to VPS → `curl -d @/tmp/file.json`. Always verify via API GET read-back that `$input`, `$getWorkflowStaticData`, and `!` operators survived.
+
+---
+
+### 2026-02-22: HubSpot nodes must use onError=stopWorkflow, never continueRegularOutput
+
+**Decision**: All HubSpot CRM nodes in n8n workflows must use `onError: stopWorkflow`. The `continueRegularOutput` setting is banned for any node that creates or updates external records.
+
+**Rationale**: Lead Gen workflow had 3 HubSpot nodes with `continueRegularOutput`. A dead/unconfigured credential caused every API call to fail silently, outputting `{}` and reporting "success." 193 leads were lost over multiple runs with zero indication of failure. No contacts were ever created in HubSpot.
+
+**Alternatives considered**: `continueErrorOutput` (surfaces error data but doesn't stop workflow — acceptable for non-critical logging nodes only).
+
+**Impact**: Any node that writes to an external system (HubSpot, email send, etc.) should fail loudly. Silent failures on external writes are unacceptable.
+
+---
+
 ## Future Decisions
 Add new entries above this line as they're made.
