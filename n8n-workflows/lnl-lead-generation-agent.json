@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-24T23:22:07.239Z",
+  "updatedAt": "2026-02-24T23:42:35.980Z",
   "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
@@ -1306,7 +1306,6 @@
     },
     "Filter Hot Leads": {
       "main": [
-        [],
         [
           {
             "node": "Email Hot Lead Alert",
@@ -1509,9 +1508,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "058b5898-f413-4a8a-9dd8-f0aa35f5b4a5",
-  "activeVersionId": "058b5898-f413-4a8a-9dd8-f0aa35f5b4a5",
-  "versionCounter": 265,
+  "versionId": "9e6b5908-5f91-471b-ae55-3bdb8edcc432",
+  "activeVersionId": "9e6b5908-5f91-471b-ae55-3bdb8edcc432",
+  "versionCounter": 268,
   "triggerCount": 1,
   "shared": [
     {
@@ -1580,9 +1579,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-24T23:22:07.242Z",
-    "createdAt": "2026-02-24T23:22:07.242Z",
-    "versionId": "058b5898-f413-4a8a-9dd8-f0aa35f5b4a5",
+    "updatedAt": "2026-02-24T23:42:35.982Z",
+    "createdAt": "2026-02-24T23:42:35.982Z",
+    "versionId": "9e6b5908-5f91-471b-ae55-3bdb8edcc432",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2884,7 +2883,6 @@
       },
       "Filter Hot Leads": {
         "main": [
-          [],
           [
             {
               "node": "Email Hot Lead Alert",
@@ -3077,10 +3075,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-24T23:22:07.331Z",
-        "id": 328,
+        "createdAt": "2026-02-24T23:42:36.090Z",
+        "id": 330,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "058b5898-f413-4a8a-9dd8-f0aa35f5b4a5",
+        "versionId": "9e6b5908-5f91-471b-ae55-3bdb8edcc432",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
