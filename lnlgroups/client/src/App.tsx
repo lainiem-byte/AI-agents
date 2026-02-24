@@ -1,22 +1,24 @@
 import { Switch, Route, Redirect } from "wouter";
+import { lazy, Suspense } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import Home from "@/pages/Home";
-import About from "@/pages/About";
-import Creatives from "@/pages/Creatives";
-import Automations from "@/pages/Automations";
-import CreativesPortfolio from "@/pages/CreativesPortfolio";
-import AutomationsPortfolio from "@/pages/AutomationsPortfolio";
-import Privacy from "@/pages/Privacy";
-import Terms from "@/pages/Terms";
-import Audit from "@/pages/Audit";
-import Vault from "@/pages/Vault";
-import FAQ from "@/pages/FAQ";
-import NotFound from "@/pages/not-found";
 import { ThemeProvider } from "next-themes";
 import { LocationProvider } from "@/context/LocationContext";
 import CookieConsentBanner from "@/components/CookieConsentBanner";
+
+const Home = lazy(() => import("@/pages/Home"));
+const About = lazy(() => import("@/pages/About"));
+const Creatives = lazy(() => import("@/pages/Creatives"));
+const Automations = lazy(() => import("@/pages/Automations"));
+const CreativesPortfolio = lazy(() => import("@/pages/CreativesPortfolio"));
+const AutomationsPortfolio = lazy(() => import("@/pages/AutomationsPortfolio"));
+const Privacy = lazy(() => import("@/pages/Privacy"));
+const Terms = lazy(() => import("@/pages/Terms"));
+const Audit = lazy(() => import("@/pages/Audit"));
+const Vault = lazy(() => import("@/pages/Vault"));
+const FAQ = lazy(() => import("@/pages/FAQ"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 
 function DomainRouter() {
   const hostname = window.location.hostname.toLowerCase();
@@ -63,7 +65,9 @@ function App() {
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <LocationProvider>
           <Toaster />
-          <Router />
+          <Suspense fallback={<div className="min-h-screen" />}>
+            <Router />
+          </Suspense>
           <CookieConsentBanner />
         </LocationProvider>
       </ThemeProvider>
