@@ -1,4 +1,6 @@
 {
+  "updatedAt": "2026-02-24T23:22:07.239Z",
+  "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
   "description": null,
@@ -882,7 +884,7 @@
         "authentication": "predefinedCredentialType",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: \"You are a business lead researcher for LNL Group, a growth architecture studio. Search for \" + $json.keyword + \" businesses in \" + $json.location + \".\n\nReturn a JSON array of up to 15 businesses. Each object must have these exact keys:\n- business_name (string)\n- address (string)\n- phone (string or empty)\n- website (string URL or empty)\n- rating (number 1-5 or null)\n- review_count (number or 0)\n\nOnly include real, currently operating businesses. Prefer businesses with websites. Return ONLY the JSON array, no markdown, no explanation.\"\n    }]\n  }],\n  tools: [{\n    google_search: {}\n  }],\n  generationConfig: {\n    maxOutputTokens: 4000,\n    temperature: 0.3\n  }\n}) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"You are a business lead researcher for LNL Group, a growth architecture studio. Search for \" + $json.keyword + \" businesses in \" + $json.location + \".\\n\\nReturn a JSON array of up to 15 businesses. Each object must have these exact keys:\\n- business_name (string)\\n- address (string)\\n- phone (string or empty)\\n- website (string URL or empty)\\n- rating (number 1-5 or null)\\n- review_count (number or 0)\\n\\nOnly include real, currently operating businesses. Prefer businesses with websites. Return ONLY the JSON array, no markdown, no explanation.\" }] }], tools: [{ google_search: {} }], generationConfig: { maxOutputTokens: 4000, temperature: 0.3 } }) }}",
         "options": {
           "response": {
             "response": {
@@ -973,7 +975,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Verify email candidates via MillionVerifier API\n// First verified hit (ok or catch_all) wins â€” skip remaining\nconst items = \\.all();\nconst apiKey = \\.MILLIONVERIFIER_API_KEY;\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const candidates = data.email_candidates || [];\n  let verifiedEmail = '';\n  let emailConfidence = 0;\n\n  for (const email of candidates) {\n    try {\n      const url = 'https://api.millionverifier.com/api/v3/?api=' + apiKey + '&email=' + encodeURIComponent(email);\n      const resp = await fetch(url);\n      const body = await resp.json();\n\n      if (body.result === 'ok') {\n        verifiedEmail = email;\n        emailConfidence = 95;\n        break;\n      } else if (body.result === 'catch_all') {\n        verifiedEmail = email;\n        emailConfidence = 60;\n        break;\n      }\n      // invalid, disposable, unknown -> skip\n    } catch (e) {\n      // API error -> skip candidate\n    }\n  }\n\n  const output = { ...data };\n  delete output.email_candidates;\n\n  if (verifiedEmail) {\n    output.email = verifiedEmail;\n    output.email_source = 'pattern_verified';\n    output.email_confidence = emailConfidence;\n  }\n\n  results.push({ json: output });\n}\n\nreturn results;"
+        "jsCode": "// Verify email candidates via MillionVerifier API\n// First verified hit (ok or catch_all) wins \u00e2\u20ac\u201d skip remaining\nconst items = \\.all();\nconst apiKey = \\.MILLIONVERIFIER_API_KEY;\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const candidates = data.email_candidates || [];\n  let verifiedEmail = '';\n  let emailConfidence = 0;\n\n  for (const email of candidates) {\n    try {\n      const url = 'https://api.millionverifier.com/api/v3/?api=' + apiKey + '&email=' + encodeURIComponent(email);\n      const resp = await fetch(url);\n      const body = await resp.json();\n\n      if (body.result === 'ok') {\n        verifiedEmail = email;\n        emailConfidence = 95;\n        break;\n      } else if (body.result === 'catch_all') {\n        verifiedEmail = email;\n        emailConfidence = 60;\n        break;\n      }\n      // invalid, disposable, unknown -> skip\n    } catch (e) {\n      // API error -> skip candidate\n    }\n  }\n\n  const output = { ...data };\n  delete output.email_candidates;\n\n  if (verifiedEmail) {\n    output.email = verifiedEmail;\n    output.email_source = 'pattern_verified';\n    output.email_confidence = emailConfidence;\n  }\n\n  results.push({ json: output });\n}\n\nreturn results;"
       },
       "name": "MillionVerifier Check",
       "type": "n8n-nodes-base.code",
@@ -1505,10 +1507,70 @@
       "recurrenceRules": []
     }
   },
+  "meta": null,
   "pinData": {},
-  "activeVersionId": "04d2db5a-824e-4801-9ab2-9f6e3b9b8951",
-  "versionCounter": 259,
+  "versionId": "058b5898-f413-4a8a-9dd8-f0aa35f5b4a5",
+  "activeVersionId": "058b5898-f413-4a8a-9dd8-f0aa35f5b4a5",
+  "versionCounter": 265,
   "triggerCount": 1,
+  "shared": [
+    {
+      "updatedAt": "2026-01-31T18:02:38.391Z",
+      "createdAt": "2026-01-31T18:02:38.391Z",
+      "role": "workflow:owner",
+      "workflowId": "DE81QfyyeSOaA778",
+      "projectId": "oD1cRAMWpJlrcLnW",
+      "project": {
+        "updatedAt": "2026-01-31T17:28:11.050Z",
+        "createdAt": "2026-01-03T21:07:03.881Z",
+        "id": "oD1cRAMWpJlrcLnW",
+        "name": "Lainie Mayfield <lainiem@lnlcreatives.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "creatorId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5",
+        "projectRelations": [
+          {
+            "updatedAt": "2026-01-03T21:07:03.881Z",
+            "createdAt": "2026-01-03T21:07:03.881Z",
+            "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5",
+            "projectId": "oD1cRAMWpJlrcLnW",
+            "user": {
+              "updatedAt": "2026-02-24T23:00:48.217Z",
+              "createdAt": "2026-01-03T21:07:03.160Z",
+              "id": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5",
+              "email": "lainiem@lnlcreatives.com",
+              "firstName": "Lainie",
+              "lastName": "Mayfield",
+              "personalizationAnswers": {
+                "version": "v4",
+                "personalization_survey_submitted_at": "2026-01-31T17:28:59.986Z",
+                "personalization_survey_n8n_version": "2.1.5",
+                "companySize": "<20",
+                "companyType": "digital-agency",
+                "role": "business-owner",
+                "reportedSource": "youtube"
+              },
+              "settings": {
+                "userActivated": true,
+                "firstSuccessfulWorkflowId": "OQ9t3TY2A7mDTBRi",
+                "userActivatedAt": 1771542568154,
+                "npsSurvey": {
+                  "waitingForResponse": true,
+                  "ignoredCount": 2,
+                  "lastShownAt": 1771966868867
+                }
+              },
+              "disabled": false,
+              "mfaEnabled": false,
+              "lastActiveAt": "2026-02-24",
+              "isPending": false
+            }
+          }
+        ]
+      }
+    }
+  ],
   "tags": [
     {
       "updatedAt": "2026-01-31T18:02:21.740Z",
@@ -1518,9 +1580,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-24T22:51:26.473Z",
-    "createdAt": "2026-02-24T22:51:26.473Z",
-    "versionId": "04d2db5a-824e-4801-9ab2-9f6e3b9b8951",
+    "updatedAt": "2026-02-24T23:22:07.242Z",
+    "createdAt": "2026-02-24T23:22:07.242Z",
+    "versionId": "058b5898-f413-4a8a-9dd8-f0aa35f5b4a5",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2400,7 +2462,7 @@
           "authentication": "predefinedCredentialType",
           "sendBody": true,
           "specifyBody": "json",
-          "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: \"You are a business lead researcher for LNL Group, a growth architecture studio. Search for \" + $json.keyword + \" businesses in \" + $json.location + \".\n\nReturn a JSON array of up to 15 businesses. Each object must have these exact keys:\n- business_name (string)\n- address (string)\n- phone (string or empty)\n- website (string URL or empty)\n- rating (number 1-5 or null)\n- review_count (number or 0)\n\nOnly include real, currently operating businesses. Prefer businesses with websites. Return ONLY the JSON array, no markdown, no explanation.\"\n    }]\n  }],\n  tools: [{\n    google_search: {}\n  }],\n  generationConfig: {\n    maxOutputTokens: 4000,\n    temperature: 0.3\n  }\n}) }}",
+          "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"You are a business lead researcher for LNL Group, a growth architecture studio. Search for \" + $json.keyword + \" businesses in \" + $json.location + \".\\n\\nReturn a JSON array of up to 15 businesses. Each object must have these exact keys:\\n- business_name (string)\\n- address (string)\\n- phone (string or empty)\\n- website (string URL or empty)\\n- rating (number 1-5 or null)\\n- review_count (number or 0)\\n\\nOnly include real, currently operating businesses. Prefer businesses with websites. Return ONLY the JSON array, no markdown, no explanation.\" }] }], tools: [{ google_search: {} }], generationConfig: { maxOutputTokens: 4000, temperature: 0.3 } }) }}",
           "options": {
             "response": {
               "response": {
@@ -2491,7 +2553,7 @@
       },
       {
         "parameters": {
-          "jsCode": "// Verify email candidates via MillionVerifier API\n// First verified hit (ok or catch_all) wins â€” skip remaining\nconst items = \\.all();\nconst apiKey = \\.MILLIONVERIFIER_API_KEY;\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const candidates = data.email_candidates || [];\n  let verifiedEmail = '';\n  let emailConfidence = 0;\n\n  for (const email of candidates) {\n    try {\n      const url = 'https://api.millionverifier.com/api/v3/?api=' + apiKey + '&email=' + encodeURIComponent(email);\n      const resp = await fetch(url);\n      const body = await resp.json();\n\n      if (body.result === 'ok') {\n        verifiedEmail = email;\n        emailConfidence = 95;\n        break;\n      } else if (body.result === 'catch_all') {\n        verifiedEmail = email;\n        emailConfidence = 60;\n        break;\n      }\n      // invalid, disposable, unknown -> skip\n    } catch (e) {\n      // API error -> skip candidate\n    }\n  }\n\n  const output = { ...data };\n  delete output.email_candidates;\n\n  if (verifiedEmail) {\n    output.email = verifiedEmail;\n    output.email_source = 'pattern_verified';\n    output.email_confidence = emailConfidence;\n  }\n\n  results.push({ json: output });\n}\n\nreturn results;"
+          "jsCode": "// Verify email candidates via MillionVerifier API\n// First verified hit (ok or catch_all) wins \u00e2\u20ac\u201d skip remaining\nconst items = \\.all();\nconst apiKey = \\.MILLIONVERIFIER_API_KEY;\nconst results = [];\n\nfor (const item of items) {\n  const data = item.json;\n  const candidates = data.email_candidates || [];\n  let verifiedEmail = '';\n  let emailConfidence = 0;\n\n  for (const email of candidates) {\n    try {\n      const url = 'https://api.millionverifier.com/api/v3/?api=' + apiKey + '&email=' + encodeURIComponent(email);\n      const resp = await fetch(url);\n      const body = await resp.json();\n\n      if (body.result === 'ok') {\n        verifiedEmail = email;\n        emailConfidence = 95;\n        break;\n      } else if (body.result === 'catch_all') {\n        verifiedEmail = email;\n        emailConfidence = 60;\n        break;\n      }\n      // invalid, disposable, unknown -> skip\n    } catch (e) {\n      // API error -> skip candidate\n    }\n  }\n\n  const output = { ...data };\n  delete output.email_candidates;\n\n  if (verifiedEmail) {\n    output.email = verifiedEmail;\n    output.email_source = 'pattern_verified';\n    output.email_confidence = emailConfidence;\n  }\n\n  results.push({ json: output });\n}\n\nreturn results;"
         },
         "name": "MillionVerifier Check",
         "type": "n8n-nodes-base.code",
@@ -3015,10 +3077,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-24T22:51:26.561Z",
-        "id": 326,
+        "createdAt": "2026-02-24T23:22:07.331Z",
+        "id": 328,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "04d2db5a-824e-4801-9ab2-9f6e3b9b8951",
+        "versionId": "058b5898-f413-4a8a-9dd8-f0aa35f5b4a5",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
