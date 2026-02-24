@@ -74,7 +74,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Config - edit these to change search targets\nconst industries = ['med_spa', 'realtor', 'law_firm', 'hvac_home_services'];\nconst locations = ['Raleigh Durham NC', 'Columbus OH', 'Moscow ID'];\n\nconst searchQueries = [];\n\nconst industryKeywords = {\n  'med_spa': ['med spa', 'medical spa', 'medspa', 'aesthetic clinic', 'botox clinic', 'laser clinic', 'skin clinic'],\n  'realtor': ['real estate agent', 'realtor', 'real estate broker', 'luxury real estate', 'homes for sale agent'],\n  'law_firm': ['law firm', 'attorney', 'lawyer', 'legal services', 'personal injury lawyer', 'family law attorney'],\n  'hvac_home_services': ['HVAC contractor', 'plumber', 'electrician', 'home services', 'AC repair', 'heating cooling']\n};\n\nconst luxuryIndustries = ['med_spa', 'realtor'];\n\nfor (const industry of industries) {\n  const keywords = industryKeywords[industry] || [industry];\n  const isLuxury = luxuryIndustries.includes(industry);\n  \n  for (const location of locations) {\n    for (const keyword of keywords) {\n      searchQueries.push({\n        industry: industry,\n        location: location,\n        keyword: keyword,\n        searchQuery: keyword + ' ' + location,\n        isLuxuryTarget: isLuxury,\n        timestamp: new Date().toISOString()\n      });\n    }\n  }\n}\n\n// Inject API keys from environment (accessible via task runner)\nconst apiKeys = {\n  _google_maps_key: $env.GOOGLE_MAPS_API_KEY || '',\n  _yelp_key: $env.YELP_API_KEY || '',\n  _gemini_key: $env.GEMINI_API_KEY || ''\n};\n\nfor (const q of searchQueries) {\n  Object.assign(q, apiKeys);\n}\n\nreturn searchQueries;"
+        "jsCode": "// Config - edit these to change search targets\nconst industries = ['med_spa', 'realtor', 'law_firm', 'hvac_home_services'];\nconst locations = ['Raleigh Durham NC', 'Columbus OH', 'Moscow ID'];\n\nconst searchQueries = [];\n\nconst industryKeywords = {\n  'med_spa': ['med spa', 'medical spa', 'medspa', 'aesthetic clinic', 'botox clinic', 'laser clinic', 'skin clinic'],\n  'realtor': ['real estate agent', 'realtor', 'real estate broker', 'luxury real estate', 'homes for sale agent'],\n  'law_firm': ['law firm', 'attorney', 'lawyer', 'legal services', 'personal injury lawyer', 'family law attorney'],\n  'hvac_home_services': ['HVAC contractor', 'plumber', 'electrician', 'home services', 'AC repair', 'heating cooling']\n};\n\nconst luxuryIndustries = ['med_spa', 'realtor'];\n\nfor (const industry of industries) {\n  const keywords = industryKeywords[industry] || [industry];\n  const isLuxury = luxuryIndustries.includes(industry);\n  \n  for (const location of locations) {\n    for (const keyword of keywords) {\n      searchQueries.push({\n        industry: industry,\n        location: location,\n        keyword: keyword,\n        searchQuery: keyword + ' ' + location,\n        isLuxuryTarget: isLuxury,\n        timestamp: new Date().toISOString()\n      });\n    }\n  }\n}\n\nreturn searchQueries;"
       },
       "id": "a1e88aa8-1745-45a2-b1b2-403ea2689ffe",
       "name": "Generate Search Queries",
@@ -89,17 +89,13 @@
     {
       "parameters": {
         "url": "https://maps.googleapis.com/maps/api/place/textsearch/json",
-        "authentication": "none",
+        "authentication": "genericCredentialType",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
             {
               "name": "query",
               "value": "={{ $json.searchQuery }}"
-            },
-            {
-              "name": "key",
-              "value": "={{ $json._google_maps_key }}"
             }
           ]
         },
@@ -109,7 +105,8 @@
               "responseFormat": "json"
             }
           }
-        }
+        },
+        "genericAuthType": "httpQueryAuth"
       },
       "id": "5a3ae315-151f-4449-8093-905567dcce09",
       "name": "Google Maps Text Search",
@@ -123,7 +120,13 @@
       "maxTries": 3,
       "waitBetweenTries": 2000,
       "continueOnFail": true,
-      "notes": "Initial search to find businesses. Returns place_id for details."
+      "notes": "Initial search to find businesses. Returns place_id for details.",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "OKEa3Gwh381omXb9",
+          "name": "Google Maps API Key"
+        }
+      }
     },
     {
       "parameters": {
@@ -152,10 +155,6 @@
             {
               "name": "fields",
               "value": "name,formatted_address,formatted_phone_number,website,opening_hours,reviews,photos,url"
-            },
-            {
-              "name": "key",
-              "value": "={{ $('Generate Search Queries').first().json._google_maps_key }}"
             }
           ]
         },
@@ -165,7 +164,9 @@
               "responseFormat": "json"
             }
           }
-        }
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth"
       },
       "id": "f63d048a-1760-4222-bd3e-e410f9beaeb0",
       "name": "Get Place Details",
@@ -179,7 +180,13 @@
       "maxTries": 3,
       "waitBetweenTries": 3000,
       "continueOnFail": true,
-      "notes": "Fetches phone, website, and detailed info for each business"
+      "notes": "Fetches phone, website, and detailed info for each business",
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "OKEa3Gwh381omXb9",
+          "name": "Google Maps API Key"
+        }
+      }
     },
     {
       "parameters": {
@@ -198,7 +205,7 @@
     {
       "parameters": {
         "url": "https://api.yelp.com/v3/businesses/search",
-        "authentication": "none",
+        "authentication": "genericCredentialType",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [
@@ -223,15 +230,7 @@
             }
           }
         },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $json._yelp_key }}"
-            }
-          ]
-        }
+        "genericAuthType": "httpHeaderAuth"
       },
       "id": "cdfef720-b8c9-447b-92a9-9aab633aa0c5",
       "name": "Yelp Business Search",
@@ -245,7 +244,13 @@
       "maxTries": 3,
       "waitBetweenTries": 2000,
       "continueOnFail": true,
-      "notes": "Parallel search on Yelp for additional businesses"
+      "notes": "Parallel search on Yelp for additional businesses",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "7jaRjwJuCE1JnN0h",
+          "name": "Yelp API Key"
+        }
+      }
     },
     {
       "parameters": {
@@ -597,7 +602,8 @@
           "name": "HubSpot App Token account"
         }
       },
-      "notes": "Creates deal in LNL Sales Pipeline"
+      "notes": "Creates deal in LNL Sales Pipeline",
+      "disabled": true
     },
     {
       "parameters": {
@@ -618,7 +624,8 @@
           "name": "HubSpot App Token account"
         }
       },
-      "notes": "Adds custom LNL scoring properties to contact"
+      "notes": "Adds custom LNL scoring properties to contact",
+      "disabled": true
     },
     {
       "parameters": {
@@ -700,7 +707,8 @@
         5264,
         304
       ],
-      "notes": "Final summary of scraping run"
+      "notes": "Final summary of scraping run",
+      "disabled": true
     },
     {
       "parameters": {
@@ -824,7 +832,7 @@
       "parameters": {
         "method": "POST",
         "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-        "authentication": "none",
+        "authentication": "predefinedCredentialType",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"You are an email extraction specialist. Given a business name and website URL, determine the most likely business contact email address. Return ONLY the email address, nothing else. If you cannot determine one with confidence, return exactly: NONE\\n\\nBusiness: \" + $json.business_name + \"\\nWebsite: \" + ($json.website || \"\") + \"\\nDomain: \" + (($json.website || \"\").match(/https?:\\/\\/([^\\/]+)/)?.[1] || \"\") }] }] }) }}",
@@ -836,15 +844,7 @@
           },
           "timeout": 10000
         },
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "key",
-              "value": "={{ $('Generate Search Queries').first().json._gemini_key }}"
-            }
-          ]
-        }
+        "nodeCredentialType": "googlePalmApi"
       },
       "name": "Gemini Email Finder",
       "type": "n8n-nodes-base.httpRequest",
@@ -854,7 +854,13 @@
       ],
       "typeVersion": 4.2,
       "id": "666e6a25-a389-4244-a08a-b476f7983454",
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "eS6zuwi0haRJRcd4",
+          "name": "Gemini API Key"
+        }
+      }
     },
     {
       "parameters": {
@@ -873,7 +879,7 @@
       "parameters": {
         "method": "POST",
         "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-        "authentication": "none",
+        "authentication": "predefinedCredentialType",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: \"You are a business lead researcher for LNL Group, a growth architecture studio. Search for \" + $json.keyword + \" businesses in \" + $json.location + \".\n\nReturn a JSON array of up to 15 businesses. Each object must have these exact keys:\n- business_name (string)\n- address (string)\n- phone (string or empty)\n- website (string URL or empty)\n- rating (number 1-5 or null)\n- review_count (number or 0)\n\nOnly include real, currently operating businesses. Prefer businesses with websites. Return ONLY the JSON array, no markdown, no explanation.\"\n    }]\n  }],\n  tools: [{\n    google_search: {}\n  }],\n  generationConfig: {\n    maxOutputTokens: 4000,\n    temperature: 0.3\n  }\n}) }}",
@@ -885,15 +891,7 @@
           },
           "timeout": 30000
         },
-        "sendQuery": true,
-        "queryParameters": {
-          "parameters": [
-            {
-              "name": "key",
-              "value": "={{ $json._gemini_key }}"
-            }
-          ]
-        }
+        "nodeCredentialType": "googlePalmApi"
       },
       "id": "gemini-search-leads",
       "name": "Gemini Search Lead Discovery",
@@ -906,7 +904,13 @@
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 3000,
-      "continueOnFail": true
+      "continueOnFail": true,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "eS6zuwi0haRJRcd4",
+          "name": "Gemini API Key"
+        }
+      }
     },
     {
       "parameters": {
@@ -1502,8 +1506,8 @@
     }
   },
   "pinData": {},
-  "activeVersionId": "65547c36-bb50-4708-9b31-6bc5b07bcb4d",
-  "versionCounter": 245,
+  "activeVersionId": "04d2db5a-824e-4801-9ab2-9f6e3b9b8951",
+  "versionCounter": 259,
   "triggerCount": 1,
   "tags": [
     {
@@ -1514,9 +1518,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-24T21:31:13.091Z",
-    "createdAt": "2026-02-24T21:31:13.091Z",
-    "versionId": "65547c36-bb50-4708-9b31-6bc5b07bcb4d",
+    "updatedAt": "2026-02-24T22:51:26.473Z",
+    "createdAt": "2026-02-24T22:51:26.473Z",
+    "versionId": "04d2db5a-824e-4801-9ab2-9f6e3b9b8951",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -1588,7 +1592,7 @@
       },
       {
         "parameters": {
-          "jsCode": "// Config - edit these to change search targets\nconst industries = ['med_spa', 'realtor', 'law_firm', 'hvac_home_services'];\nconst locations = ['Raleigh Durham NC', 'Columbus OH', 'Moscow ID'];\n\nconst searchQueries = [];\n\nconst industryKeywords = {\n  'med_spa': ['med spa', 'medical spa', 'medspa', 'aesthetic clinic', 'botox clinic', 'laser clinic', 'skin clinic'],\n  'realtor': ['real estate agent', 'realtor', 'real estate broker', 'luxury real estate', 'homes for sale agent'],\n  'law_firm': ['law firm', 'attorney', 'lawyer', 'legal services', 'personal injury lawyer', 'family law attorney'],\n  'hvac_home_services': ['HVAC contractor', 'plumber', 'electrician', 'home services', 'AC repair', 'heating cooling']\n};\n\nconst luxuryIndustries = ['med_spa', 'realtor'];\n\nfor (const industry of industries) {\n  const keywords = industryKeywords[industry] || [industry];\n  const isLuxury = luxuryIndustries.includes(industry);\n  \n  for (const location of locations) {\n    for (const keyword of keywords) {\n      searchQueries.push({\n        industry: industry,\n        location: location,\n        keyword: keyword,\n        searchQuery: keyword + ' ' + location,\n        isLuxuryTarget: isLuxury,\n        timestamp: new Date().toISOString()\n      });\n    }\n  }\n}\n\n// Inject API keys from environment (accessible via task runner)\nconst apiKeys = {\n  _google_maps_key: $env.GOOGLE_MAPS_API_KEY || '',\n  _yelp_key: $env.YELP_API_KEY || '',\n  _gemini_key: $env.GEMINI_API_KEY || ''\n};\n\nfor (const q of searchQueries) {\n  Object.assign(q, apiKeys);\n}\n\nreturn searchQueries;"
+          "jsCode": "// Config - edit these to change search targets\nconst industries = ['med_spa', 'realtor', 'law_firm', 'hvac_home_services'];\nconst locations = ['Raleigh Durham NC', 'Columbus OH', 'Moscow ID'];\n\nconst searchQueries = [];\n\nconst industryKeywords = {\n  'med_spa': ['med spa', 'medical spa', 'medspa', 'aesthetic clinic', 'botox clinic', 'laser clinic', 'skin clinic'],\n  'realtor': ['real estate agent', 'realtor', 'real estate broker', 'luxury real estate', 'homes for sale agent'],\n  'law_firm': ['law firm', 'attorney', 'lawyer', 'legal services', 'personal injury lawyer', 'family law attorney'],\n  'hvac_home_services': ['HVAC contractor', 'plumber', 'electrician', 'home services', 'AC repair', 'heating cooling']\n};\n\nconst luxuryIndustries = ['med_spa', 'realtor'];\n\nfor (const industry of industries) {\n  const keywords = industryKeywords[industry] || [industry];\n  const isLuxury = luxuryIndustries.includes(industry);\n  \n  for (const location of locations) {\n    for (const keyword of keywords) {\n      searchQueries.push({\n        industry: industry,\n        location: location,\n        keyword: keyword,\n        searchQuery: keyword + ' ' + location,\n        isLuxuryTarget: isLuxury,\n        timestamp: new Date().toISOString()\n      });\n    }\n  }\n}\n\nreturn searchQueries;"
         },
         "id": "a1e88aa8-1745-45a2-b1b2-403ea2689ffe",
         "name": "Generate Search Queries",
@@ -1603,17 +1607,13 @@
       {
         "parameters": {
           "url": "https://maps.googleapis.com/maps/api/place/textsearch/json",
-          "authentication": "none",
+          "authentication": "genericCredentialType",
           "sendQuery": true,
           "queryParameters": {
             "parameters": [
               {
                 "name": "query",
                 "value": "={{ $json.searchQuery }}"
-              },
-              {
-                "name": "key",
-                "value": "={{ $json._google_maps_key }}"
               }
             ]
           },
@@ -1623,7 +1623,8 @@
                 "responseFormat": "json"
               }
             }
-          }
+          },
+          "genericAuthType": "httpQueryAuth"
         },
         "id": "5a3ae315-151f-4449-8093-905567dcce09",
         "name": "Google Maps Text Search",
@@ -1637,7 +1638,13 @@
         "maxTries": 3,
         "waitBetweenTries": 2000,
         "continueOnFail": true,
-        "notes": "Initial search to find businesses. Returns place_id for details."
+        "notes": "Initial search to find businesses. Returns place_id for details.",
+        "credentials": {
+          "httpQueryAuth": {
+            "id": "OKEa3Gwh381omXb9",
+            "name": "Google Maps API Key"
+          }
+        }
       },
       {
         "parameters": {
@@ -1666,10 +1673,6 @@
               {
                 "name": "fields",
                 "value": "name,formatted_address,formatted_phone_number,website,opening_hours,reviews,photos,url"
-              },
-              {
-                "name": "key",
-                "value": "={{ $('Generate Search Queries').first().json._google_maps_key }}"
               }
             ]
           },
@@ -1679,7 +1682,9 @@
                 "responseFormat": "json"
               }
             }
-          }
+          },
+          "authentication": "genericCredentialType",
+          "genericAuthType": "httpQueryAuth"
         },
         "id": "f63d048a-1760-4222-bd3e-e410f9beaeb0",
         "name": "Get Place Details",
@@ -1693,7 +1698,13 @@
         "maxTries": 3,
         "waitBetweenTries": 3000,
         "continueOnFail": true,
-        "notes": "Fetches phone, website, and detailed info for each business"
+        "notes": "Fetches phone, website, and detailed info for each business",
+        "credentials": {
+          "httpQueryAuth": {
+            "id": "OKEa3Gwh381omXb9",
+            "name": "Google Maps API Key"
+          }
+        }
       },
       {
         "parameters": {
@@ -1712,7 +1723,7 @@
       {
         "parameters": {
           "url": "https://api.yelp.com/v3/businesses/search",
-          "authentication": "none",
+          "authentication": "genericCredentialType",
           "sendQuery": true,
           "queryParameters": {
             "parameters": [
@@ -1737,15 +1748,7 @@
               }
             }
           },
-          "sendHeaders": true,
-          "headerParameters": {
-            "parameters": [
-              {
-                "name": "Authorization",
-                "value": "=Bearer {{ $json._yelp_key }}"
-              }
-            ]
-          }
+          "genericAuthType": "httpHeaderAuth"
         },
         "id": "cdfef720-b8c9-447b-92a9-9aab633aa0c5",
         "name": "Yelp Business Search",
@@ -1759,7 +1762,13 @@
         "maxTries": 3,
         "waitBetweenTries": 2000,
         "continueOnFail": true,
-        "notes": "Parallel search on Yelp for additional businesses"
+        "notes": "Parallel search on Yelp for additional businesses",
+        "credentials": {
+          "httpHeaderAuth": {
+            "id": "7jaRjwJuCE1JnN0h",
+            "name": "Yelp API Key"
+          }
+        }
       },
       {
         "parameters": {
@@ -2111,7 +2120,8 @@
             "name": "HubSpot App Token account"
           }
         },
-        "notes": "Creates deal in LNL Sales Pipeline"
+        "notes": "Creates deal in LNL Sales Pipeline",
+        "disabled": true
       },
       {
         "parameters": {
@@ -2132,7 +2142,8 @@
             "name": "HubSpot App Token account"
           }
         },
-        "notes": "Adds custom LNL scoring properties to contact"
+        "notes": "Adds custom LNL scoring properties to contact",
+        "disabled": true
       },
       {
         "parameters": {
@@ -2214,7 +2225,8 @@
           5264,
           304
         ],
-        "notes": "Final summary of scraping run"
+        "notes": "Final summary of scraping run",
+        "disabled": true
       },
       {
         "parameters": {
@@ -2338,7 +2350,7 @@
         "parameters": {
           "method": "POST",
           "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-          "authentication": "none",
+          "authentication": "predefinedCredentialType",
           "sendBody": true,
           "specifyBody": "json",
           "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: \"You are an email extraction specialist. Given a business name and website URL, determine the most likely business contact email address. Return ONLY the email address, nothing else. If you cannot determine one with confidence, return exactly: NONE\\n\\nBusiness: \" + $json.business_name + \"\\nWebsite: \" + ($json.website || \"\") + \"\\nDomain: \" + (($json.website || \"\").match(/https?:\\/\\/([^\\/]+)/)?.[1] || \"\") }] }] }) }}",
@@ -2350,15 +2362,7 @@
             },
             "timeout": 10000
           },
-          "sendQuery": true,
-          "queryParameters": {
-            "parameters": [
-              {
-                "name": "key",
-                "value": "={{ $('Generate Search Queries').first().json._gemini_key }}"
-              }
-            ]
-          }
+          "nodeCredentialType": "googlePalmApi"
         },
         "name": "Gemini Email Finder",
         "type": "n8n-nodes-base.httpRequest",
@@ -2368,7 +2372,13 @@
         ],
         "typeVersion": 4.2,
         "id": "666e6a25-a389-4244-a08a-b476f7983454",
-        "onError": "continueRegularOutput"
+        "onError": "continueRegularOutput",
+        "credentials": {
+          "googlePalmApi": {
+            "id": "eS6zuwi0haRJRcd4",
+            "name": "Gemini API Key"
+          }
+        }
       },
       {
         "parameters": {
@@ -2387,7 +2397,7 @@
         "parameters": {
           "method": "POST",
           "url": "=https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
-          "authentication": "none",
+          "authentication": "predefinedCredentialType",
           "sendBody": true,
           "specifyBody": "json",
           "jsonBody": "={{ JSON.stringify({\n  contents: [{\n    parts: [{\n      text: \"You are a business lead researcher for LNL Group, a growth architecture studio. Search for \" + $json.keyword + \" businesses in \" + $json.location + \".\n\nReturn a JSON array of up to 15 businesses. Each object must have these exact keys:\n- business_name (string)\n- address (string)\n- phone (string or empty)\n- website (string URL or empty)\n- rating (number 1-5 or null)\n- review_count (number or 0)\n\nOnly include real, currently operating businesses. Prefer businesses with websites. Return ONLY the JSON array, no markdown, no explanation.\"\n    }]\n  }],\n  tools: [{\n    google_search: {}\n  }],\n  generationConfig: {\n    maxOutputTokens: 4000,\n    temperature: 0.3\n  }\n}) }}",
@@ -2399,15 +2409,7 @@
             },
             "timeout": 30000
           },
-          "sendQuery": true,
-          "queryParameters": {
-            "parameters": [
-              {
-                "name": "key",
-                "value": "={{ $json._gemini_key }}"
-              }
-            ]
-          }
+          "nodeCredentialType": "googlePalmApi"
         },
         "id": "gemini-search-leads",
         "name": "Gemini Search Lead Discovery",
@@ -2420,7 +2422,13 @@
         "retryOnFail": true,
         "maxTries": 2,
         "waitBetweenTries": 3000,
-        "continueOnFail": true
+        "continueOnFail": true,
+        "credentials": {
+          "googlePalmApi": {
+            "id": "eS6zuwi0haRJRcd4",
+            "name": "Gemini API Key"
+          }
+        }
       },
       {
         "parameters": {
@@ -3007,10 +3015,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-24T21:31:13.218Z",
-        "id": 321,
+        "createdAt": "2026-02-24T22:51:26.561Z",
+        "id": 326,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "65547c36-bb50-4708-9b31-6bc5b07bcb4d",
+        "versionId": "04d2db5a-824e-4801-9ab2-9f6e3b9b8951",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
