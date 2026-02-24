@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-24T23:42:35.980Z",
+  "updatedAt": "2026-02-24T23:47:14.435Z",
   "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
@@ -563,7 +563,26 @@
     {
       "parameters": {
         "authentication": "appToken",
-        "operation": "create"
+        "operation": "create",
+        "email": "={{ $json.email }}",
+        "additionalFields": {
+          "company": "={{ $json.business_name }}",
+          "phone": "={{ $json.phone || '' }}",
+          "website": "={{ $json.website || '' }}",
+          "city": "={{ $json.location || '' }}",
+          "industry": "={{ $json.industry || '' }}",
+          "lifecyclestage": "lead",
+          "properties": [
+            {
+              "property": "hs_lead_status",
+              "value": "NEW"
+            },
+            {
+              "property": "hubspotscore",
+              "value": "={{ $json.lead_score }}"
+            }
+          ]
+        }
       },
       "id": "298611a7-aa93-48a4-989b-3499bf09feec",
       "name": "Create HubSpot Contact",
@@ -579,15 +598,20 @@
           "name": "HubSpot App Token account"
         }
       },
-      "notes": "Creates contact in HubSpot CRM"
+      "notes": "Creates contact in HubSpot CRM",
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "authentication": "appToken",
         "resource": "deal",
         "additionalFields": {
-          "dealName": "={{ $json.business_name }} - {{ $json.industry }}",
-          "pipeline": "default"
+          "dealName": "={{ $json.business_name + ' - ' + ($json.industry || 'General') }}",
+          "pipeline": "default",
+          "stage": "appointmentscheduled",
+          "dealType": "newbusiness",
+          "amount": "",
+          "description": "={{ 'Score: ' + $json.lead_score + ' (' + $json.lead_tier + ')\\nProducts: ' + ($json.product_recommendations || 'TBD') + '\\nBreakdown: ' + ($json.scoring_breakdown || 'N/A') }}"
         }
       },
       "id": "411ef9e7-216f-4c5a-ba23-f1498d613263",
@@ -605,7 +629,8 @@
         }
       },
       "notes": "Creates deal in LNL Sales Pipeline",
-      "disabled": true
+      "disabled": false,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1508,9 +1533,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "9e6b5908-5f91-471b-ae55-3bdb8edcc432",
-  "activeVersionId": "9e6b5908-5f91-471b-ae55-3bdb8edcc432",
-  "versionCounter": 268,
+  "versionId": "e67543b1-563b-4588-b981-00f0ab7e2c8d",
+  "activeVersionId": "e67543b1-563b-4588-b981-00f0ab7e2c8d",
+  "versionCounter": 271,
   "triggerCount": 1,
   "shared": [
     {
@@ -1579,9 +1604,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-24T23:42:35.982Z",
-    "createdAt": "2026-02-24T23:42:35.982Z",
-    "versionId": "9e6b5908-5f91-471b-ae55-3bdb8edcc432",
+    "updatedAt": "2026-02-24T23:47:14.437Z",
+    "createdAt": "2026-02-24T23:47:14.437Z",
+    "versionId": "e67543b1-563b-4588-b981-00f0ab7e2c8d",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2140,7 +2165,26 @@
       {
         "parameters": {
           "authentication": "appToken",
-          "operation": "create"
+          "operation": "create",
+          "email": "={{ $json.email }}",
+          "additionalFields": {
+            "company": "={{ $json.business_name }}",
+            "phone": "={{ $json.phone || '' }}",
+            "website": "={{ $json.website || '' }}",
+            "city": "={{ $json.location || '' }}",
+            "industry": "={{ $json.industry || '' }}",
+            "lifecyclestage": "lead",
+            "properties": [
+              {
+                "property": "hs_lead_status",
+                "value": "NEW"
+              },
+              {
+                "property": "hubspotscore",
+                "value": "={{ $json.lead_score }}"
+              }
+            ]
+          }
         },
         "id": "298611a7-aa93-48a4-989b-3499bf09feec",
         "name": "Create HubSpot Contact",
@@ -2156,15 +2200,20 @@
             "name": "HubSpot App Token account"
           }
         },
-        "notes": "Creates contact in HubSpot CRM"
+        "notes": "Creates contact in HubSpot CRM",
+        "onError": "continueRegularOutput"
       },
       {
         "parameters": {
           "authentication": "appToken",
           "resource": "deal",
           "additionalFields": {
-            "dealName": "={{ $json.business_name }} - {{ $json.industry }}",
-            "pipeline": "default"
+            "dealName": "={{ $json.business_name + ' - ' + ($json.industry || 'General') }}",
+            "pipeline": "default",
+            "stage": "appointmentscheduled",
+            "dealType": "newbusiness",
+            "amount": "",
+            "description": "={{ 'Score: ' + $json.lead_score + ' (' + $json.lead_tier + ')\\nProducts: ' + ($json.product_recommendations || 'TBD') + '\\nBreakdown: ' + ($json.scoring_breakdown || 'N/A') }}"
           }
         },
         "id": "411ef9e7-216f-4c5a-ba23-f1498d613263",
@@ -2182,7 +2231,8 @@
           }
         },
         "notes": "Creates deal in LNL Sales Pipeline",
-        "disabled": true
+        "disabled": false,
+        "onError": "continueRegularOutput"
       },
       {
         "parameters": {
@@ -3075,10 +3125,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-24T23:42:36.090Z",
-        "id": 330,
+        "createdAt": "2026-02-24T23:47:14.541Z",
+        "id": 331,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "9e6b5908-5f91-471b-ae55-3bdb8edcc432",
+        "versionId": "e67543b1-563b-4588-b981-00f0ab7e2c8d",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
