@@ -140,5 +140,17 @@ Each decision entry should include:
 
 ---
 
+### 2026-02-25: VPS deployment via tar+SSH script (deploy.py)
+
+**Decision**: Official deploy method is `python deploy.py` from the repo root. Builds locally (`npm run build` in `lnlgroups/`), tars `dist/`, SCPs to VPS, extracts to `/root/lnlgroups/dist/`, restarts PM2. The VPS git repo (`lnlgroups.git`) is retired as the deploy mechanism — it accumulated 142 file divergences and was never kept in sync.
+
+**Rationale**: The VPS `lnlgroups.git` repo was stale from day one — deployments were always done via tar+SSH (faster, no git credentials needed on VPS, no build step required on server). Formalizing the working method is lower risk than migrating to a git-pull-based pipeline that requires server-side credentials and build tooling.
+
+**Alternatives considered**: git pull on VPS (requires auth tokens, build tooling on server, adds complexity), GitHub Actions CI/CD (adds external dependency, overkill for solo operation), rsync (equivalent complexity, no advantage over tar+SCP for this use case).
+
+**Impact**: `deploy.py` is the canonical deploy command. Supports `--dry-run` flag. Keeps a `dist.bak/` rollback copy on VPS. PM2 config unchanged.
+
+---
+
 ## Future Decisions
 Add new entries above this line as they're made.
