@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-25T06:31:52.907Z",
+  "updatedAt": "2026-02-25T06:57:41.748Z",
   "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
@@ -582,7 +582,8 @@
               "value": "={{ $json.lead_score }}"
             }
           ]
-        }
+        },
+        "resource": "contact"
       },
       "id": "298611a7-aa93-48a4-989b-3499bf09feec",
       "name": "Create HubSpot Contact",
@@ -599,7 +600,7 @@
         }
       },
       "notes": "Creates contact in HubSpot CRM",
-      "onError": "continueRegularOutput"
+      "onError": "stopWorkflow"
     },
     {
       "parameters": {
@@ -690,7 +691,8 @@
               "value": "={{ $json.source || '' }}"
             }
           ]
-        }
+        },
+        "resource": "contact"
       },
       "id": "c0ae8c69-8e08-4e45-90df-000ede53802b",
       "name": "Update HubSpot Custom Properties",
@@ -708,7 +710,7 @@
       },
       "notes": "Adds custom LNL scoring properties to contact",
       "disabled": false,
-      "onError": "continueRegularOutput"
+      "onError": "stopWorkflow"
     },
     {
       "parameters": {
@@ -1616,9 +1618,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "b05a506a-7cf2-49e3-978a-d74bd0a4d74c",
-  "activeVersionId": "b05a506a-7cf2-49e3-978a-d74bd0a4d74c",
-  "versionCounter": 325,
+  "versionId": "88eff497-0000-47ee-b728-1fe2425a449a",
+  "activeVersionId": "88eff497-0000-47ee-b728-1fe2425a449a",
+  "versionCounter": 328,
   "triggerCount": 1,
   "shared": [
     {
@@ -1648,9 +1650,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-25T06:31:52.911Z",
-    "createdAt": "2026-02-25T06:31:52.911Z",
-    "versionId": "b05a506a-7cf2-49e3-978a-d74bd0a4d74c",
+    "updatedAt": "2026-02-25T06:57:41.753Z",
+    "createdAt": "2026-02-25T06:57:41.753Z",
+    "versionId": "88eff497-0000-47ee-b728-1fe2425a449a",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2228,7 +2230,8 @@
                 "value": "={{ $json.lead_score }}"
               }
             ]
-          }
+          },
+          "resource": "contact"
         },
         "id": "298611a7-aa93-48a4-989b-3499bf09feec",
         "name": "Create HubSpot Contact",
@@ -2245,7 +2248,7 @@
           }
         },
         "notes": "Creates contact in HubSpot CRM",
-        "onError": "continueRegularOutput"
+        "onError": "stopWorkflow"
       },
       {
         "parameters": {
@@ -2336,7 +2339,8 @@
                 "value": "={{ $json.source || '' }}"
               }
             ]
-          }
+          },
+          "resource": "contact"
         },
         "id": "c0ae8c69-8e08-4e45-90df-000ede53802b",
         "name": "Update HubSpot Custom Properties",
@@ -2354,7 +2358,7 @@
         },
         "notes": "Adds custom LNL scoring properties to contact",
         "disabled": false,
-        "onError": "continueRegularOutput"
+        "onError": "stopWorkflow"
       },
       {
         "parameters": {
@@ -3252,18 +3256,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-25T06:31:53.056Z",
-        "id": 361,
+        "createdAt": "2026-02-25T06:57:41.902Z",
+        "id": 363,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "b05a506a-7cf2-49e3-978a-d74bd0a4d74c",
+        "versionId": "88eff497-0000-47ee-b728-1fe2425a449a",
         "event": "deactivated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       },
       {
-        "createdAt": "2026-02-25T06:31:53.096Z",
-        "id": 362,
+        "createdAt": "2026-02-25T06:57:41.937Z",
+        "id": 364,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "b05a506a-7cf2-49e3-978a-d74bd0a4d74c",
+        "versionId": "88eff497-0000-47ee-b728-1fe2425a449a",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
