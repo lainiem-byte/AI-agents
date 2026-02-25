@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-25T09:15:50.723Z",
+  "updatedAt": "2026-02-25T09:25:50.451Z",
   "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
@@ -994,7 +994,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Filter: only pass items with a valid email address\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim();\n  return email.length > 0 && email.includes('@') && email.split('@')[1]?.includes('.');\n});"
+        "jsCode": "// Filter: only pass items with a genuinely valid email address\n// Rejects image filenames like 'image@2x.webp', 'logo@72dpi.svg', etc.\nconst BAD_TLDS = new Set([\n  'webp','svg','jpg','jpeg','png','gif','bmp','ico',\n  'pdf','txt','css','js','ts','html','htm','xml','zip','mp4'\n]);\n\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim().toLowerCase();\n  if (!email || !email.includes('@') || email.includes(' ')) return false;\n\n  const parts = email.split('@');\n  if (parts.length !== 2) return false;\n\n  const [local, domain] = parts;\n  if (!local || local.length < 1) return false;\n  if (!domain || !domain.includes('.')) return false;\n\n  // Reject file extension TLDs\n  const tld = domain.split('.').pop();\n  if (BAD_TLDS.has(tld)) return false;\n\n  // TLD must be 2-6 alpha chars (com, io, net, co.uk, etc.)\n  if (!/^[a-z]{2,6}$/.test(tld)) return false;\n\n  return true;\n});"
       },
       "id": "email-guard-001",
       "name": "Has Valid Email?",
@@ -1601,9 +1601,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
-  "activeVersionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
-  "versionCounter": 337,
+  "versionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
+  "activeVersionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
+  "versionCounter": 340,
   "triggerCount": 1,
   "shared": [
     {
@@ -1633,9 +1633,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-25T09:15:50.730Z",
-    "createdAt": "2026-02-25T09:15:50.730Z",
-    "versionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
+    "updatedAt": "2026-02-25T09:25:50.453Z",
+    "createdAt": "2026-02-25T09:25:50.453Z",
+    "versionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2625,7 +2625,7 @@
       },
       {
         "parameters": {
-          "jsCode": "// Filter: only pass items with a valid email address\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim();\n  return email.length > 0 && email.includes('@') && email.split('@')[1]?.includes('.');\n});"
+          "jsCode": "// Filter: only pass items with a genuinely valid email address\n// Rejects image filenames like 'image@2x.webp', 'logo@72dpi.svg', etc.\nconst BAD_TLDS = new Set([\n  'webp','svg','jpg','jpeg','png','gif','bmp','ico',\n  'pdf','txt','css','js','ts','html','htm','xml','zip','mp4'\n]);\n\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim().toLowerCase();\n  if (!email || !email.includes('@') || email.includes(' ')) return false;\n\n  const parts = email.split('@');\n  if (parts.length !== 2) return false;\n\n  const [local, domain] = parts;\n  if (!local || local.length < 1) return false;\n  if (!domain || !domain.includes('.')) return false;\n\n  // Reject file extension TLDs\n  const tld = domain.split('.').pop();\n  if (BAD_TLDS.has(tld)) return false;\n\n  // TLD must be 2-6 alpha chars (com, io, net, co.uk, etc.)\n  if (!/^[a-z]{2,6}$/.test(tld)) return false;\n\n  return true;\n});"
         },
         "id": "email-guard-001",
         "name": "Has Valid Email?",
@@ -3222,18 +3222,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-25T09:15:50.823Z",
-        "id": 369,
+        "createdAt": "2026-02-25T09:25:50.516Z",
+        "id": 371,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
+        "versionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
         "event": "deactivated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       },
       {
-        "createdAt": "2026-02-25T09:15:50.847Z",
-        "id": 370,
+        "createdAt": "2026-02-25T09:25:50.542Z",
+        "id": 372,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
+        "versionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
