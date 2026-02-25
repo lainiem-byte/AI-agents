@@ -52,13 +52,8 @@ function __lnlInitHubSpot() {
 }
 
 function __lnlInitAhrefs() {
-  if (document.getElementById("ahrefs-analytics")) return;
-  var s = document.createElement("script");
-  s.id = "ahrefs-analytics";
-  s.async = true;
-  s.src = "https://analytics.ahrefs.com/analytics.js";
-  s.setAttribute("data-key", "6PhdcK03LVhp3vrqeljhfg");
-  document.head.appendChild(s);
+  // Ahrefs now loads as a static <script> in index.html (required for crawler verification).
+  // No-op here to avoid double-loading.
 }
 
 function __lnlInitRadar() {
