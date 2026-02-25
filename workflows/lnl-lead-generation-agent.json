@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-25T09:25:50.451Z",
+  "updatedAt": "2026-02-25T10:50:10.371Z",
   "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
@@ -606,10 +606,11 @@
         "authentication": "appToken",
         "resource": "deal",
         "additionalFields": {
-          "dealName": "={{ $json.business_name + ' - ' + ($json.industry || 'General') }}",
+          "dealName": "={{ $('Has Valid Email?').item.json.business_name + ' - ' + ($('Has Valid Email?').item.json.industry || 'General') }}",
           "pipeline": "default",
           "dealType": "newbusiness",
-          "description": "={{ 'Score: ' + $json.lead_score + ' (' + $json.lead_tier + ')\\nProducts: ' + ($json.product_recommendations || 'TBD') + '\\nBreakdown: ' + ($json.scoring_breakdown || 'N/A') }}"
+          "description": "={{ 'Score: ' + $('Has Valid Email?').item.json.lead_score + ' (' + $('Has Valid Email?').item.json.lead_tier + ')\nProducts: ' + ($('Has Valid Email?').item.json.product_recommendations || 'TBD') + '\nBreakdown: ' + ($('Has Valid Email?').item.json.scoring_breakdown || 'N/A') }}",
+          "associateContact": "={{ $('Create HubSpot Contact').item.json.vid }}"
         },
         "stage": "appointmentscheduled"
       },
@@ -634,62 +635,65 @@
     {
       "parameters": {
         "authentication": "appToken",
-        "operation": "update",
-        "updateFields": {
-          "properties": [
-            {
-              "property": "has_chatbot",
-              "value": "={{ $json.website_has_chatbot ? 'true' : 'false' }}"
-            },
-            {
-              "property": "has_online_booking",
-              "value": "={{ $json.website_has_booking ? 'true' : 'false' }}"
-            },
-            {
-              "property": "industry_vertical",
-              "value": "={{ $json.industry || '' }}"
-            },
-            {
-              "property": "lnl_division",
-              "value": "={{ $json.industry === 'med_spa' || $json.industry === 'realtor' ? 'creatives' : 'automations' }}"
-            },
-            {
-              "property": "lnl_lead_id",
-              "value": "={{ $json.row_number || $json.id || '' }}"
-            },
-            {
-              "property": "lnl_lead_score",
-              "value": "={{ $json.lead_score || 0 }}"
-            },
-            {
-              "property": "lnl_notes",
-              "value": "={{ $json.scoring_breakdown || '' }}"
-            },
-            {
-              "property": "luxury_target",
-              "value": "={{ $json.isLuxuryTarget ? 'true' : 'false' }}"
-            },
-            {
-              "property": "outreach_status",
-              "value": "={{ $json.lead_tier || 'cold' }}"
-            },
-            {
-              "property": "product_recommendations",
-              "value": "={{ $json.product_recommendations || '' }}"
-            },
-            {
-              "property": "scoring_breakdown",
-              "value": "={{ $json.scoring_breakdown || '' }}"
-            },
-            {
-              "property": "scraped_date",
-              "value": "={{ $json.timestamp || $json.qualified_date || '' }}"
-            },
-            {
-              "property": "source_path",
-              "value": "={{ $json.source || '' }}"
-            }
-          ]
+        "operation": "upsert",
+        "email": "={{ $('Has Valid Email?').item.json.email }}",
+        "additionalFields": {
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "has_chatbot",
+                "value": "={{ $('Has Valid Email?').item.json.website_has_chatbot ? 'true' : 'false' }}"
+              },
+              {
+                "property": "has_online_booking",
+                "value": "={{ $('Has Valid Email?').item.json.website_has_booking ? 'true' : 'false' }}"
+              },
+              {
+                "property": "industry_vertical",
+                "value": "={{ $('Has Valid Email?').item.json.industry || '' }}"
+              },
+              {
+                "property": "lnl_division",
+                "value": "={{ $('Has Valid Email?').item.json.industry === 'med_spa' || $('Has Valid Email?').item.json.industry === 'realtor' ? 'creatives' : 'automations' }}"
+              },
+              {
+                "property": "lnl_lead_id",
+                "value": "={{ $('Has Valid Email?').item.json.row_number || $('Has Valid Email?').item.json.id || '' }}"
+              },
+              {
+                "property": "lnl_lead_score",
+                "value": "={{ $('Has Valid Email?').item.json.lead_score || 0 }}"
+              },
+              {
+                "property": "lnl_notes",
+                "value": "={{ $('Has Valid Email?').item.json.scoring_breakdown || '' }}"
+              },
+              {
+                "property": "luxury_target",
+                "value": "={{ $('Has Valid Email?').item.json.isLuxuryTarget ? 'true' : 'false' }}"
+              },
+              {
+                "property": "outreach_status",
+                "value": "={{ $('Has Valid Email?').item.json.lead_tier || 'cold' }}"
+              },
+              {
+                "property": "product_recommendations",
+                "value": "={{ $('Has Valid Email?').item.json.product_recommendations || '' }}"
+              },
+              {
+                "property": "scoring_breakdown",
+                "value": "={{ $('Has Valid Email?').item.json.scoring_breakdown || '' }}"
+              },
+              {
+                "property": "scraped_date",
+                "value": "={{ $('Has Valid Email?').item.json.timestamp || $('Has Valid Email?').item.json.qualified_date || '' }}"
+              },
+              {
+                "property": "source_path",
+                "value": "={{ $('Has Valid Email?').item.json.source || '' }}"
+              }
+            ]
+          }
         },
         "resource": "contact"
       },
@@ -768,7 +772,7 @@
         }
       },
       "notes": "Sends email notification for hot leads",
-      "disabled": true
+      "disabled": false
     },
     {
       "parameters": {
@@ -866,28 +870,10 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $json.email }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "isEmpty"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "jsCode": "// Route by email presence\n// [0] = has email -> Lead Scoring | [1] = no email -> discovery path\nconst hasEmail = [];\nconst noEmail = [];\nfor (const item of $input.all()) {\n  const email = (item.json.email || '').trim();\n  if (email && email.includes('@') && email.includes('.')) {\n    hasEmail.push(item);\n  } else {\n    noEmail.push(item);\n  }\n}\nreturn [hasEmail, noEmail];"
       },
       "name": "Still No Email?",
-      "type": "n8n-nodes-base.if",
+      "type": "n8n-nodes-base.code",
       "position": [
         4352,
         400
@@ -1035,28 +1021,10 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $json.email }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "isNotEmpty"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "jsCode": "// Route by email presence\n// [0] = has email -> Lead Scoring | [1] = no email -> discovery path\nconst hasEmail = [];\nconst noEmail = [];\nfor (const item of $input.all()) {\n  const email = (item.json.email || '').trim();\n  if (email && email.includes('@') && email.includes('.')) {\n    hasEmail.push(item);\n  } else {\n    noEmail.push(item);\n  }\n}\nreturn [hasEmail, noEmail];"
       },
       "name": "Pattern Found Email?",
-      "type": "n8n-nodes-base.if",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         5040,
@@ -1601,9 +1569,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
-  "activeVersionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
-  "versionCounter": 340,
+  "versionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
+  "activeVersionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
+  "versionCounter": 349,
   "triggerCount": 1,
   "shared": [
     {
@@ -1633,9 +1601,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-25T09:25:50.453Z",
-    "createdAt": "2026-02-25T09:25:50.453Z",
-    "versionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
+    "updatedAt": "2026-02-25T10:50:10.374Z",
+    "createdAt": "2026-02-25T10:50:10.374Z",
+    "versionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2237,10 +2205,11 @@
           "authentication": "appToken",
           "resource": "deal",
           "additionalFields": {
-            "dealName": "={{ $json.business_name + ' - ' + ($json.industry || 'General') }}",
+            "dealName": "={{ $('Has Valid Email?').item.json.business_name + ' - ' + ($('Has Valid Email?').item.json.industry || 'General') }}",
             "pipeline": "default",
             "dealType": "newbusiness",
-            "description": "={{ 'Score: ' + $json.lead_score + ' (' + $json.lead_tier + ')\\nProducts: ' + ($json.product_recommendations || 'TBD') + '\\nBreakdown: ' + ($json.scoring_breakdown || 'N/A') }}"
+            "description": "={{ 'Score: ' + $('Has Valid Email?').item.json.lead_score + ' (' + $('Has Valid Email?').item.json.lead_tier + ')\nProducts: ' + ($('Has Valid Email?').item.json.product_recommendations || 'TBD') + '\nBreakdown: ' + ($('Has Valid Email?').item.json.scoring_breakdown || 'N/A') }}",
+            "associateContact": "={{ $('Create HubSpot Contact').item.json.vid }}"
           },
           "stage": "appointmentscheduled"
         },
@@ -2265,62 +2234,65 @@
       {
         "parameters": {
           "authentication": "appToken",
-          "operation": "update",
-          "updateFields": {
-            "properties": [
-              {
-                "property": "has_chatbot",
-                "value": "={{ $json.website_has_chatbot ? 'true' : 'false' }}"
-              },
-              {
-                "property": "has_online_booking",
-                "value": "={{ $json.website_has_booking ? 'true' : 'false' }}"
-              },
-              {
-                "property": "industry_vertical",
-                "value": "={{ $json.industry || '' }}"
-              },
-              {
-                "property": "lnl_division",
-                "value": "={{ $json.industry === 'med_spa' || $json.industry === 'realtor' ? 'creatives' : 'automations' }}"
-              },
-              {
-                "property": "lnl_lead_id",
-                "value": "={{ $json.row_number || $json.id || '' }}"
-              },
-              {
-                "property": "lnl_lead_score",
-                "value": "={{ $json.lead_score || 0 }}"
-              },
-              {
-                "property": "lnl_notes",
-                "value": "={{ $json.scoring_breakdown || '' }}"
-              },
-              {
-                "property": "luxury_target",
-                "value": "={{ $json.isLuxuryTarget ? 'true' : 'false' }}"
-              },
-              {
-                "property": "outreach_status",
-                "value": "={{ $json.lead_tier || 'cold' }}"
-              },
-              {
-                "property": "product_recommendations",
-                "value": "={{ $json.product_recommendations || '' }}"
-              },
-              {
-                "property": "scoring_breakdown",
-                "value": "={{ $json.scoring_breakdown || '' }}"
-              },
-              {
-                "property": "scraped_date",
-                "value": "={{ $json.timestamp || $json.qualified_date || '' }}"
-              },
-              {
-                "property": "source_path",
-                "value": "={{ $json.source || '' }}"
-              }
-            ]
+          "operation": "upsert",
+          "email": "={{ $('Has Valid Email?').item.json.email }}",
+          "additionalFields": {
+            "customPropertiesUi": {
+              "customPropertiesValues": [
+                {
+                  "property": "has_chatbot",
+                  "value": "={{ $('Has Valid Email?').item.json.website_has_chatbot ? 'true' : 'false' }}"
+                },
+                {
+                  "property": "has_online_booking",
+                  "value": "={{ $('Has Valid Email?').item.json.website_has_booking ? 'true' : 'false' }}"
+                },
+                {
+                  "property": "industry_vertical",
+                  "value": "={{ $('Has Valid Email?').item.json.industry || '' }}"
+                },
+                {
+                  "property": "lnl_division",
+                  "value": "={{ $('Has Valid Email?').item.json.industry === 'med_spa' || $('Has Valid Email?').item.json.industry === 'realtor' ? 'creatives' : 'automations' }}"
+                },
+                {
+                  "property": "lnl_lead_id",
+                  "value": "={{ $('Has Valid Email?').item.json.row_number || $('Has Valid Email?').item.json.id || '' }}"
+                },
+                {
+                  "property": "lnl_lead_score",
+                  "value": "={{ $('Has Valid Email?').item.json.lead_score || 0 }}"
+                },
+                {
+                  "property": "lnl_notes",
+                  "value": "={{ $('Has Valid Email?').item.json.scoring_breakdown || '' }}"
+                },
+                {
+                  "property": "luxury_target",
+                  "value": "={{ $('Has Valid Email?').item.json.isLuxuryTarget ? 'true' : 'false' }}"
+                },
+                {
+                  "property": "outreach_status",
+                  "value": "={{ $('Has Valid Email?').item.json.lead_tier || 'cold' }}"
+                },
+                {
+                  "property": "product_recommendations",
+                  "value": "={{ $('Has Valid Email?').item.json.product_recommendations || '' }}"
+                },
+                {
+                  "property": "scoring_breakdown",
+                  "value": "={{ $('Has Valid Email?').item.json.scoring_breakdown || '' }}"
+                },
+                {
+                  "property": "scraped_date",
+                  "value": "={{ $('Has Valid Email?').item.json.timestamp || $('Has Valid Email?').item.json.qualified_date || '' }}"
+                },
+                {
+                  "property": "source_path",
+                  "value": "={{ $('Has Valid Email?').item.json.source || '' }}"
+                }
+              ]
+            }
           },
           "resource": "contact"
         },
@@ -2399,7 +2371,7 @@
           }
         },
         "notes": "Sends email notification for hot leads",
-        "disabled": true
+        "disabled": false
       },
       {
         "parameters": {
@@ -2497,28 +2469,10 @@
       },
       {
         "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict"
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ $json.email }}",
-                "rightValue": "",
-                "operator": {
-                  "type": "string",
-                  "operation": "isEmpty"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
+          "jsCode": "// Route by email presence\n// [0] = has email -> Lead Scoring | [1] = no email -> discovery path\nconst hasEmail = [];\nconst noEmail = [];\nfor (const item of $input.all()) {\n  const email = (item.json.email || '').trim();\n  if (email && email.includes('@') && email.includes('.')) {\n    hasEmail.push(item);\n  } else {\n    noEmail.push(item);\n  }\n}\nreturn [hasEmail, noEmail];"
         },
         "name": "Still No Email?",
-        "type": "n8n-nodes-base.if",
+        "type": "n8n-nodes-base.code",
         "position": [
           4352,
           400
@@ -2666,28 +2620,10 @@
       },
       {
         "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict"
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ $json.email }}",
-                "rightValue": "",
-                "operator": {
-                  "type": "string",
-                  "operation": "isNotEmpty"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
+          "jsCode": "// Route by email presence\n// [0] = has email -> Lead Scoring | [1] = no email -> discovery path\nconst hasEmail = [];\nconst noEmail = [];\nfor (const item of $input.all()) {\n  const email = (item.json.email || '').trim();\n  if (email && email.includes('@') && email.includes('.')) {\n    hasEmail.push(item);\n  } else {\n    noEmail.push(item);\n  }\n}\nreturn [hasEmail, noEmail];"
         },
         "name": "Pattern Found Email?",
-        "type": "n8n-nodes-base.if",
+        "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": [
           5040,
@@ -3222,18 +3158,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-25T09:25:50.516Z",
-        "id": 371,
+        "createdAt": "2026-02-25T10:50:10.439Z",
+        "id": 377,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
+        "versionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
         "event": "deactivated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       },
       {
-        "createdAt": "2026-02-25T09:25:50.542Z",
-        "id": 372,
+        "createdAt": "2026-02-25T10:50:10.466Z",
+        "id": 378,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "1e9762fb-6687-48e9-b512-b453d8d044e8",
+        "versionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
