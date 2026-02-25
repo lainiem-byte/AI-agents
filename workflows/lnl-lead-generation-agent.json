@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-25T08:56:14.242Z",
+  "updatedAt": "2026-02-25T09:15:50.723Z",
   "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
@@ -797,29 +797,11 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "leftValue": "={{ $json.email }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "isNotEmpty"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "jsCode": "// Pass only items that already have an email\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim();\n  return email.length > 0 && email.includes('@');\n});"
       },
       "id": "e6330275-c615-4b46-893e-fccdb29a6027",
       "name": "Has Email?",
-      "type": "n8n-nodes-base.if",
+      "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         3664,
@@ -1012,31 +994,12 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict"
-          },
-          "conditions": [
-            {
-              "id": "email-guard",
-              "leftValue": "={{ $json.email }}",
-              "rightValue": "",
-              "operator": {
-                "type": "string",
-                "operation": "isNotEmpty"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
+        "jsCode": "// Filter: only pass items with a valid email address\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim();\n  return email.length > 0 && email.includes('@') && email.split('@')[1]?.includes('.');\n});"
       },
       "id": "email-guard-001",
       "name": "Has Valid Email?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.3,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         3968,
         208
@@ -1114,6 +1077,19 @@
         112
       ],
       "notes": "Aggregates all hot leads into a single digest email to prevent SMTP rate limiting"
+    },
+    {
+      "id": "f95cca11-95a1-433a-81d8-ecb36b143255",
+      "name": "Route No Email",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3904,
+        232
+      ],
+      "parameters": {
+        "jsCode": "// Pass only items WITHOUT email \u2014 send to deep discovery\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim();\n  return !(email.length > 0 && email.includes('@'));\n});"
+      }
     }
   ],
   "connections": {
@@ -1420,19 +1396,17 @@
             "node": "Has Email?",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Route No Email",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
     },
     "Has Email?": {
       "main": [
-        [
-          {
-            "node": "Build Contact URLs",
-            "type": "main",
-            "index": 0
-          }
-        ],
         [
           {
             "node": "Lead Scoring Algorithm",
@@ -1539,7 +1513,6 @@
     },
     "Has Valid Email?": {
       "main": [
-        [],
         [
           {
             "node": "Create HubSpot Contact",
@@ -1599,6 +1572,17 @@
           }
         ]
       ]
+    },
+    "Route No Email": {
+      "main": [
+        [
+          {
+            "node": "Build Contact URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "settings": {
@@ -1617,9 +1601,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
-  "activeVersionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
-  "versionCounter": 331,
+  "versionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
+  "activeVersionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
+  "versionCounter": 337,
   "triggerCount": 1,
   "shared": [
     {
@@ -1649,9 +1633,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-25T08:56:14.246Z",
-    "createdAt": "2026-02-25T08:56:14.246Z",
-    "versionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
+    "updatedAt": "2026-02-25T09:15:50.730Z",
+    "createdAt": "2026-02-25T09:15:50.730Z",
+    "versionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2444,29 +2428,11 @@
       },
       {
         "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict"
-            },
-            "conditions": [
-              {
-                "leftValue": "={{ $json.email }}",
-                "rightValue": "",
-                "operator": {
-                  "type": "string",
-                  "operation": "isNotEmpty"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
+          "jsCode": "// Pass only items that already have an email\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim();\n  return email.length > 0 && email.includes('@');\n});"
         },
         "id": "e6330275-c615-4b46-893e-fccdb29a6027",
         "name": "Has Email?",
-        "type": "n8n-nodes-base.if",
+        "type": "n8n-nodes-base.code",
         "typeVersion": 2,
         "position": [
           3664,
@@ -2659,31 +2625,12 @@
       },
       {
         "parameters": {
-          "conditions": {
-            "options": {
-              "caseSensitive": true,
-              "leftValue": "",
-              "typeValidation": "strict"
-            },
-            "conditions": [
-              {
-                "id": "email-guard",
-                "leftValue": "={{ $json.email }}",
-                "rightValue": "",
-                "operator": {
-                  "type": "string",
-                  "operation": "isNotEmpty"
-                }
-              }
-            ],
-            "combinator": "and"
-          },
-          "options": {}
+          "jsCode": "// Filter: only pass items with a valid email address\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim();\n  return email.length > 0 && email.includes('@') && email.split('@')[1]?.includes('.');\n});"
         },
         "id": "email-guard-001",
         "name": "Has Valid Email?",
-        "type": "n8n-nodes-base.if",
-        "typeVersion": 2.3,
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
         "position": [
           3968,
           208
@@ -2761,6 +2708,19 @@
           112
         ],
         "notes": "Aggregates all hot leads into a single digest email to prevent SMTP rate limiting"
+      },
+      {
+        "id": "f95cca11-95a1-433a-81d8-ecb36b143255",
+        "name": "Route No Email",
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [
+          3904,
+          232
+        ],
+        "parameters": {
+          "jsCode": "// Pass only items WITHOUT email \u2014 send to deep discovery\nreturn $input.all().filter(item => {\n  const email = (item.json.email || '').trim();\n  return !(email.length > 0 && email.includes('@'));\n});"
+        }
       }
     ],
     "connections": {
@@ -3067,19 +3027,17 @@
               "node": "Has Email?",
               "type": "main",
               "index": 0
+            },
+            {
+              "node": "Route No Email",
+              "type": "main",
+              "index": 0
             }
           ]
         ]
       },
       "Has Email?": {
         "main": [
-          [
-            {
-              "node": "Build Contact URLs",
-              "type": "main",
-              "index": 0
-            }
-          ],
           [
             {
               "node": "Lead Scoring Algorithm",
@@ -3186,7 +3144,6 @@
       },
       "Has Valid Email?": {
         "main": [
-          [],
           [
             {
               "node": "Create HubSpot Contact",
@@ -3246,6 +3203,17 @@
             }
           ]
         ]
+      },
+      "Route No Email": {
+        "main": [
+          [
+            {
+              "node": "Build Contact URLs",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
       }
     },
     "authors": "Lainie Mayfield",
@@ -3254,18 +3222,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-25T08:56:14.348Z",
-        "id": 365,
+        "createdAt": "2026-02-25T09:15:50.823Z",
+        "id": 369,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
+        "versionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
         "event": "deactivated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       },
       {
-        "createdAt": "2026-02-25T08:56:14.378Z",
-        "id": 366,
+        "createdAt": "2026-02-25T09:15:50.847Z",
+        "id": 370,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
+        "versionId": "8f16b62a-408b-4d45-95dd-fbccbdf8f050",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
