@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-25T06:57:41.748Z",
+  "updatedAt": "2026-02-25T08:56:14.242Z",
   "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
@@ -563,25 +563,24 @@
     {
       "parameters": {
         "authentication": "appToken",
-        "operation": "create",
+        "operation": "upsert",
         "email": "={{ $json.email }}",
         "additionalFields": {
-          "company": "={{ $json.business_name }}",
-          "phone": "={{ $json.phone || '' }}",
-          "website": "={{ $json.website || '' }}",
-          "city": "={{ $json.location || '' }}",
+          "companyName": "={{ $json.business_name }}",
+          "phoneNumber": "={{ $json.phone || '' }}",
+          "websiteUrl": "={{ $json.website || '' }}",
+          "city": "={{ $json.city || $json.location || '' }}",
           "industry": "={{ $json.industry || '' }}",
-          "lifecyclestage": "lead",
-          "properties": [
-            {
-              "property": "hs_lead_status",
-              "value": "NEW"
-            },
-            {
-              "property": "hubspotscore",
-              "value": "={{ $json.lead_score }}"
-            }
-          ]
+          "lifeCycleStage": "lead",
+          "leadStatus": "NEW",
+          "customPropertiesUi": {
+            "customPropertiesValues": [
+              {
+                "property": "lnl_lead_score",
+                "value": "={{ $json.lead_score || 0 }}"
+              }
+            ]
+          }
         },
         "resource": "contact"
       },
@@ -1618,9 +1617,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "88eff497-0000-47ee-b728-1fe2425a449a",
-  "activeVersionId": "88eff497-0000-47ee-b728-1fe2425a449a",
-  "versionCounter": 328,
+  "versionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
+  "activeVersionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
+  "versionCounter": 331,
   "triggerCount": 1,
   "shared": [
     {
@@ -1650,9 +1649,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-25T06:57:41.753Z",
-    "createdAt": "2026-02-25T06:57:41.753Z",
-    "versionId": "88eff497-0000-47ee-b728-1fe2425a449a",
+    "updatedAt": "2026-02-25T08:56:14.246Z",
+    "createdAt": "2026-02-25T08:56:14.246Z",
+    "versionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2211,25 +2210,24 @@
       {
         "parameters": {
           "authentication": "appToken",
-          "operation": "create",
+          "operation": "upsert",
           "email": "={{ $json.email }}",
           "additionalFields": {
-            "company": "={{ $json.business_name }}",
-            "phone": "={{ $json.phone || '' }}",
-            "website": "={{ $json.website || '' }}",
-            "city": "={{ $json.location || '' }}",
+            "companyName": "={{ $json.business_name }}",
+            "phoneNumber": "={{ $json.phone || '' }}",
+            "websiteUrl": "={{ $json.website || '' }}",
+            "city": "={{ $json.city || $json.location || '' }}",
             "industry": "={{ $json.industry || '' }}",
-            "lifecyclestage": "lead",
-            "properties": [
-              {
-                "property": "hs_lead_status",
-                "value": "NEW"
-              },
-              {
-                "property": "hubspotscore",
-                "value": "={{ $json.lead_score }}"
-              }
-            ]
+            "lifeCycleStage": "lead",
+            "leadStatus": "NEW",
+            "customPropertiesUi": {
+              "customPropertiesValues": [
+                {
+                  "property": "lnl_lead_score",
+                  "value": "={{ $json.lead_score || 0 }}"
+                }
+              ]
+            }
           },
           "resource": "contact"
         },
@@ -3256,18 +3254,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-25T06:57:41.902Z",
-        "id": 363,
+        "createdAt": "2026-02-25T08:56:14.348Z",
+        "id": 365,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "88eff497-0000-47ee-b728-1fe2425a449a",
+        "versionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
         "event": "deactivated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       },
       {
-        "createdAt": "2026-02-25T06:57:41.937Z",
-        "id": 364,
+        "createdAt": "2026-02-25T08:56:14.378Z",
+        "id": 366,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "88eff497-0000-47ee-b728-1fe2425a449a",
+        "versionId": "05c42ce5-5991-4d92-ab45-c671da33701c",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
