@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-25T10:27:00.686Z",
+  "updatedAt": "2026-02-25T10:50:10.371Z",
   "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
@@ -772,7 +772,7 @@
         }
       },
       "notes": "Sends email notification for hot leads",
-      "disabled": true
+      "disabled": false
     },
     {
       "parameters": {
@@ -1569,9 +1569,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "72daac1d-0d1b-40e4-aee9-0686b4da084b",
-  "activeVersionId": "72daac1d-0d1b-40e4-aee9-0686b4da084b",
-  "versionCounter": 346,
+  "versionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
+  "activeVersionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
+  "versionCounter": 349,
   "triggerCount": 1,
   "shared": [
     {
@@ -1601,9 +1601,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-25T10:27:00.689Z",
-    "createdAt": "2026-02-25T10:27:00.689Z",
-    "versionId": "72daac1d-0d1b-40e4-aee9-0686b4da084b",
+    "updatedAt": "2026-02-25T10:50:10.374Z",
+    "createdAt": "2026-02-25T10:50:10.374Z",
+    "versionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2371,7 +2371,7 @@
           }
         },
         "notes": "Sends email notification for hot leads",
-        "disabled": true
+        "disabled": false
       },
       {
         "parameters": {
@@ -3158,18 +3158,18 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-25T10:27:00.794Z",
-        "id": 375,
+        "createdAt": "2026-02-25T10:50:10.439Z",
+        "id": 377,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "72daac1d-0d1b-40e4-aee9-0686b4da084b",
+        "versionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
         "event": "deactivated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       },
       {
-        "createdAt": "2026-02-25T10:27:00.839Z",
-        "id": 376,
+        "createdAt": "2026-02-25T10:50:10.466Z",
+        "id": 378,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "72daac1d-0d1b-40e4-aee9-0686b4da084b",
+        "versionId": "30dc3772-d8c4-403f-93a6-8663dcd110d5",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
