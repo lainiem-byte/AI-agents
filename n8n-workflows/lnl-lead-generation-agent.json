@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-02-24T23:47:14.435Z",
+  "updatedAt": "2026-02-25T00:10:42.455Z",
   "createdAt": "2026-01-31T18:02:38.391Z",
   "id": "DE81QfyyeSOaA778",
   "name": "LNL Lead Generation Agent",
@@ -635,7 +635,63 @@
     {
       "parameters": {
         "authentication": "appToken",
-        "operation": "update"
+        "operation": "update",
+        "updateFields": {
+          "properties": [
+            {
+              "property": "has_chatbot",
+              "value": "={{ $json.website_has_chatbot ? 'true' : 'false' }}"
+            },
+            {
+              "property": "has_online_booking",
+              "value": "={{ $json.website_has_booking ? 'true' : 'false' }}"
+            },
+            {
+              "property": "industry_vertical",
+              "value": "={{ $json.industry || '' }}"
+            },
+            {
+              "property": "lnl_division",
+              "value": "={{ $json.industry === 'med_spa' || $json.industry === 'realtor' ? 'creatives' : 'automations' }}"
+            },
+            {
+              "property": "lnl_lead_id",
+              "value": "={{ $json.row_number || $json.id || '' }}"
+            },
+            {
+              "property": "lnl_lead_score",
+              "value": "={{ $json.lead_score || 0 }}"
+            },
+            {
+              "property": "lnl_notes",
+              "value": "={{ $json.scoring_breakdown || '' }}"
+            },
+            {
+              "property": "luxury_target",
+              "value": "={{ $json.isLuxuryTarget ? 'true' : 'false' }}"
+            },
+            {
+              "property": "outreach_status",
+              "value": "={{ $json.lead_tier || 'cold' }}"
+            },
+            {
+              "property": "product_recommendations",
+              "value": "={{ $json.product_recommendations || '' }}"
+            },
+            {
+              "property": "scoring_breakdown",
+              "value": "={{ $json.scoring_breakdown || '' }}"
+            },
+            {
+              "property": "scraped_date",
+              "value": "={{ $json.timestamp || $json.qualified_date || '' }}"
+            },
+            {
+              "property": "source_path",
+              "value": "={{ $json.source || '' }}"
+            }
+          ]
+        }
       },
       "id": "c0ae8c69-8e08-4e45-90df-000ede53802b",
       "name": "Update HubSpot Custom Properties",
@@ -652,7 +708,8 @@
         }
       },
       "notes": "Adds custom LNL scoring properties to contact",
-      "disabled": true
+      "disabled": false,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
@@ -1533,9 +1590,9 @@
   },
   "meta": null,
   "pinData": {},
-  "versionId": "e67543b1-563b-4588-b981-00f0ab7e2c8d",
-  "activeVersionId": "e67543b1-563b-4588-b981-00f0ab7e2c8d",
-  "versionCounter": 271,
+  "versionId": "0e824115-1575-4350-aa62-ac6bf74edd72",
+  "activeVersionId": "0e824115-1575-4350-aa62-ac6bf74edd72",
+  "versionCounter": 274,
   "triggerCount": 1,
   "shared": [
     {
@@ -1604,9 +1661,9 @@
     }
   ],
   "activeVersion": {
-    "updatedAt": "2026-02-24T23:47:14.437Z",
-    "createdAt": "2026-02-24T23:47:14.437Z",
-    "versionId": "e67543b1-563b-4588-b981-00f0ab7e2c8d",
+    "updatedAt": "2026-02-25T00:10:42.456Z",
+    "createdAt": "2026-02-25T00:10:42.456Z",
+    "versionId": "0e824115-1575-4350-aa62-ac6bf74edd72",
     "workflowId": "DE81QfyyeSOaA778",
     "nodes": [
       {
@@ -2237,7 +2294,63 @@
       {
         "parameters": {
           "authentication": "appToken",
-          "operation": "update"
+          "operation": "update",
+          "updateFields": {
+            "properties": [
+              {
+                "property": "has_chatbot",
+                "value": "={{ $json.website_has_chatbot ? 'true' : 'false' }}"
+              },
+              {
+                "property": "has_online_booking",
+                "value": "={{ $json.website_has_booking ? 'true' : 'false' }}"
+              },
+              {
+                "property": "industry_vertical",
+                "value": "={{ $json.industry || '' }}"
+              },
+              {
+                "property": "lnl_division",
+                "value": "={{ $json.industry === 'med_spa' || $json.industry === 'realtor' ? 'creatives' : 'automations' }}"
+              },
+              {
+                "property": "lnl_lead_id",
+                "value": "={{ $json.row_number || $json.id || '' }}"
+              },
+              {
+                "property": "lnl_lead_score",
+                "value": "={{ $json.lead_score || 0 }}"
+              },
+              {
+                "property": "lnl_notes",
+                "value": "={{ $json.scoring_breakdown || '' }}"
+              },
+              {
+                "property": "luxury_target",
+                "value": "={{ $json.isLuxuryTarget ? 'true' : 'false' }}"
+              },
+              {
+                "property": "outreach_status",
+                "value": "={{ $json.lead_tier || 'cold' }}"
+              },
+              {
+                "property": "product_recommendations",
+                "value": "={{ $json.product_recommendations || '' }}"
+              },
+              {
+                "property": "scoring_breakdown",
+                "value": "={{ $json.scoring_breakdown || '' }}"
+              },
+              {
+                "property": "scraped_date",
+                "value": "={{ $json.timestamp || $json.qualified_date || '' }}"
+              },
+              {
+                "property": "source_path",
+                "value": "={{ $json.source || '' }}"
+              }
+            ]
+          }
         },
         "id": "c0ae8c69-8e08-4e45-90df-000ede53802b",
         "name": "Update HubSpot Custom Properties",
@@ -2254,7 +2367,8 @@
           }
         },
         "notes": "Adds custom LNL scoring properties to contact",
-        "disabled": true
+        "disabled": false,
+        "onError": "continueRegularOutput"
       },
       {
         "parameters": {
@@ -3125,10 +3239,10 @@
     "autosaved": false,
     "workflowPublishHistory": [
       {
-        "createdAt": "2026-02-24T23:47:14.541Z",
-        "id": 331,
+        "createdAt": "2026-02-25T00:10:42.683Z",
+        "id": 332,
         "workflowId": "DE81QfyyeSOaA778",
-        "versionId": "e67543b1-563b-4588-b981-00f0ab7e2c8d",
+        "versionId": "0e824115-1575-4350-aa62-ac6bf74edd72",
         "event": "activated",
         "userId": "ac8bdc4a-23ff-4b97-aae6-3bd2b3b9a4d5"
       }
