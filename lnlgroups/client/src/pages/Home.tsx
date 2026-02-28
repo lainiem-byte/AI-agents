@@ -36,8 +36,8 @@ export default function Home() {
               <div>
                 <h4 className="text-lg font-bold text-white mb-4">Services</h4>
                 <div className="space-y-2">
-                  <Link href="/creatives" className="block text-gray-400 text-sm hover:text-[#008080] transition-colors">LNL Creative</Link>
-                  <Link href="/automations" className="block text-gray-400 text-sm hover:text-[#2E5BFF] transition-colors">LNL Automations</Link>
+                  <a href="https://lnlcreatives.com" className="block text-gray-400 text-sm hover:text-[#008080] transition-colors">LNL Creative</a>
+                  <a href="https://lnlautomations.com" className="block text-gray-400 text-sm hover:text-[#2E5BFF] transition-colors">LNL Automations</a>
                   <Link href="/about" className="block text-gray-400 text-sm hover:text-lnl-gold transition-colors">About Lainie</Link>
                 </div>
               </div>

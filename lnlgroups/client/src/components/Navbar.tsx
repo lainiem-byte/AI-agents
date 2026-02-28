@@ -81,7 +81,7 @@ export default function Navbar() {
 
         {/* Desktop Nav */}
         <div className="flex items-center gap-5">
-          <NavLink href="/">Home</NavLink>
+          <a href="https://lnlgroups.com" className="text-sm font-medium transition-colors hover:text-lnl-gold text-foreground/80">Home</a>
           <NavLink href="/about">About</NavLink>
           
           {/* Divisions Dropdown */}
@@ -98,7 +98,7 @@ export default function Navbar() {
               className="w-64 bg-[#242428] border-lnl-gold/20 p-2"
             >
               <DropdownMenuItem
-                onClick={() => window.location.href = '/'}
+                onClick={() => window.location.href = 'https://lnlgroups.com'}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all hover:bg-lnl-gold/10 text-foreground/80 hover:text-white"
               >
                 <div className="w-8 h-8 rounded-lg bg-lnl-gold/20 flex items-center justify-center">
@@ -110,7 +110,7 @@ export default function Navbar() {
                 </div>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => window.location.href = '/creatives'}
+                onClick={() => window.location.href = 'https://lnlcreatives.com'}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all hover:bg-[#008080]/10 text-foreground/80 hover:text-white"
               >
                 <div className="w-8 h-8 rounded-lg bg-[#008080]/20 flex items-center justify-center">
@@ -122,7 +122,7 @@ export default function Navbar() {
                 </div>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => window.location.href = '/automations'}
+                onClick={() => window.location.href = 'https://lnlautomations.com'}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer transition-all hover:bg-[#2E5BFF]/10 text-foreground/80 hover:text-white"
               >
                 <div className="w-8 h-8 rounded-lg bg-[#2E5BFF]/20 flex items-center justify-center">
@@ -288,9 +288,9 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent className="bg-[#1A1A1D] border-lnl-gold/20">
               <div className="flex flex-col gap-6 mt-10">
-                <Link href="/" className="text-lg font-medium text-foreground/80 hover:text-lnl-gold transition-colors">
+                <a href="https://lnlgroups.com" className="text-lg font-medium text-foreground/80 hover:text-lnl-gold transition-colors">
                   Home
-                </Link>
+                </a>
                 <Link href="/about" className="text-lg font-medium text-foreground/80 hover:text-lnl-gold transition-colors">
                   About
                 </Link>
@@ -303,7 +303,7 @@ export default function Navbar() {
                   </div>
                   <div className="flex flex-col gap-2">
                     <a
-                      href="/"
+                      href="https://lnlgroups.com"
                       className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-lnl-gold/10"
                     >
                       <div className="w-8 h-8 rounded-lg bg-lnl-gold/20 flex items-center justify-center">
@@ -315,7 +315,7 @@ export default function Navbar() {
                       </div>
                     </a>
                     <a
-                      href="/creatives"
+                      href="https://lnlcreatives.com"
                       className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-[#008080]/10"
                     >
                       <div className="w-8 h-8 rounded-lg bg-[#008080]/20 flex items-center justify-center">
@@ -327,7 +327,7 @@ export default function Navbar() {
                       </div>
                     </a>
                     <a
-                      href="/automations"
+                      href="https://lnlautomations.com"
                       className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-[#2E5BFF]/10"
                     >
                       <div className="w-8 h-8 rounded-lg bg-[#2E5BFF]/20 flex items-center justify-center">
