@@ -10,3 +10,7 @@ env.txt
 nul
 OUTREACH SCRIPTS ALL.docx
 .claude/settings.local.json
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
