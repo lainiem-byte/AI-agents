@@ -21,11 +21,20 @@ const localHubs = [
   { id: "moscow" as const, name: "Moscow", tagline: "Palouse Community" },
 ];
 
+function getSiteDomain() {
+  if (typeof window === "undefined") return "group";
+  const h = window.location.hostname.toLowerCase();
+  if (h.includes("lnlcreatives")) return "creatives";
+  if (h.includes("lnlautomations")) return "automations";
+  return "group";
+}
+
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [location, setLocation] = useLocation();
   const { theme, setTheme } = useTheme();
   const { activeLocation, setActiveLocation } = useActiveLocation();
+  const siteDomain = getSiteDomain();
 
 
   useEffect(() => {
@@ -64,11 +73,11 @@ export default function Navbar() {
       <div className="w-full px-4 md:px-6 h-20 flex items-center justify-center">
         {/* Centered logo + nav group */}
         <div className="hidden md:flex items-center gap-6">
-        {location === '/creatives' || location === '/raleigh' || location === '/columbus' || location === '/moscow' ? (
+        {siteDomain === "creatives" || location === '/creatives' || location === '/raleigh' || location === '/columbus' || location === '/moscow' ? (
           <Link href="/creatives" className="flex items-center group shrink-0">
             <img src={logoCreatives} alt="LNL Creatives" className="h-16 md:h-[88px] w-auto" />
           </Link>
-        ) : location === '/automations' || location.startsWith('/automations') ? (
+        ) : siteDomain === "automations" || location === '/automations' || location.startsWith('/automations') ? (
           <Link href="/automations" className="flex items-center group shrink-0">
             <img src={logoAutomations} alt="LNL Automations" className="h-16 md:h-[88px] w-auto" />
           </Link>
@@ -254,11 +263,11 @@ export default function Navbar() {
 
         {/* Mobile Nav - logo + hamburger */}
         <div className="md:hidden flex items-center justify-between w-full">
-          {location === '/creatives' || location === '/raleigh' || location === '/columbus' || location === '/moscow' ? (
+          {siteDomain === "creatives" || location === '/creatives' || location === '/raleigh' || location === '/columbus' || location === '/moscow' ? (
             <Link href="/creatives" className="flex items-center group">
               <img src={logoCreatives} alt="LNL Creatives" className="h-14 w-auto" />
             </Link>
-          ) : location === '/automations' || location.startsWith('/automations') ? (
+          ) : siteDomain === "automations" || location === '/automations' || location.startsWith('/automations') ? (
             <Link href="/automations" className="flex items-center group">
               <img src={logoAutomations} alt="LNL Automations" className="h-14 w-auto" />
             </Link>

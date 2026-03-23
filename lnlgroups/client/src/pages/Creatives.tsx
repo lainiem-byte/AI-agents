@@ -171,8 +171,8 @@ export default function Creatives({ initialLocation = "raleigh" }: CreativesProp
                 Your brand must justify your pricing before you ever speak to a lead. We use proprietary Brand-Mining to extract your hidden authority and build a visual presence that commands respect in luxury markets.
               </p>
               <div className="mt-6">
-                <button 
-                  onClick={() => document.getElementById('contact-section')?.scrollIntoView({ behavior: 'smooth' })}
+                <button
+                  onClick={() => window.location.href = '/audit?industry=creatives'}
                   className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#008080] hover:bg-[#008080]/90 text-white font-medium text-sm transition-all"
                   style={{ boxShadow: '0 0 30px rgba(0, 128, 128, 0.3)' }}
                 >
