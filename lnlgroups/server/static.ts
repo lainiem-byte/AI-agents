@@ -115,6 +115,44 @@ function injectMeta(html: string, meta: SiteMeta): string {
     .replace("</head>", `  ${metaBlock}\n  </head>`);
 }
 
+const DOMAIN_ROBOTS: Record<string, string> = {
+  lnlgroups: `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /vault\nCrawl-delay: 1\nSitemap: https://lnlgroups.com/sitemap.xml`,
+  lnlautomations: `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /vault\nCrawl-delay: 1\nSitemap: https://lnlautomations.com/sitemap.xml`,
+  lnlcreatives: `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /vault\nCrawl-delay: 1\nSitemap: https://lnlcreatives.com/sitemap.xml`,
+};
+
+const today = new Date().toISOString().split("T")[0];
+
+function buildSitemap(baseUrl: string, paths: string[]): string {
+  const urls = paths
+    .map(
+      (p) =>
+        `  <url>\n    <loc>${baseUrl}${p}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>${p === "/" ? "weekly" : "monthly"}</changefreq>\n    <priority>${p === "/" ? "1.0" : p.match(/\/(raleigh|columbus|moscow)$/) ? "0.95" : "0.8"}</priority>\n  </url>`,
+    )
+    .join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`;
+}
+
+const DOMAIN_SITEMAPS: Record<string, string> = {
+  lnlgroups: buildSitemap("https://lnlgroups.com", [
+    "/", "/about", "/creatives", "/automations",
+    "/portfolio/creatives", "/portfolio/automations",
+    "/audit", "/faq", "/contact", "/privacy", "/terms",
+    "/raleigh", "/columbus", "/moscow",
+  ]),
+  lnlautomations: buildSitemap("https://lnlautomations.com", [
+    "/", "/about", "/automations",
+    "/portfolio/automations",
+    "/audit", "/faq", "/contact", "/privacy", "/terms",
+  ]),
+  lnlcreatives: buildSitemap("https://lnlcreatives.com", [
+    "/", "/about", "/creatives",
+    "/portfolio/creatives",
+    "/audit", "/faq", "/contact", "/privacy", "/terms",
+    "/raleigh", "/columbus", "/moscow",
+  ]),
+};
+
 export function serveStatic(app: Express) {
   const distPath = path.resolve(process.cwd(), "dist", "public");
   if (!fs.existsSync(distPath)) {
@@ -122,6 +160,25 @@ export function serveStatic(app: Express) {
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
     );
   }
+
+  // Domain-specific robots.txt
+  app.get("/robots.txt", (req: Request, res: Response) => {
+    const meta = getSiteMeta(req.headers.host || "");
+    const key = Object.keys(DOMAIN_ROBOTS).find((k) =>
+      (req.headers.host || "").toLowerCase().includes(k),
+    ) || "lnlgroups";
+    res.setHeader("Content-Type", "text/plain");
+    res.send(DOMAIN_ROBOTS[key]);
+  });
+
+  // Domain-specific sitemap.xml
+  app.get("/sitemap.xml", (req: Request, res: Response) => {
+    const key = Object.keys(DOMAIN_SITEMAPS).find((k) =>
+      (req.headers.host || "").toLowerCase().includes(k),
+    ) || "lnlgroups";
+    res.setHeader("Content-Type", "application/xml");
+    res.send(DOMAIN_SITEMAPS[key]);
+  });
 
   // Serve static assets but NOT index.html automatically — we inject domain meta ourselves
   app.use(express.static(distPath, { index: false }));
